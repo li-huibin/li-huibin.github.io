@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+  
+
+    <head>
+      <meta charset="utf-8" />
+       
+      <meta
+        name="keywords"
+        content="Spring-IOC原理,Java,hexo+github,spring,springboot,springcloud,nacos,jvm,mysql,k8s,docker,gateway,springcloudAlibaba"
+      />
+       
+      <meta name="description" content="学习，生活分享" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>Spring-IOC原理 |  不忘初心</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/favicon.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css"
+      />
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+       
+ 
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    <link rel="alternate" href="/atom.xml" title="不忘初心" type="application/atom+xml">
+</head>
+  </html>
+</html>
+
+
+<body>
+  <div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-Spring-IOC原理"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  Spring-IOC原理
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/archives/81aeb1f/" class="article-date">
+  <time datetime="2021-08-13T09:39:44.000Z" itemprop="datePublished">2021-08-13</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Spring%E6%BA%90%E7%A0%81/">Spring源码</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">1.5k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">5 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在Spring中最重要的就属<code>IOC</code>了，不论是在面试中，还是在一些中间件与Spring的继承中，都离不开<code>IOC</code>，下面就来瞧瞧<code>IOC</code>是个什么东西，他是怎么一个加载流程，先大致粗略的了解一下！</p>
+<h2 id="一、下载Spring源码"><a href="#一、下载Spring源码" class="headerlink" title="一、下载Spring源码"></a>一、<a target="_blank" rel="noopener" href="https://gitee.com/li-huibin/spring-framework-5.2.16.-release">下载Spring源码</a></h2><h2 id="二、编译Spring源码"><a href="#二、编译Spring源码" class="headerlink" title="二、编译Spring源码"></a>二、编译Spring源码</h2><p>在编译的时候有些包是需要从外网下载的，有条件的可以科学上网，这样可以加快编译速度。如果不管怎么编译都是报错，或者下载包总是失败，可以留言我，我可以提供一点有限的帮助。</p>
+<h2 id="三、创建demo模块"><a href="#三、创建demo模块" class="headerlink" title="三、创建demo模块"></a>三、创建demo模块</h2><p><img src="/archives/81aeb1f/image-20210813193225670.png" alt="创建demo模块"></p>
+<blockquote>
+<p><strong>注意：</strong> 一定要选择<code>Gradle</code>，别选错了，因为从<code>Spring5</code>开始，使用的是<code>Gradle</code>来构建整个项目的</p>
+</blockquote>
+<p><img src="/archives/81aeb1f/image-20210813193542786.png" alt="创建demo模块-2"></p>
+<p>这里因为我已经事先创建过了模块，所以上面会有一个报错。然后点<code>Finish</code>完成创建。</p>
+<p>创建完毕之后，在初始化模块的目录结构，我的目录结构是如下结构：</p>
+<p><img src="/archives/81aeb1f/image-20210813193846621.png" alt="demo模块目录结构"></p>
+<p>这里我创建了三个类<code>ApplicationMain</code>启动类、<code>TestIOC</code>接口、实现<code>TestIOC</code>接口的<code>TestIOCImpl</code>实现类。</p>
+<p><code>TestIOC.java</code>代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lhb.service;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Program</span>: spring</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Description</span>:</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Author</span>: LHB</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Version</span>: v0.0.1</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Time</span>: 2021-07-26 14:52</span></span><br><span class="line"><span class="comment"> **/</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">TestIOC</span> </span>&#123;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">helloIOC</span><span class="params">(String say)</span></span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p><code>TestIOCImpl.java</code>代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lhb.service.impl;</span><br><span class="line"><span class="keyword">import</span> com.lhb.service.TestIOC;</span><br><span class="line"><span class="keyword">import</span> org.springframework.stereotype.Service;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Program</span>: spring</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Description</span>:</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Author</span>: LHB</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Version</span>: v0.0.1</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Time</span>: 2021-07-26 14:53</span></span><br><span class="line"><span class="comment"> **/</span></span><br><span class="line"><span class="meta">@Service</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestIOCImpl</span> <span class="keyword">implements</span> <span class="title">TestIOC</span> </span>&#123;</span><br><span class="line">	<span class="meta">@Override</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">helloIOC</span><span class="params">(String say)</span> </span>&#123;</span><br><span class="line">		System.out.println(<span class="string">&quot;====&gt; &quot;</span> + say);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>ApplicationMain.java</code>启动类代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lhb;</span><br><span class="line"><span class="keyword">import</span> com.lhb.service.impl.TestIOCImpl;</span><br><span class="line"><span class="keyword">import</span> org.springframework.context.annotation.AnnotationConfigApplicationContext;</span><br><span class="line"><span class="keyword">import</span> org.springframework.context.annotation.ComponentScan;</span><br><span class="line"><span class="keyword">import</span> org.springframework.context.annotation.Configuration;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Program</span>: spring</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Description</span>:</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Author</span>: LHB</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Version</span>: v0.0.1 mode</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Time</span>: 2021-07-26 14:56</span></span><br><span class="line"><span class="comment"> **/</span></span><br><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="meta">@ComponentScan(&quot;com.lhb&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ApplicationMain</span> </span>&#123;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">		AnnotationConfigApplicationContext applicationContext = <span class="keyword">new</span> AnnotationConfigApplicationContext(ApplicationMain.class);</span><br><span class="line">		TestIOCImpl bean = applicationContext.getBean(TestIOCImpl.class);</span><br><span class="line">		bean.helloIOC(<span class="string">&quot;hello spring ioc&quot;</span>);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="四、IOC主流程分析"><a href="#四、IOC主流程分析" class="headerlink" title="四、IOC主流程分析"></a>四、<code>IOC</code>主流程分析</h2><p>首先，肯定是要从整个程序的入口开始分析的，下面就从<code>ApplicationMain</code>中的<code>main</code>方法开始。从上图中我们可以看到在<code>ApplicationMain</code>类中的<code>main</code>方法中手动创建了一个<code>AnnotationConfigApplicationContext</code></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">AnnotationConfigApplicationContext applicationContext = <span class="keyword">new</span> AnnotationConfigApplicationContext(ApplicationMain.class);</span><br></pre></td></tr></table></figure>
+
+<p>嗯？？what.<code>AnnotationConfigApplicationContext</code>是一个什么东西。。为什么要创建这个东西；那么就带着这个疑问点到他的源码里看一看。<code>Ctrl</code>+鼠标左键走起。</p>
+<p><img src="/archives/81aeb1f/image-20210813200002798.png" alt="AnnotationConfigApplicationContext.java"></p>
+<p>这两个名叫<code>Juergen Hoeller和Chris Beams</code>的作者给写了一大片注释，大概意思就是<code>AnnotationConfigApplicationContext</code>是整个引用的上下文，可以用他来获取容器中的Bean，和注册Bean等；<code>AnnotationConfigApplicationContext</code>实现会这继承了Spring框架中大部分的基础能力，一切Spring的动作，都是从这个类开始进行的，并且整个过程也都是这个类来进行接管的；所以它也是比较强大；总之大部分容器中的和Bean的操作都可以通过<code>AnnotationConfigApplicationContext</code>来操作。</p>
+<p><img src="/archives/81aeb1f/image-20210813201436746.png" alt="AnnotationConfigApplicationContext关系图"></p>
+<p>从上面的<code>AnnotationConfigApplicatioinContext</code>类关系图中可以看出，这个类其实比较复杂的。好了这个类先聊到这里，接下来我们看到<code>AnnotationConfigApplicationContext</code>的构造方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Create a new AnnotationConfigApplicationContext, deriving bean definitions</span></span><br><span class="line"><span class="comment"> * from the given component classes and automatically refreshing the context.</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> componentClasses one or more component classes &amp;mdash; for example,</span></span><br><span class="line"><span class="comment"> * &#123;<span class="doctag">@link</span> Configuration <span class="doctag">@Configuration</span>&#125; classes</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">AnnotationConfigApplicationContext</span><span class="params">(Class&lt;?&gt;... componentClasses)</span> </span>&#123;</span><br><span class="line">	<span class="comment">/** 这里会实例化BeanDefinitionReader和BeanDefinitionScanner，并注册一些框架初始化必要的Bean</span></span><br><span class="line"><span class="comment">	 * 调用无参构造函数，会先调用父类GenericApplicationContext的构造函数，父类构造函数中就是初始化</span></span><br><span class="line"><span class="comment">	 * DefaultListableBeanFactory，并且赋值给beanFactory。</span></span><br><span class="line"><span class="comment">	 * 在本类的构造函数中，初始化了一个读取器reader = new AnnotatedBeanDefinitionReader(this);</span></span><br><span class="line"><span class="comment">	 * 和一个扫描器scanner = new ClassPathBeanDefinitionScanner(this);</span></span><br><span class="line"><span class="comment">	 * 扫描器scanner的用出不是很大，它仅仅是我们外部手动调用.scan()方法时才会用到的，常规方式是不会用到scanner</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">this</span>();</span><br><span class="line">	<span class="comment">/** 注册Bean</span></span><br><span class="line"><span class="comment">	 * 把传入的类进行注册，这里会有两种方式，一种是传入配置类，一种是传入bean。</span></span><br><span class="line"><span class="comment">	 * 这里spring会把传统的带有<span class="doctag">@Configuration</span>注解的类称之为FULL配置类，不带<span class="doctag">@Configuration</span>注解但是带有<span class="doctag">@Component</span>、</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@Import</span>、<span class="doctag">@ImportResource</span>、<span class="doctag">@Server</span>、<span class="doctag">@ComponentScan</span> 等注解的类称之为Lite配置类</span></span><br><span class="line"><span class="comment">	 * 我们这里先把带有<span class="doctag">@Configuration</span>注解的称之为传统配置类，不带该注解的称之为普通类</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	register(componentClasses);</span><br><span class="line">	<span class="comment">/** 刷新 */</span></span><br><span class="line">	refresh();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在构造函数中调用了三个方法，下面一一说一下这三个方法都干了什么</p>
+<blockquote>
+<p><strong><code>this();</code>：</strong>这个方法调用了本类的无参数构造函数，其实在调用<code>AnnotationConfigApplicationContext</code>的无参数构造方法之前，先调用的父类的构造方法。在这些方法中主要是做了一些初始化的操作，比如初始化我们的容器<code>beanDefinitionMap</code>，初始化资源读取器<code>AnnotationBeanDefinitionReader</code>和资源扫描器<code>BeanDefinitionScanner</code>等</p>
+<p><strong><code>register(componentClasses)</code>：</strong> 这个方法很重要；在这个方法中会扫描所有的Bean，并且会把扫描出来的Bean定义进行注册；Spring还会在这里把带有<code>@Configuration</code>注解的类进行标记为<code>Full</code>配置类，不带<code>@Configuration</code>注解的类但是有<code>@Component</code>、<code>@ComponentScan</code>、<code>@Import</code>、<code>@ImportSource</code>、<code>@Server</code>等注解的类标记为<code>Lite</code>配置类，然后被标记为<code>Full</code>的配置类会进行<code>CGLIB</code>代理增强处理。&gt;</p>
+<blockquote>
+<p><em><strong>Spring的循环依赖也是在这个过程中解决的，后面会详细看这个方法</strong></em>    </p>
+</blockquote>
+<p><strong><code>refresh()</code>：</strong> 这个方法很重要，几乎Spring所有的启动动作都会在这个方法来完成的。在这里会准备Bean工厂，为Bean工厂设置一些依赖到的接口，也会添加后置处理器，注册类的后置处理器，注册Bean工厂后置处理器，解析<code>@Import</code>、<code>@Component</code>注解、注册Bean后置处理器、初始化事件、实例化Bean等操作、发布初始化完成事件等操作；这个方法后面也会详细看</p>
+</blockquote>
+<p>下面通过一个图来回顾总结一下整个流程：</p>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          打赏
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://li-huibin.github.io/archives/81aeb1f/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Spring%E6%BA%90%E7%A0%81/" rel="tag">Spring源码</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+   
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2015-2021
+        <i class="ri-heart-fill heart_icon"></i> Li HuiBin
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>访问人数:<span id="busuanzi_value_site_uv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>浏览次数:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s9.cnzz.com/z_stat.php?id=1278069914&amp;web_id=1278069914'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>
+      <div class="float_btns">
+        <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+      </div>
+    </main>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/ayer-side.svg" alt="不忘初心"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/friends">友链</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/2019/about">关于我</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags/%E6%97%85%E8%A1%8C/">旅行</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" target="_blank" rel="noopener" href="http://shenyu-vip.lofter.com">摄影</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+      <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+        <i class="ri-rss-line"></i>
+      </a>
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/img/alipay.jpg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/img/wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css">
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+ 
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+ 
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>
