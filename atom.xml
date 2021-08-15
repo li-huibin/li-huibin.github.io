@@ -3,11 +3,11 @@
   <title>不忘初心</title>
   
   <subtitle>个人博客</subtitle>
-  <link href="https://li-huibin.github.io/atom.xml" rel="self"/>
+  <link href="https://blog.lihuibin.top/atom.xml" rel="self"/>
   
-  <link href="https://li-huibin.github.io/"/>
+  <link href="https://blog.lihuibin.top/"/>
   <updated>2021-08-15T04:33:36.203Z</updated>
-  <id>https://li-huibin.github.io/</id>
+  <id>https://blog.lihuibin.top/</id>
   
   <author>
     <name>Li HuiBin</name>
@@ -18,8 +18,8 @@
   
   <entry>
     <title>Spring-IOC原理</title>
-    <link href="https://li-huibin.github.io/archives/81aeb1f/"/>
-    <id>https://li-huibin.github.io/archives/81aeb1f/</id>
+    <link href="https://blog.lihuibin.top/archives/81aeb1f/"/>
+    <id>https://blog.lihuibin.top/archives/81aeb1f/</id>
     <published>2021-08-13T09:39:44.000Z</published>
     <updated>2021-08-15T04:33:36.203Z</updated>
     
@@ -34,17 +34,17 @@
     
     
     
-    <category term="Spring源码" scheme="https://li-huibin.github.io/categories/Spring%E6%BA%90%E7%A0%81/"/>
+    <category term="Spring源码" scheme="https://blog.lihuibin.top/categories/Spring%E6%BA%90%E7%A0%81/"/>
     
     
-    <category term="Spring源码" scheme="https://li-huibin.github.io/tags/Spring%E6%BA%90%E7%A0%81/"/>
+    <category term="Spring源码" scheme="https://blog.lihuibin.top/tags/Spring%E6%BA%90%E7%A0%81/"/>
     
   </entry>
   
   <entry>
     <title>设计模式-工厂模式</title>
-    <link href="https://li-huibin.github.io/archives/ccff2b22/"/>
-    <id>https://li-huibin.github.io/archives/ccff2b22/</id>
+    <link href="https://blog.lihuibin.top/archives/ccff2b22/"/>
+    <id>https://blog.lihuibin.top/archives/ccff2b22/</id>
     <published>2021-08-10T06:08:06.000Z</published>
     <updated>2021-08-14T03:37:45.601Z</updated>
     
@@ -59,17 +59,17 @@
     
     
     
-    <category term="设计模式" scheme="https://li-huibin.github.io/categories/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"/>
+    <category term="设计模式" scheme="https://blog.lihuibin.top/categories/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"/>
     
     
-    <category term="设计模式" scheme="https://li-huibin.github.io/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"/>
+    <category term="设计模式" scheme="https://blog.lihuibin.top/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"/>
     
   </entry>
   
   <entry>
     <title>hexo静态页面图片不显示问题</title>
-    <link href="https://li-huibin.github.io/archives/e4419141/"/>
-    <id>https://li-huibin.github.io/archives/e4419141/</id>
+    <link href="https://blog.lihuibin.top/archives/e4419141/"/>
+    <id>https://blog.lihuibin.top/archives/e4419141/</id>
     <published>2021-07-28T04:22:14.000Z</published>
     <updated>2021-07-29T13:49:39.653Z</updated>
     
@@ -86,17 +86,17 @@
     
     
     
-    <category term="解决方案" scheme="https://li-huibin.github.io/categories/%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/"/>
+    <category term="解决方案" scheme="https://blog.lihuibin.top/categories/%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/"/>
     
     
-    <category term="问题解决" scheme="https://li-huibin.github.io/tags/%E9%97%AE%E9%A2%98%E8%A7%A3%E5%86%B3/"/>
+    <category term="问题解决" scheme="https://blog.lihuibin.top/tags/%E9%97%AE%E9%A2%98%E8%A7%A3%E5%86%B3/"/>
     
   </entry>
   
   <entry>
     <title>hexo+github搭建博客详细教程</title>
-    <link href="https://li-huibin.github.io/archives/8eb04e19/"/>
-    <id>https://li-huibin.github.io/archives/8eb04e19/</id>
+    <link href="https://blog.lihuibin.top/archives/8eb04e19/"/>
+    <id>https://blog.lihuibin.top/archives/8eb04e19/</id>
     <published>2021-07-27T05:49:32.000Z</published>
     <updated>2021-07-29T13:49:39.628Z</updated>
     
@@ -112,10 +112,10 @@
     
     
     
-    <category term="解决方案" scheme="https://li-huibin.github.io/categories/%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/"/>
+    <category term="解决方案" scheme="https://blog.lihuibin.top/categories/%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/"/>
     
     
-    <category term="环境搭建" scheme="https://li-huibin.github.io/tags/%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA/"/>
+    <category term="环境搭建" scheme="https://blog.lihuibin.top/tags/%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA/"/>
     
   </entry>
   
