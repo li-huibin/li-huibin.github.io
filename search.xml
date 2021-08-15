@@ -53,29 +53,6 @@
       </tags>
   </entry>
   <entry>
-    <title>hexo静态页面图片不显示问题</title>
-    <url>/archives/e4419141/</url>
-    <content><![CDATA[<p>hexo静态页面图片不显示一般有几个原因：</p>
-<p>1、<code>_config.yml</code>中没有设置<code>post_asset_folder: true</code>；这个设置默认是false</p>
-<p>2、没有安装插件 asset-image</p>
-<p>如果在运行工程之前上面两个步骤都没有操作过，则首先需要在<code>_config.yml</code>中设置<code>post_asset_folder:true</code> 。然后在cmd中运行</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npm install https://github.com/CodeFalling/hexo-asset-image --save</span><br></pre></td></tr></table></figure>
-
-<p>由于国内网络环境，可能需要多下载几次才可以下载成功，要耐心等待。或者有条件的可以翻墙下载。</p>
-<p>以上操作完毕之后重新发布工程</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean &amp;&amp; hexo generate &amp;&amp; hexo deploy</span><br></pre></td></tr></table></figure>
-
-<p>页面效果如下：</p>
-<p><img src="/archives/e4419141/image-20210728134047043.png" alt="image-20210728134047043"></p>
-]]></content>
-      <categories>
-        <category>解决方案</category>
-      </categories>
-      <tags>
-        <tag>问题解决</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>hexo+github搭建博客详细教程</title>
     <url>/archives/8eb04e19/</url>
     <content><![CDATA[<p>经历了两天的折腾，终于搭建好了个人博客。由于第一次搭建个人博客，所以在搭建过程中也遇到了很多的问题。现在特意整理一下整个搭建过程以及中间遇到的问题。</p>
@@ -140,6 +117,29 @@
       </categories>
       <tags>
         <tag>环境搭建</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>hexo静态页面图片不显示问题</title>
+    <url>/archives/e4419141/</url>
+    <content><![CDATA[<p>hexo静态页面图片不显示一般有几个原因：</p>
+<p>1、<code>_config.yml</code>中没有设置<code>post_asset_folder: true</code>；这个设置默认是false</p>
+<p>2、没有安装插件 asset-image</p>
+<p>如果在运行工程之前上面两个步骤都没有操作过，则首先需要在<code>_config.yml</code>中设置<code>post_asset_folder:true</code> 。然后在cmd中运行</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npm install https://github.com/CodeFalling/hexo-asset-image --save</span><br></pre></td></tr></table></figure>
+
+<p>由于国内网络环境，可能需要多下载几次才可以下载成功，要耐心等待。或者有条件的可以翻墙下载。</p>
+<p>以上操作完毕之后重新发布工程</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean &amp;&amp; hexo generate &amp;&amp; hexo deploy</span><br></pre></td></tr></table></figure>
+
+<p>页面效果如下：</p>
+<p><img src="/archives/e4419141/image-20210728134047043.png" alt="image-20210728134047043"></p>
+]]></content>
+      <categories>
+        <category>解决方案</category>
+      </categories>
+      <tags>
+        <tag>问题解决</tag>
       </tags>
   </entry>
   <entry>
