@@ -150,13 +150,14 @@
 <p>在构造函数中调用了三个方法，下面一一说一下这三个方法都干了什么</p>
 <blockquote>
 <p><strong><code>this();</code>：</strong>这个方法调用了本类的无参数构造函数，其实在调用<code>AnnotationConfigApplicationContext</code>的无参数构造方法之前，先调用的父类的构造方法。在这些方法中主要是做了一些初始化的操作，比如初始化我们的容器<code>beanDefinitionMap</code>，初始化资源读取器<code>AnnotationBeanDefinitionReader</code>和资源扫描器<code>BeanDefinitionScanner</code>等</p>
-<p><strong><code>register(componentClasses)</code>：</strong> 这个方法很重要；在这个方法中会扫描所有的Bean，并且会把扫描出来的Bean定义进行注册；Spring还会在这里把带有<code>@Configuration</code>注解的类进行标记为<code>Full</code>配置类，不带<code>@Configuration</code>注解的类但是有<code>@Component</code>、<code>@ComponentScan</code>、<code>@Import</code>、<code>@ImportSource</code>、<code>@Server</code>等注解的类标记为<code>Lite</code>配置类，然后被标记为<code>Full</code>的配置类会进行<code>CGLIB</code>代理增强处理。&gt;</p>
+<p><strong><code>register(componentClasses)</code>：</strong> 这个方法很重要；在这个方法中会扫描所有的Bean，并且会把扫描出来的Bean定义进行注册；Spring还会在这里把带有<code>@Configuration</code>注解的类进行标记为<code>Full</code>配置类，不带<code>@Configuration</code>注解的类但是有<code>@Component</code>、<code>@ComponentScan</code>、<code>@Import</code>、<code>@ImportSource</code>、<code>@Server</code>等注解的类标记为<code>Lite</code>配置类，然后被标记为<code>Full</code>的配置类会进行<code>CGLIB</code>代理增强处理。</p>
 <blockquote>
 <p><em><strong>Spring的循环依赖也是在这个过程中解决的，后面会详细看这个方法</strong></em>    </p>
 </blockquote>
 <p><strong><code>refresh()</code>：</strong> 这个方法很重要，几乎Spring所有的启动动作都会在这个方法来完成的。在这里会准备Bean工厂，为Bean工厂设置一些依赖到的接口，也会添加后置处理器，注册类的后置处理器，注册Bean工厂后置处理器，解析<code>@Import</code>、<code>@Component</code>注解、注册Bean后置处理器、初始化事件、实例化Bean等操作、发布初始化完成事件等操作；这个方法后面也会详细看</p>
 </blockquote>
 <p>下面通过一个图来回顾总结一下整个流程：</p>
+<p><img src="/archives/81aeb1f/IOC%E5%8A%A0%E8%BD%BD%E6%B5%81%E7%A8%8B-IOC%E5%8A%A0%E8%BD%BD%E6%B5%81%E7%A8%8B.png" alt="Spring-IOC原理"></p>
  
       <!-- reward -->
       
