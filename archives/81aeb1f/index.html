@@ -9,7 +9,7 @@
        
       <meta
         name="keywords"
-        content="Spring-IOC原理,Java,hexo+github,spring,springboot,springcloud,nacos,jvm,mysql,k8s,docker,gateway,springcloudAlibaba"
+        content="Spring-IOC原理,lihuibin,lhb,Java,hexo+github,spring,springboot,springcloud,nacos,jvm,mysql,k8s,docker,gateway,springcloudAlibaba"
       />
        
       <meta name="description" content="学习，生活分享" />
@@ -18,7 +18,7 @@
         name="viewport"
         content="width=device-width, initial-scale=1, maximum-scale=1"
       />
-      <title>Spring-IOC原理 |  不忘初心</title>
+      <title>Spring-IOC原理(一) |  不忘初心</title>
   <meta name="generator" content="hexo-theme-ayer">
       
       <link rel="shortcut icon" href="/favicon.ico" />
@@ -75,7 +75,7 @@
     <header class="article-header">
        
 <h1 class="article-title sea-center" style="border-left:0" itemprop="name">
-  Spring-IOC原理
+  Spring-IOC原理(一)
 </h1>
  
 
@@ -151,7 +151,7 @@
 
 <p>在构造函数中调用了三个方法，下面一一说一下这三个方法都干了什么</p>
 <blockquote>
-<p><strong><code>this();</code>：</strong>这个方法调用了本类的无参数构造函数，其实在调用<code>AnnotationConfigApplicationContext</code>的无参数构造方法之前，先调用的父类的构造方法。在这些方法中主要是做了一些初始化的操作，比如初始化我们的容器<code>beanDefinitionMap</code>，初始化资源读取器<code>AnnotationBeanDefinitionReader</code>和资源扫描器<code>BeanDefinitionScanner</code>等</p>
+<p><strong><code>this()</code>：</strong>这个方法调用了本类的无参数构造函数，其实在调用<code>AnnotationConfigApplicationContext</code>的无参数构造方法之前，先调用的父类的构造方法。在这些方法中主要是做了一些初始化的操作，比如初始化我们的容器<code>beanDefinitionMap</code>，初始化资源读取器<code>AnnotationBeanDefinitionReader</code>和资源扫描器<code>BeanDefinitionScanner</code>等</p>
 <p><strong><code>register(componentClasses)</code>：</strong> 这个方法很重要；在这个方法中会扫描所有的Bean，并且会把扫描出来的Bean定义进行注册；Spring还会在这里把带有<code>@Configuration</code>注解的类进行标记为<code>Full</code>配置类，不带<code>@Configuration</code>注解的类但是有<code>@Component</code>、<code>@ComponentScan</code>、<code>@Import</code>、<code>@ImportSource</code>、<code>@Server</code>等注解的类标记为<code>Lite</code>配置类，然后被标记为<code>Full</code>的配置类会进行<code>CGLIB</code>代理增强处理。</p>
 <blockquote>
 <p><em><strong>Spring的循环依赖也是在这个过程中解决的，后面会详细看这个方法</strong></em>    </p>
@@ -224,7 +224,7 @@
     <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
     <p>扫一扫，分享到微信</p>
     <div class="wx-qrcode">
-      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://blog.lihuibin.top/archives/81aeb1f/" alt="微信分享二维码">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://www.lihuibin.top/archives/81aeb1f/" alt="微信分享二维码">
     </div>
 </div>
 
@@ -293,6 +293,10 @@
     </ul>
     <ul>
       
+        <li>
+          <a href="https://beian.miit.gov.cn/" target="_black" rel="nofollow">晋ICP备2021014677号</a>
+        </li>
+        
     </ul>
     <ul>
       
@@ -301,7 +305,7 @@
       <li>
         <!-- cnzz统计 -->
         
-        <script type="text/javascript" src='https://s9.cnzz.com/z_stat.php?id=1280216174&amp;web_id=1280216174'></script>
+        <script type="text/javascript" src='https://v1.cnzz.com/z_stat.php?id=1280277223&amp;web_id=1280277223'></script>
         
       </li>
     </ul>

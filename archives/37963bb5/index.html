@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+  
+
+    <head>
+      <meta charset="utf-8" />
+       
+      <meta
+        name="keywords"
+        content="Spring-IOC原理(三),lihuibin,lhb,Java,hexo+github,spring,springboot,springcloud,nacos,jvm,mysql,k8s,docker,gateway,springcloudAlibaba"
+      />
+       
+      <meta name="description" content="学习，生活分享" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>Spring-IOC原理(三) |  不忘初心</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/favicon.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css"
+      />
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+       
+ 
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <script src="https://cdn.jsdelivr.net/npm/mermaid@8.9.2/dist/mermaid.min.js"></script>
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    <link rel="alternate" href="/atom.xml" title="不忘初心" type="application/atom+xml">
+</head>
+  </html>
+</html>
+
+
+<body>
+  <div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-Spring-IOC原理-三"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  Spring-IOC原理(三)
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/archives/37963bb5/" class="article-date">
+  <time datetime="2021-08-23T11:15:07.000Z" itemprop="datePublished">2021-08-23</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Spring%E6%BA%90%E7%A0%81/">Spring源码</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">2.5k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">10 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在上一篇博文《<a href="/archives/49651b9e/">Spring-IOC原理(二)</a>》中分析了<code>AnnotationConfigApplicationContext</code>构造方法中的<code>this()</code>方法，也知道了在这个方法中主要注册了一些<code>Spring</code>初始化必要的Bean，并且也创建了我们的容器对象。接下来继续看一下<code>AnnotationConfigApplicationContext</code>构造方法中的<code>register()</code>方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">AnnotationConfigApplicationContext</span><span class="params">(Class&lt;?&gt;... componentClasses)</span> </span>&#123;</span><br><span class="line">    <span class="comment">/** 这里会实例化BeanDefinitionReader和BeanDefinitionScanner，并注册一些框架初始化必要的Bean</span></span><br><span class="line"><span class="comment">	 * 调用无参构造函数，会先调用父类GenericApplicationContext的构造函数，父类构造函数中就是初始化</span></span><br><span class="line"><span class="comment">	 * DefaultListableBeanFactory，并且赋值给beanFactory。</span></span><br><span class="line"><span class="comment">	 * 在本类的构造函数中，初始化了一个读取器reader = new AnnotatedBeanDefinitionReader(this);</span></span><br><span class="line"><span class="comment">	 * 和一个扫描器scanner = new ClassPathBeanDefinitionScanner(this);</span></span><br><span class="line"><span class="comment">	 * 扫描器scanner的用出不是很大，它仅仅是我们外部手动调用.scan()方法时才会用到的，常规方式是不会用到scanner</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">    <span class="keyword">this</span>();</span><br><span class="line">    <span class="comment">/** 注册Bean</span></span><br><span class="line"><span class="comment">	 * 把传入的类进行注册，这里会有两种方式，一种是传入配置类，一种是传入bean。</span></span><br><span class="line"><span class="comment">	 * 这里spring会把传统的带有<span class="doctag">@Configuration</span>注解的类称之为FULL配置类，不带<span class="doctag">@Configuration</span>注解但是带有<span class="doctag">@Component</span>、</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@Import</span>、<span class="doctag">@ImportResource</span>、<span class="doctag">@Server</span>、<span class="doctag">@ComponentScan</span> 等注解的类称之为Lite配置类</span></span><br><span class="line"><span class="comment">	 * 我们这里先把带有<span class="doctag">@Configuration</span>注解的称之为传统配置类，不带该注解的称之为普通类</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">    register(componentClasses);</span><br><span class="line">    <span class="comment">/** 刷新 */</span></span><br><span class="line">    refresh();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="一、register方法分析"><a href="#一、register方法分析" class="headerlink" title="一、register方法分析"></a>一、<code>register</code>方法分析</h2><p>老办法，进入<code>register(componentClasses)</code></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">register</span><span class="params">(Class&lt;?&gt;... componentClasses)</span> </span>&#123;</span><br><span class="line">    Assert.notEmpty(componentClasses, <span class="string">&quot;At least one component class must be specified&quot;</span>);</span><br><span class="line">    <span class="keyword">this</span>.reader.register(componentClasses);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>是一个重写方法，在方法中又调用了<code>register(componentClasses)</code>;这次是调用<code>reader</code>中的<code>register</code>。先来看看<code>reader</code>是什么东西？</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 注解bean定义读取器，主要作用是读取被注解标记的bean</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> AnnotatedBeanDefinitionReader reader;</span><br></pre></td></tr></table></figure>
+
+<p>看到这个，脑海中突然想到，我们在<code>this()</code>方法中不是初始化过一个<code>AnnotatedBeanDefinitionReader</code>吗！没错这个<code>reader</code>就是在<code>this()</code>中初始化完成创建的，几乎之后的用的<code>reader</code>，也是这个。既然知道它的来来龙去脉了，那就继续往下走，进到</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">this</span>.reader.register(componentClasses)</span><br></pre></td></tr></table></figure>
+
+<p>方法中。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">register</span><span class="params">(Class&lt;?&gt;... componentClasses)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (Class&lt;?&gt; componentClass : componentClasses) &#123;</span><br><span class="line">        registerBean(componentClass);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在这个方法中，依次遍历<code>componentClasses</code>，并将遍历出的类通过<code>registerBean</code>方法中。进入<code>registerBean(componentClasses)</code>方法中具体看看是怎么做的。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">registerBean</span><span class="params">(Class&lt;?&gt; beanClass)</span> </span>&#123;</span><br><span class="line">    doRegisterBean(beanClass, <span class="keyword">null</span>, <span class="keyword">null</span>, <span class="keyword">null</span>, <span class="keyword">null</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>又被<code>Spring</code>代码搞恶心了，这TM套了这么多层还没有进入。高手都是这样子写代码的吗？？后来才知道其实在<code>Spring</code>源码中，不管嵌套多少次，最终真正干活的方法只有是<code>doXXX()</code>的方法。好吧继续进到<code>doRegisterBean()</code>方法中。</p>
+<h3 id="1-1、doRegisterBean方法分析"><a href="#1-1、doRegisterBean方法分析" class="headerlink" title="1.1、doRegisterBean方法分析"></a>1.1、<code>doRegisterBean</code>方法分析</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> &lt;T&gt; <span class="function"><span class="keyword">void</span> <span class="title">doRegisterBean</span><span class="params">(Class&lt;T&gt; beanClass, <span class="meta">@Nullable</span> String name,</span></span></span><br><span class="line"><span class="params"><span class="function">			<span class="meta">@Nullable</span> Class&lt;? extends Annotation&gt;[] qualifiers, <span class="meta">@Nullable</span> Supplier&lt;T&gt; supplier,</span></span></span><br><span class="line"><span class="params"><span class="function">			<span class="meta">@Nullable</span> BeanDefinitionCustomizer[] customizers)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * AnnotatedGenericBeanDefinition一种数据结构，用来描述Bean的，这里的作用就是把传入的标记了注解的类转为</span></span><br><span class="line"><span class="comment">	 * AnnotatedGenericBeanDefinition数据结构，类里面有一个getMetadata方法，可以拿到类上面的注解信息</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">    AnnotatedGenericBeanDefinition abd = <span class="keyword">new</span> AnnotatedGenericBeanDefinition(beanClass);</span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * 判断是否需要跳过注解，spring中有<span class="doctag">@Condition</span>注解，当不满足条件，这个Bean就不会被解析</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">this</span>.conditionEvaluator.shouldSkip(abd.getMetadata())) &#123;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    abd.setInstanceSupplier(supplier);</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * 解析bean的作用域，如果没有设置的话，默认是单例</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">    ScopeMetadata scopeMetadata = <span class="keyword">this</span>.scopeMetadataResolver.resolveScopeMetadata(abd);</span><br><span class="line">    abd.setScope(scopeMetadata.getScopeName());</span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * 获取bean名字</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	String beanName = (name != <span class="keyword">null</span> ? name : <span class="keyword">this</span>.beanNameGenerator.generateBeanName(abd, <span class="keyword">this</span>.registry));</span><br><span class="line"></span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * 解析通用注解，填充到AnnotatedGenericBeanDefinition，解析的注解为<span class="doctag">@Lazy</span>、<span class="doctag">@Primary</span>,<span class="doctag">@DependsOn</span>、<span class="doctag">@Role</span>、<span class="doctag">@Description</span></span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	AnnotationConfigUtils.processCommonDefinitionAnnotations(abd);</span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * 限定符处理，不是特指<span class="doctag">@Qualifier</span>注解，也有可能是<span class="doctag">@Primary</span>,或者<span class="doctag">@Lazy</span>，或者是其他，如果以常规方式去初始化spring</span></span><br><span class="line"><span class="comment">	 * ApplicationContext applicationContext = new AnnotationConfigApplicationContext(ApplicationMain.class);</span></span><br><span class="line"><span class="comment">	 * qualifier永远都是空的，包括上面的name和instanceSupplier都是同样的道理</span></span><br><span class="line"><span class="comment">	 * 但是spring提供了其他方式去注册bean，就可能传入了</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">if</span> (qualifiers != <span class="keyword">null</span>) &#123;</span><br><span class="line">		<span class="comment">/**</span></span><br><span class="line"><span class="comment">		 * 可以传入qualifier数组，所以这里循环处理</span></span><br><span class="line"><span class="comment">		 */</span></span><br><span class="line">		<span class="keyword">for</span> (Class&lt;? extends Annotation&gt; qualifier : qualifiers) &#123;</span><br><span class="line">			<span class="comment">/**</span></span><br><span class="line"><span class="comment">			 * 优先处理<span class="doctag">@Primary</span>注解</span></span><br><span class="line"><span class="comment">			 */</span></span><br><span class="line">			<span class="keyword">if</span> (Primary.class == qualifier) &#123;</span><br><span class="line">				abd.setPrimary(<span class="keyword">true</span>);</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="comment">/**</span></span><br><span class="line"><span class="comment">			 * 再处理<span class="doctag">@Lazy</span>注解</span></span><br><span class="line"><span class="comment">			 */</span></span><br><span class="line">			<span class="keyword">else</span> <span class="keyword">if</span> (Lazy.class == qualifier) &#123;</span><br><span class="line">				abd.setLazyInit(<span class="keyword">true</span>);</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="comment">/**</span></span><br><span class="line"><span class="comment">			 * 最后处理其他注解</span></span><br><span class="line"><span class="comment">			 */</span></span><br><span class="line">			<span class="keyword">else</span> &#123;</span><br><span class="line">				abd.addQualifier(<span class="keyword">new</span> AutowireCandidateQualifier(qualifier));</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (customizers != <span class="keyword">null</span>) &#123;</span><br><span class="line">		<span class="keyword">for</span> (BeanDefinitionCustomizer customizer : customizers) &#123;</span><br><span class="line">			customizer.customize(abd);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * 将AnnotatedGenericBeanDefinition和beanName封装到一个对象中BeanDefinitionHolder</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	BeanDefinitionHolder definitionHolder = <span class="keyword">new</span> BeanDefinitionHolder(abd, beanName);</span><br><span class="line">	definitionHolder = AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, <span class="keyword">this</span>.registry);</span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * 注册。最终调用DefaultListableBeanFactory中的registerBeanDefinition方法去注册，DefaultListableBeanFactory会维护一系列的信息</span></span><br><span class="line"><span class="comment">	 * 比如beanDefinitionNames,beanDefinitionMap。</span></span><br><span class="line"><span class="comment">	 * beanDefinitionNames是一个List&lt;String&gt; 用来存放bean的名字</span></span><br><span class="line"><span class="comment">	 * beanDefinitionMap是一个Map&lt;String,BeanDefinition&gt;</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	BeanDefinitionReaderUtils.registerBeanDefinition(definitionHolder, <span class="keyword">this</span>.registry);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>详细看一下上面代码。</p>
+<h4 id="1-1-1、-初始化AnnotatedGenericBeanDefinition"><a href="#1-1-1、-初始化AnnotatedGenericBeanDefinition" class="headerlink" title="1.1.1、 初始化AnnotatedGenericBeanDefinition"></a>1.1.1、 初始化<code>AnnotatedGenericBeanDefinition</code></h4><p>首先是创建了一个<code>AnnotatedGenericBeanDefinition</code>，它其实可以看做是一种数据结构，里面会包含一些注解信息</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">AnnotatedGenericBeanDefinition abd = <span class="keyword">new</span> AnnotatedGenericBeanDefinition(beanClass);</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>在这里创建<code>AnnotatedGenericBeanDefinition</code>的作用主要是吧传入的标记了注解的类封装为<code>AnnotatedGenericBeanDefinition</code>类型，然后可以通过<code>AnnotatedGenericBeanDefinition</code>中的<code>getMetadata()</code>方法来拿到类上面的注解信息。</p>
+</blockquote>
+<h4 id="1-1-2、shouldSkip-判断是否跳过"><a href="#1-1-2、shouldSkip-判断是否跳过" class="headerlink" title="1.1.2、shouldSkip()判断是否跳过"></a>1.1.2、<code>shouldSkip()</code>判断是否跳过</h4><p>接下类会判断是否需要跳过注解。在<code>Spring</code>中有一个<code>@Confition</code>注解，当不满足该注解表达式中条件时，这个Bean就不会被解析</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (<span class="keyword">this</span>.conditionEvaluator.shouldSkip(abd.getMetadata())) &#123;</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>在<code>shouldSkip()</code>方法中主要是解析带有<code>@Conditional</code>注解的类，如果没有注解这个注解，则直接返回false,否则会循环递归去解析带有该注解的类；并将所有带有该注解的类元信息拿到，并遍历渠道过滤条件，然后将过滤条件封装为<code>Condition</code>加入到<code>conditions</code>集合中；然后进行排序，之后会遍历我们刚刚保存的条件集合<code>conditions</code> ，通过<code>matchs()</code>方法匹配到符合过滤条件的bean,返回true</p>
+</blockquote>
+<h3 id="1-1-3、解析bean作用域"><a href="#1-1-3、解析bean作用域" class="headerlink" title="1.1.3、解析bean作用域"></a>1.1.3、解析bean作用域</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 解析bean的作用域，如果没有设置的话，默认是单例</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">ScopeMetadata scopeMetadata = <span class="keyword">this</span>.scopeMetadataResolver.resolveScopeMetadata(abd);</span><br><span class="line">abd.setScope(scopeMetadata.getScopeName());</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>这里bean的作用域默认是单例，当然可以通过<code>@Scope(scopeName = &quot;&quot;)</code>注解来指定作用域,是<code>singleton</code>还是<code>prototype</code></p>
+</blockquote>
+<h3 id="1-1-4、解析通用注解"><a href="#1-1-4、解析通用注解" class="headerlink" title="1.1.4、解析通用注解"></a>1.1.4、解析通用注解</h3><p>通过<code>AnnotationConfigUtils.processCommonDefinitionAnnotations(abd)</code>来解析通用注解，例如<code>@Lazy</code>、<code>@Primary</code>、<code>@DependsOn</code>、<code>@Role</code>、<code>@Description</code>注解。然后处理解析到的注解</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (qualifiers != <span class="keyword">null</span>) &#123;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * 可以传入qualifier数组，所以这里循环处理</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">    <span class="keyword">for</span> (Class&lt;? extends Annotation&gt; qualifier : qualifiers) &#123;</span><br><span class="line">        <span class="comment">/**</span></span><br><span class="line"><span class="comment">		 * 优先处理<span class="doctag">@Primary</span>注解</span></span><br><span class="line"><span class="comment">		 */</span></span><br><span class="line">        <span class="keyword">if</span> (Primary.class == qualifier) &#123;</span><br><span class="line">            abd.setPrimary(<span class="keyword">true</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">/**</span></span><br><span class="line"><span class="comment">		 * 再处理<span class="doctag">@Lazy</span>注解</span></span><br><span class="line"><span class="comment">		 */</span></span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span> (Lazy.class == qualifier) &#123;</span><br><span class="line">            abd.setLazyInit(<span class="keyword">true</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">/**</span></span><br><span class="line"><span class="comment">		 * 最后处理其他注解</span></span><br><span class="line"><span class="comment">		 */</span></span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            abd.addQualifier(<span class="keyword">new</span> AutowireCandidateQualifier(qualifier));</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>从上述代码我们可以看出，其实<code>@Lazy</code>、<code>@Primary</code>、<code>@DependsOn</code>、<code>@Role</code>、<code>@Description</code>在处理的时候是有优先级的，如果一个类中以上几个注解都标注了，那么优先级依次是：<code>@Primary</code> &gt; <code>@Lazy</code> &gt; 其他注解</p>
+</blockquote>
+<h3 id="1-1-5、通过registerBeanDefinition-注册spring需要的基础bean"><a href="#1-1-5、通过registerBeanDefinition-注册spring需要的基础bean" class="headerlink" title="1.1.5、通过registerBeanDefinition()注册spring需要的基础bean"></a>1.1.5、通过<code>registerBeanDefinition()</code>注册spring需要的基础bean</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 注册。最终调用DefaultListableBeanFactory中的registerBeanDefinition方法去注册，DefaultListableBeanFactory会维护一系列的信息</span></span><br><span class="line"><span class="comment"> * 比如beanDefinitionNames,beanDefinitionMap。</span></span><br><span class="line"><span class="comment"> * beanDefinitionNames是一个List&lt;String&gt; 用来存放bean的名字</span></span><br><span class="line"><span class="comment"> * beanDefinitionMap是一个Map&lt;String,BeanDefinition&gt;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">BeanDefinitionReaderUtils.registerBeanDefinition(definitionHolder, <span class="keyword">this</span>.registry);</span><br></pre></td></tr></table></figure>
+
+<p>最终通过调用<code>DefaultListableBeanFactory</code>类中的<code>registerBeanDefinition()</code>来完成基础bean的注册，这个方法的调用链很深，我们先点进到<code>registerBeanDefinition()</code>方法中看看。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">registerBeanDefinition</span><span class="params">(</span></span></span><br><span class="line"><span class="params"><span class="function">    BeanDefinitionHolder definitionHolder, BeanDefinitionRegistry registry)</span></span></span><br><span class="line"><span class="function">    <span class="keyword">throws</span> BeanDefinitionStoreException </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Register bean definition under primary name.</span></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * 获取bean的名字</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">    String beanName = definitionHolder.getBeanName();</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * 注册bean</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">    registry.registerBeanDefinition(beanName, definitionHolder.getBeanDefinition());</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * 如果有别名，注册别名</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">    <span class="comment">// Register aliases for bean name, if any.</span></span><br><span class="line">    String[] aliases = definitionHolder.getAliases();</span><br><span class="line">    <span class="keyword">if</span> (aliases != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">for</span> (String alias : aliases) &#123;</span><br><span class="line">            registry.registerAlias(beanName, alias);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在<code>registerBeanDefinition()</code>方法中先获取了bean名字，然后通过调用<code>registry.registerBeanDefinition(beanName,beanDefinition)</code>来真正完成注册，这里的<code>registry</code>是<code>DefaultListableBeanFactory</code>实现子类，所以我们到<code>DefaultListableBeanFactory</code>类中找到<code>registerBeanDefinition()</code>方法，如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">registerBeanDefinition</span><span class="params">(String beanName, BeanDefinition beanDefinition)</span></span></span><br><span class="line"><span class="function">    <span class="keyword">throws</span> BeanDefinitionStoreException </span>&#123;</span><br><span class="line"></span><br><span class="line">    Assert.hasText(beanName, <span class="string">&quot;Bean name must not be empty&quot;</span>);</span><br><span class="line">    Assert.notNull(beanDefinition, <span class="string">&quot;BeanDefinition must not be null&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (beanDefinition <span class="keyword">instanceof</span> AbstractBeanDefinition) &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            ((AbstractBeanDefinition) beanDefinition).validate();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">catch</span> (BeanDefinitionValidationException ex) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> BeanDefinitionStoreException(beanDefinition.getResourceDescription(), beanName,</span><br><span class="line">                                                   <span class="string">&quot;Validation of bean definition failed&quot;</span>, ex);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/** 先从beanDefinitionMap一级缓存中获取bean */</span></span><br><span class="line">    BeanDefinition existingDefinition = <span class="keyword">this</span>.beanDefinitionMap.get(beanName);</span><br><span class="line">    <span class="comment">/** 如果一级缓存中有bean */</span></span><br><span class="line">    <span class="keyword">if</span> (existingDefinition != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (!isAllowBeanDefinitionOverriding()) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> BeanDefinitionOverrideException(beanName, beanDefinition, existingDefinition);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span> (existingDefinition.getRole() &lt; beanDefinition.getRole()) &#123;</span><br><span class="line">            <span class="comment">// e.g. was ROLE_APPLICATION, now overriding with ROLE_SUPPORT or ROLE_INFRASTRUCTURE</span></span><br><span class="line">            <span class="keyword">if</span> (logger.isInfoEnabled()) &#123;</span><br><span class="line">                logger.info(<span class="string">&quot;Overriding user-defined bean definition for bean &#x27;&quot;</span> + beanName +</span><br><span class="line">                            <span class="string">&quot;&#x27; with a framework-generated bean definition: replacing [&quot;</span> +</span><br><span class="line">                            existingDefinition + <span class="string">&quot;] with [&quot;</span> + beanDefinition + <span class="string">&quot;]&quot;</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span> (!beanDefinition.equals(existingDefinition)) &#123;</span><br><span class="line">            <span class="keyword">if</span> (logger.isDebugEnabled()) &#123;</span><br><span class="line">                logger.debug(<span class="string">&quot;Overriding bean definition for bean &#x27;&quot;</span> + beanName +</span><br><span class="line">                             <span class="string">&quot;&#x27; with a different definition: replacing [&quot;</span> + existingDefinition +</span><br><span class="line">                             <span class="string">&quot;] with [&quot;</span> + beanDefinition + <span class="string">&quot;]&quot;</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> (logger.isTraceEnabled()) &#123;</span><br><span class="line">                logger.trace(<span class="string">&quot;Overriding bean definition for bean &#x27;&quot;</span> + beanName +</span><br><span class="line">                             <span class="string">&quot;&#x27; with an equivalent definition: replacing [&quot;</span> + existingDefinition +</span><br><span class="line">                             <span class="string">&quot;] with [&quot;</span> + beanDefinition + <span class="string">&quot;]&quot;</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">/** 将bean设置到一级缓存 */</span></span><br><span class="line">        <span class="keyword">this</span>.beanDefinitionMap.put(beanName, beanDefinition);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (hasBeanCreationStarted()) &#123;</span><br><span class="line">            <span class="comment">// Cannot modify startup-time collection elements anymore (for stable iteration)</span></span><br><span class="line">            <span class="keyword">synchronized</span> (<span class="keyword">this</span>.beanDefinitionMap) &#123;</span><br><span class="line">                <span class="keyword">this</span>.beanDefinitionMap.put(beanName, beanDefinition);</span><br><span class="line">                List&lt;String&gt; updatedDefinitions = <span class="keyword">new</span> ArrayList&lt;&gt;(<span class="keyword">this</span>.beanDefinitionNames.size() + <span class="number">1</span>);</span><br><span class="line">                updatedDefinitions.addAll(<span class="keyword">this</span>.beanDefinitionNames);</span><br><span class="line">                updatedDefinitions.add(beanName);</span><br><span class="line">                <span class="keyword">this</span>.beanDefinitionNames = updatedDefinitions;</span><br><span class="line">                removeManualSingletonName(beanName);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">// Still in startup registration phase</span></span><br><span class="line">            <span class="comment">/**</span></span><br><span class="line"><span class="comment">				 * beanDefinitionMap是Map&lt;String,BeanDefinition&gt;,这里把beanName作为key,beanDefinition作为value</span></span><br><span class="line"><span class="comment">				 */</span></span><br><span class="line">            <span class="keyword">this</span>.beanDefinitionMap.put(beanName, beanDefinition);</span><br><span class="line">            <span class="keyword">this</span>.beanDefinitionNames.add(beanName);</span><br><span class="line">            removeManualSingletonName(beanName);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">this</span>.frozenBeanDefinitionNames = <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (existingDefinition != <span class="keyword">null</span> || containsSingleton(beanName)) &#123;</span><br><span class="line">        resetBeanDefinition(beanName);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span> (isConfigurationFrozen()) &#123;</span><br><span class="line">        clearByTypeCache();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里首先会判断<code>beanDefinitionMap</code>缓存中是否存在bean，第一次进来肯定是不存在的，所以第一次进来必定会进入else分支，在else分支中，为了避免重复创建，首先会通过<code>hasBeanCreationStarted()</code>来判断是否已经创建。第一次的话这里肯定也是没有创建，所以也不会进入到if中，来到else将<code>beanDefinition</code>放入<code>beanDefinitionMap</code>中，<code>beanName</code>放入<code>beanDefinitionNames</code>集合中。最后开看一些<code>beanDefinitionMap</code>和<code>beanDefinitionNames</code>的结构</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> Map&lt;String, BeanDefinition&gt; beanDefinitionMap = <span class="keyword">new</span> ConcurrentHashMap&lt;&gt;(<span class="number">256</span>);</span><br><span class="line"><span class="keyword">private</span> <span class="keyword">volatile</span> List&lt;String&gt; beanDefinitionNames = <span class="keyword">new</span> ArrayList&lt;&gt;(<span class="number">256</span>);</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>从代码中可以看出，<code>beanDefinitionMap</code>是一个Map，并且key是<code>beanName</code>，value是<code>BeanDefinition</code>，<code>beanDefinitionNames</code>是一个集合，并且是线程可见变量集合，用来保存<code>beanName</code>。</p>
+</blockquote>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://www.lihuibin.top/archives/37963bb5/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Spring%E6%BA%90%E7%A0%81/" rel="tag">Spring源码</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+<div class="gitalk" id="gitalk-container"></div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.css">
+
+
+<script src="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+
+
+<script src="https://cdn.jsdelivr.net/npm/blueimp-md5@2.10.0/js/md5.min.js"></script>
+
+<script type="text/javascript">
+  var gitalk = new Gitalk({
+    clientID: 'e247716e4bc0bde03887',
+    clientSecret: '9c3304bbd2652553a5d9b31b843c82ee9e80f434',
+    repo: 'blog.comments',
+    owner: 'li-huibin',
+    admin: ['li-huibin'],
+    // id: location.pathname,      // Ensure uniqueness and length less than 50
+    id: md5(location.pathname),
+    distractionFreeMode: false,  // Facebook-like distraction free mode
+    pagerDirection: 'last'
+  })
+
+  gitalk.render('gitalk-container')
+</script>
+
+   
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2021
+        <i class="ri-heart-fill heart_icon"></i> Li HuiBin
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>访问人数:<span id="busuanzi_value_site_uv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>浏览次数:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+        <li>
+          <a href="https://beian.miit.gov.cn/" target="_black" rel="nofollow">晋ICP备2021014677号</a>
+        </li>
+        
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://v1.cnzz.com/z_stat.php?id=1280277223&amp;web_id=1280277223'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>
+      <div class="float_btns">
+        <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+      </div>
+    </main>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/ayer-side.svg" alt="不忘初心"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/friends">友链</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于我</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+      <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+        <i class="ri-rss-line"></i>
+      </a>
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/img/alipay.jpg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/img/wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css">
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+ 
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+ 
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>

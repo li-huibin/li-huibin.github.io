@@ -7,7 +7,10 @@
     <head>
       <meta charset="utf-8" />
        
-      <meta name="keywords" content="lihuibin,lhb,Java,hexo+github,spring,springboot,springcloud,nacos,jvm,mysql,k8s,docker,gateway,springcloudAlibaba" />
+      <meta
+        name="keywords"
+        content="postProcessBeanDefinitionRegistry,invokeBeanDefinitionRegistryPostProcessors,spring,lihuibin,lhb,Java,hexo+github,spring,springboot,springcloud,nacos,jvm,mysql,k8s,docker,gateway,springcloudAlibaba"
+      />
        
       <meta name="description" content="学习，生活分享" />
       
@@ -15,7 +18,7 @@
         name="viewport"
         content="width=device-width, initial-scale=1, maximum-scale=1"
       />
-      <title>about |  不忘初心</title>
+      <title>invokeBeanDefinitionRegistryPostProcessors方法解析 |  不忘初心</title>
   <meta name="generator" content="hexo-theme-ayer">
       
       <link rel="shortcut icon" href="/favicon.ico" />
@@ -61,8 +64,8 @@
     <main class="content on">
       <section class="outer">
   <article
-  id="about-"
-  class="article article-type-about"
+  id="post-postProcessBeanDefinitionRegistry方法解析"
+  class="article article-type-post"
   itemscope
   itemprop="blogPost"
   data-scroll-reveal
@@ -72,16 +75,62 @@
     <header class="article-header">
        
 <h1 class="article-title sea-center" style="border-left:0" itemprop="name">
-  about
+  invokeBeanDefinitionRegistryPostProcessors方法解析
 </h1>
  
 
       
     </header>
-       
+     
+    <div class="article-meta">
+      <a href="/archives/8d05e930/" class="article-date">
+  <time datetime="2021-08-27T12:19:41.000Z" itemprop="datePublished">2021-08-27</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Spring%E6%BA%90%E7%A0%81/">Spring源码</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">428</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">1 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+
+
+
+  
     <div class="article-entry" itemprop="articleBody">
        
-  <p>姓名: XXX</p>
+  <p>在上一篇<a href="/archives/e74be873">《Spring-IOC原理之invokeBeanFactoryPostProcessor详解》</a>中我们提到了一个方法<code>invokeBeanDefinitionRegistryPostProcessors()</code>。也说了这个方法最终会调用<code>ConfigurationClassPostProcessor</code>类中的<code>postProcessBeanDefinitionRegistry</code>方法。并且在这个方法中会解析<code>@Import</code>、<code>@Component</code>等注解和创建<code>CGLIB</code>动态代理。那么这一篇我们来详细看一下这个调用链中的方法。</p>
+<p>先找到<code>refresh()</code>方法中的<code>invokeBeanFactoryPostProcessors()</code>，然后找到方法中的<code>invokeBeanDefinitionRegistryPostProcessors</code>方法。</p>
+<p><img src="/archives/8d05e930/image-20210828140340723.png" alt="PostProcessorRegistrationDelegate#invokeBeanFactoryPostProcessors"></p>
+<p>然后<code>Ctrl+鼠标左键</code>进入到该方法中</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">invokeBeanDefinitionRegistryPostProcessors</span><span class="params">(Collection&lt;? extends BeanDefinitionRegistryPostProcessor&gt; postProcessors, BeanDefinitionRegistry registry)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">for</span> (BeanDefinitionRegistryPostProcessor postProcessor : postProcessors) &#123;</span><br><span class="line">		<span class="comment">/** 这里调用ConfigutationClassPostProcessor处理beanDefinitionMap中的bean定义 */</span></span><br><span class="line">		postProcessor.postProcessBeanDefinitionRegistry(registry);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>循环遍历了传进来的<code>postProcessors</code>，不过<code>postProcessors</code>中只有一个类是<code>ConfigurationClassPostProcessor</code>。然后调用<code>postProcessBeanDefinitionRegistry</code>。</p>
+<p><img src="/archives/8d05e930/image-20210828141408341.png" alt="Debug-invokeBeanDefinitionRegistryPostProcessors"></p>
+<blockquote>
+<p>这里还有一个点，就是<code>postProcessBeanDefinitionRegistry</code>方法，这个方法是<code>BeanDefinitionRegistryPostProcessor</code>接口中的方法，所以要想看方法内的实现逻辑只能找实现类中该方法的实现逻辑；通过上面的调试图片我们可以知道，<code>postProcessor</code>是<code>ConfigurationClassPostProcessor</code>类型，而<code>ConfigurationClassPostProcessor</code>切好也实现了<code>BeanDefinitionRegistryPostProcessors</code>接口，当然也实现了这个接口中的方法。所以这里我们只要去<code>ConfigurationClassPostProcessor</code>类中去找方法即可。</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">postProcessBeanDefinitionRegistry</span><span class="params">(BeanDefinitionRegistry registry)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">int</span> registryId = System.identityHashCode(registry);</span><br><span class="line">	<span class="keyword">if</span> (<span class="keyword">this</span>.registriesPostProcessed.contains(registryId)) &#123;</span><br><span class="line">		<span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(</span><br><span class="line">				<span class="string">&quot;postProcessBeanDefinitionRegistry already called on this post-processor against &quot;</span> + registry);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (<span class="keyword">this</span>.factoriesPostProcessed.contains(registryId)) &#123;</span><br><span class="line">		<span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(</span><br><span class="line">				<span class="string">&quot;postProcessBeanFactory already called on this post-processor against &quot;</span> + registry);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">this</span>.registriesPostProcessed.add(registryId);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/** 这里会解析配置类的一些注解，例如<span class="doctag">@Configutation</span>、<span class="doctag">@Component</span>、<span class="doctag">@Import</span>等配置注解 */</span></span><br><span class="line">	processConfigBeanDefinitions(registry);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在<code>postProcessBeanDefinitionRegistry</code>方法中，我们直接看到最后一行，调用了<code>processConfigBeanDefinitions(registry)</code>，这个方法主要是解析<code>@Component</code>、<code>@Import</code>等配置注解。<a href="/archives/79103379">想要了解<code>processConfigBeanDefinitioins</code>中具体流程可以查看这一篇。</a></p>
  
       <!-- reward -->
       
@@ -146,15 +195,44 @@
     <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
     <p>扫一扫，分享到微信</p>
     <div class="wx-qrcode">
-      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://www.lihuibin.top/about/" alt="微信分享二维码">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://www.lihuibin.top/archives/8d05e930/" alt="微信分享二维码">
     </div>
 </div>
 
 <div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Spring%E6%BA%90%E7%A0%81/" rel="tag">Spring源码</a></li></ul>
+
     </footer>
   </div>
 
-    
+   
+<div class="gitalk" id="gitalk-container"></div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.css">
+
+
+<script src="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+
+
+<script src="https://cdn.jsdelivr.net/npm/blueimp-md5@2.10.0/js/md5.min.js"></script>
+
+<script type="text/javascript">
+  var gitalk = new Gitalk({
+    clientID: 'e247716e4bc0bde03887',
+    clientSecret: '9c3304bbd2652553a5d9b31b843c82ee9e80f434',
+    repo: 'blog.comments',
+    owner: 'li-huibin',
+    admin: ['li-huibin'],
+    // id: location.pathname,      // Ensure uniqueness and length less than 50
+    id: md5(location.pathname),
+    distractionFreeMode: false,  // Facebook-like distraction free mode
+    pagerDirection: 'last'
+  })
+
+  gitalk.render('gitalk-container')
+</script>
+
+   
 </article>
 
 </section>
@@ -301,6 +379,22 @@
 <script src="/js/lazyload.min.js"></script>
 
 <!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
 
 <script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
 <link

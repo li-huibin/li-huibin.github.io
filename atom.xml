@@ -3,11 +3,11 @@
   <title>不忘初心</title>
   
   <subtitle>个人博客</subtitle>
-  <link href="https://blog.lihuibin.top/atom.xml" rel="self"/>
+  <link href="https://www.lihuibin.top/atom.xml" rel="self"/>
   
-  <link href="https://blog.lihuibin.top/"/>
-  <updated>2021-08-15T04:33:36.203Z</updated>
-  <id>https://blog.lihuibin.top/</id>
+  <link href="https://www.lihuibin.top/"/>
+  <updated>2021-09-03T13:51:21.406Z</updated>
+  <id>https://www.lihuibin.top/</id>
   
   <author>
     <name>Li HuiBin</name>
@@ -17,11 +17,153 @@
   <generator uri="https://hexo.io/">Hexo</generator>
   
   <entry>
-    <title>Spring-IOC原理</title>
-    <link href="https://blog.lihuibin.top/archives/81aeb1f/"/>
-    <id>https://blog.lihuibin.top/archives/81aeb1f/</id>
+    <title>processConfigBeanDefinitions方法解析</title>
+    <link href="https://www.lihuibin.top/archives/79103379/"/>
+    <id>https://www.lihuibin.top/archives/79103379/</id>
+    <published>2021-08-28T06:29:17.000Z</published>
+    <updated>2021-09-03T13:51:21.406Z</updated>
+    
+    
+    
+    
+    <category term="Spring源码" scheme="https://www.lihuibin.top/categories/Spring%E6%BA%90%E7%A0%81/"/>
+    
+    
+    <category term="Spring源码" scheme="https://www.lihuibin.top/tags/Spring%E6%BA%90%E7%A0%81/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>invokeBeanDefinitionRegistryPostProcessors方法解析</title>
+    <link href="https://www.lihuibin.top/archives/8d05e930/"/>
+    <id>https://www.lihuibin.top/archives/8d05e930/</id>
+    <published>2021-08-27T12:19:41.000Z</published>
+    <updated>2021-09-03T13:51:21.388Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;在上一篇&lt;a</summary>
+        
+      
+    
+    
+    
+    <category term="Spring源码" scheme="https://www.lihuibin.top/categories/Spring%E6%BA%90%E7%A0%81/"/>
+    
+    
+    <category term="Spring源码" scheme="https://www.lihuibin.top/tags/Spring%E6%BA%90%E7%A0%81/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Spring-IOC原理之invokeBeanFactoryPostProcessor详解</title>
+    <link href="https://www.lihuibin.top/archives/e74be873/"/>
+    <id>https://www.lihuibin.top/archives/e74be873/</id>
+    <published>2021-08-25T09:48:36.000Z</published>
+    <updated>2021-09-03T13:51:21.312Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h1 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot;</summary>
+        
+      
+    
+    
+    
+    <category term="Spring源码" scheme="https://www.lihuibin.top/categories/Spring%E6%BA%90%E7%A0%81/"/>
+    
+    
+    <category term="Spring源码" scheme="https://www.lihuibin.top/tags/Spring%E6%BA%90%E7%A0%81/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Spring-IOC原理(四)</title>
+    <link href="https://www.lihuibin.top/archives/cdd5d4ba/"/>
+    <id>https://www.lihuibin.top/archives/cdd5d4ba/</id>
+    <published>2021-08-24T02:06:03.000Z</published>
+    <updated>2021-09-03T13:51:21.289Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h1 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h1&gt;&lt;p&gt;在上一篇博文《&lt;a</summary>
+        
+      
+    
+    
+    
+    <category term="Spring源码" scheme="https://www.lihuibin.top/categories/Spring%E6%BA%90%E7%A0%81/"/>
+    
+    
+    <category term="Spring源码" scheme="https://www.lihuibin.top/tags/Spring%E6%BA%90%E7%A0%81/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Spring-IOC原理(三)</title>
+    <link href="https://www.lihuibin.top/archives/37963bb5/"/>
+    <id>https://www.lihuibin.top/archives/37963bb5/</id>
+    <published>2021-08-23T11:15:07.000Z</published>
+    <updated>2021-09-03T13:51:21.246Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h2 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h2&gt;&lt;p&gt;在上一篇博文《&lt;a</summary>
+        
+      
+    
+    
+    
+    <category term="Spring源码" scheme="https://www.lihuibin.top/categories/Spring%E6%BA%90%E7%A0%81/"/>
+    
+    
+    <category term="Spring源码" scheme="https://www.lihuibin.top/tags/Spring%E6%BA%90%E7%A0%81/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Spring-IOC原理(二)</title>
+    <link href="https://www.lihuibin.top/archives/49651b9e/"/>
+    <id>https://www.lihuibin.top/archives/49651b9e/</id>
+    <published>2021-08-17T01:40:32.000Z</published>
+    <updated>2021-09-03T13:51:21.247Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h2 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h2&gt;&lt;p&gt;在上一篇博文&lt;a</summary>
+        
+      
+    
+    
+    
+    <category term="Spring源码" scheme="https://www.lihuibin.top/categories/Spring%E6%BA%90%E7%A0%81/"/>
+    
+    
+    <category term="Spring源码" scheme="https://www.lihuibin.top/tags/Spring%E6%BA%90%E7%A0%81/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Spring-IOC原理(一)</title>
+    <link href="https://www.lihuibin.top/archives/81aeb1f/"/>
+    <id>https://www.lihuibin.top/archives/81aeb1f/</id>
     <published>2021-08-13T09:39:44.000Z</published>
-    <updated>2021-08-15T04:33:36.203Z</updated>
+    <updated>2021-09-03T13:51:21.310Z</updated>
     
     
       
@@ -34,17 +176,17 @@
     
     
     
-    <category term="Spring源码" scheme="https://blog.lihuibin.top/categories/Spring%E6%BA%90%E7%A0%81/"/>
+    <category term="Spring源码" scheme="https://www.lihuibin.top/categories/Spring%E6%BA%90%E7%A0%81/"/>
     
     
-    <category term="Spring源码" scheme="https://blog.lihuibin.top/tags/Spring%E6%BA%90%E7%A0%81/"/>
+    <category term="Spring源码" scheme="https://www.lihuibin.top/tags/Spring%E6%BA%90%E7%A0%81/"/>
     
   </entry>
   
   <entry>
     <title>设计模式-工厂模式</title>
-    <link href="https://blog.lihuibin.top/archives/ccff2b22/"/>
-    <id>https://blog.lihuibin.top/archives/ccff2b22/</id>
+    <link href="https://www.lihuibin.top/archives/ccff2b22/"/>
+    <id>https://www.lihuibin.top/archives/ccff2b22/</id>
     <published>2021-08-10T06:08:06.000Z</published>
     <updated>2021-08-14T03:37:45.601Z</updated>
     
@@ -59,19 +201,19 @@
     
     
     
-    <category term="设计模式" scheme="https://blog.lihuibin.top/categories/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"/>
+    <category term="设计模式" scheme="https://www.lihuibin.top/categories/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"/>
     
     
-    <category term="设计模式" scheme="https://blog.lihuibin.top/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"/>
+    <category term="设计模式" scheme="https://www.lihuibin.top/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"/>
     
   </entry>
   
   <entry>
     <title>hexo静态页面图片不显示问题</title>
-    <link href="https://blog.lihuibin.top/archives/e4419141/"/>
-    <id>https://blog.lihuibin.top/archives/e4419141/</id>
+    <link href="https://www.lihuibin.top/archives/e4419141/"/>
+    <id>https://www.lihuibin.top/archives/e4419141/</id>
     <published>2021-07-28T04:22:14.000Z</published>
-    <updated>2021-07-29T13:49:39.653Z</updated>
+    <updated>2021-09-03T13:51:21.351Z</updated>
     
     
       
@@ -86,17 +228,17 @@
     
     
     
-    <category term="解决方案" scheme="https://blog.lihuibin.top/categories/%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/"/>
+    <category term="解决方案" scheme="https://www.lihuibin.top/categories/%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/"/>
     
     
-    <category term="问题解决" scheme="https://blog.lihuibin.top/tags/%E9%97%AE%E9%A2%98%E8%A7%A3%E5%86%B3/"/>
+    <category term="问题解决" scheme="https://www.lihuibin.top/tags/%E9%97%AE%E9%A2%98%E8%A7%A3%E5%86%B3/"/>
     
   </entry>
   
   <entry>
     <title>hexo+github搭建博客详细教程</title>
-    <link href="https://blog.lihuibin.top/archives/8eb04e19/"/>
-    <id>https://blog.lihuibin.top/archives/8eb04e19/</id>
+    <link href="https://www.lihuibin.top/archives/8eb04e19/"/>
+    <id>https://www.lihuibin.top/archives/8eb04e19/</id>
     <published>2021-07-27T05:49:32.000Z</published>
     <updated>2021-07-29T13:49:39.628Z</updated>
     
@@ -112,10 +254,10 @@
     
     
     
-    <category term="解决方案" scheme="https://blog.lihuibin.top/categories/%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/"/>
+    <category term="解决方案" scheme="https://www.lihuibin.top/categories/%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/"/>
     
     
-    <category term="环境搭建" scheme="https://blog.lihuibin.top/tags/%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA/"/>
+    <category term="环境搭建" scheme="https://www.lihuibin.top/tags/%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA/"/>
     
   </entry>
   
