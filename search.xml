@@ -1,6 +1,928 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>Redis主从工作原理</title>
+    <url>/archives/1b578af4/</url>
+    <content><![CDATA[<h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>接前面讲到的<a href="/archives/ba77e58/">《redis主从架构搭建》</a>，来讲一下Redis主从架构的工作原理到底是怎么运作的</p>
+<h2 id="Redis工作原理"><a href="#Redis工作原理" class="headerlink" title="Redis工作原理"></a>Redis工作原理</h2><p>在上个博客中我们搭建了Redis主从架构；在过程中我们为master主节点配置了三个slave从节点。在这三个slave从节点启动的时候，不管是否第一次连接上master主节点，他们都会发送改一个<code>PSYNC</code>命令给master请求同步数据。</p>
+<p>master主节点接收到<code>PSYNC</code>命令后，会在后台进行数据持久化，通过<code>bgsave</code>生成最新的快照文件；在持久化期间，master主节点还会继续接受客户端的请求，并且他会把这些可能修改数据的请求命令缓存在一块内存中。当持久化进行完毕之后，master会把这份rdb文件数据集发送给slave从节点，slave从节点会把接收到的数据进行持久化生成rdb，然后再加载到内存中。然后master主节点再将之前缓存在内存中的命令发送给slave从节点，从节点根据这些请求指令重放数据到redis中。</p>
+<p>当master主节点和slave从节点之间的连接由于一些原因断开时，slave从节点能够自动重连master主节点，如果master收到了多个slave从节点并发连接的请求时，他会进行一次持久化，而不是一个一个连接一次，然后把这份持久化的数据发送给多个并发连接的slave从节点。以上整个流程可以用下图来表示</p>
+<p><img src="/archives/1b578af4/image-20210914160847756.png" alt="主从复制(全量复制)流程图"></p>
+<h3 id="主从部分数据复制"><a href="#主从部分数据复制" class="headerlink" title="主从部分数据复制"></a>主从部分数据复制</h3><p>当master和slave断开重连后，一般都会对整份数据进行复制。但是从<code>redis2.8</code>版本开始，redis改用可以支持部分数据复制的命令<code>PSYNC</code>去master同步数据，slave与master能够在网络连接断开重连后只进行部分数据复制(<strong>端点续传</strong>)。</p>
+<p>master会在其内存中创建一个复制数据用的缓存队列，缓存最近一段时间的数据，master和他所有的slave都维护了复制的数据下标offset和master的进程id，因此，当网络连接断开后，slave会请求master继续进行未完成的复制，从所记录的数据下标开始，如果master进程id变化了，或者从节点数据下标offset太旧，已经不再master的缓存队里中，那么将会进行一次全量数据的复制</p>
+<p><img src="/archives/1b578af4/image-20210914161725948.png" alt="主从复制(部分复制，端点续传)流程图"></p>
+<p>如果有很多从节点，为了缓解<strong>主从复制风暴</strong>(多个从节点同时复制主节点数据导致主节点压力过大)，可以做如下结构调整，让部分从节点与从节点(与主节点同步)同步数据</p>
+<p><img src="/archives/1b578af4/image-20210914162422875.png" alt="主从复制风暴架构解决方案"></p>
+]]></content>
+      <categories>
+        <category>Redis</category>
+      </categories>
+      <tags>
+        <tag>Redis</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Linux安装配置Redis</title>
+    <url>/archives/a813391e/</url>
+    <content><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><ul>
+<li>Redis版本 6.2.5</li>
+<li>服务器版本 Linux Centos 7.6 64位</li>
+</ul>
+<h2 id="下载Redis"><a href="#下载Redis" class="headerlink" title="下载Redis"></a>下载Redis</h2><p>进入官网下载地址<a href="https://redis.io/download">https://redis.io/download</a></p>
+<p><img src="/archives/a813391e/image-20210914123642204.png" alt="Redis官网"></p>
+<p>选择对应的版本，这里我选择的是Stable版，右键Download按钮，选择复制链接。进入到MobaXtream控制台，并打开我们默认建好的目录</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">wget https://download.redis.io/releases/redis-6.2.5.tar.gz</span><br></pre></td></tr></table></figure>
+
+<p>回车后如下图</p>
+<p><img src="/archives/a813391e/image-20210914124512088.png" alt="Redis下载"></p>
+<p>等待下载完毕</p>
+<h2 id="解压并安装Redis"><a href="#解压并安装Redis" class="headerlink" title="解压并安装Redis"></a>解压并安装Redis</h2><h3 id="解压"><a href="#解压" class="headerlink" title="解压"></a>解压</h3><p>下载完成后需要将压缩文件解压，输入以下命令解压到当前目录</p>
+<p><img src="/archives/a813391e/image-20210914124700732.png" alt="解压Redis"></p>
+<h3 id="编译"><a href="#编译" class="headerlink" title="编译"></a>编译</h3><p>编译需要gcc，所以在编译之前需要执行<code>yum install gcc</code>来安装gcc环境，等待安装完毕之后进入到解压文件夹，并执行编译</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line"><span class="built_in">cd</span> redis-6.2.5</span><br><span class="line">make</span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/a813391e/image-20210914125434056.png" alt="编译完成"></p>
+<h3 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h3><p>输入一下命令</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">make PREFIX=/home/redis/build install</span><br></pre></td></tr></table></figure>
+
+<p>这里多了一个关键字 <strong><code>PREFIX=</code></strong> 这个关键字的作用是编译的时候用于指定程序存放的路径。比如我们现在就是指定了redis必须存放在/home/redis/build目录。假设不添加该关键字Linux会将可执行文件存放在/usr/local/bin目录，库文件会存放在/usr/local/lib目录。配置文件会存放在/usr/local/etc目录。其他的资源文件会存放在usr/local/share目录。这里指定号目录也方便后续的卸载，后续直接rm -rf /home/redis/build 即可删除redis。</p>
+<p>执行结果如下图:</p>
+<p><img src="/archives/a813391e/image-20210914130201598.png" alt="安装Redis"></p>
+<h3 id="修改配置文件"><a href="#修改配置文件" class="headerlink" title="修改配置文件"></a>修改配置文件</h3><p>执行一下命令将配置文件拷贝到安装目录/home/redis/build/bin</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">cp /home/redis/redis-6.2.5/redis.conf /home/redis/build/bin</span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/a813391e/image-20210914130546712.png" alt="拷贝配置文件"></p>
+<p>修改该配置文件中一下内容</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">port 6379</span><br><span class="line">pidfile /var/run/redis_6379.pid  # 把pid进程号写入pidfile配置的文件</span><br><span class="line">logfile &quot;/home/redis/build/log/6379.log&quot;</span><br><span class="line">dir /home/redis/build/data  # 指定数据存放目录</span><br><span class="line"># 需要注释掉bind</span><br><span class="line"># bind 127.0.0.1（bind绑定的是自己机器网卡的ip，如果有多块网卡可以配多个ip，代表允许客户端通过机器的哪些网卡ip去访问，内网一般可以不配置bind，注释掉即可）</span><br><span class="line">daemonize yes #后台启动方式</span><br><span class="line">protected-mode no  #关闭保护模式，开启的话，只有本机才可以访问redis</span><br></pre></td></tr></table></figure>
+
+<h3 id="启动服务"><a href="#启动服务" class="headerlink" title="启动服务"></a>启动服务</h3><figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">/home/redis/build/bin/redis-server redis.conf</span><br></pre></td></tr></table></figure>
+
+<h3 id="验证是否启动成功"><a href="#验证是否启动成功" class="headerlink" title="验证是否启动成功"></a>验证是否启动成功</h3><figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">ps -ef | grep redis</span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/a813391e/image-20210914134023196.png" alt="image-20210914134023196"></p>
+]]></content>
+      <categories>
+        <category>Redis</category>
+      </categories>
+      <tags>
+        <tag>Redis</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Redis哨兵架构搭建</title>
+    <url>/archives/8bd0f0fd/</url>
+    <content><![CDATA[<h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>安装Redis教程这里就不说了，我们在之前搭建的<a href="/archives/ba77e58/">《Redis主从架构搭建》</a>基础上来进行Redis哨兵架构的搭建。</p>
+<p><img src="/archives/8bd0f0fd/image-20210924094852940.png" alt="哨兵架构"></p>
+<blockquote>
+<p>主节点：192.168.49.128:6379</p>
+<p>从节点：192.168.49.129:6381 ，192.168.49.130:6380</p>
+</blockquote>
+<h2 id="配置主节点"><a href="#配置主节点" class="headerlink" title="配置主节点"></a>配置主节点</h2><p>登录主节点服务器(192.168.49.128)，进入到redis解压文件</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line"><span class="built_in">cd</span> /home/redis/redis-src/redis-6.2.5</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>我的解压文件是在<code>/home/redis/redis-src/redis-6.2.5</code>，请根据不同文件位置修改对应的目录</p>
+</blockquote>
+<p><img src="/archives/8bd0f0fd/image-20210914171205948.png" alt="redis-6.2.5"></p>
+<p>复制该目录下的<code>sentinel.conf</code>文件到安装目录中；我的安装目录是在(<code>/home/redis/build/bin</code>)，各位根据各自的安装位置要做对应的修改</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">cp ./sentinel.conf /home/redis/build/bin/</span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/8bd0f0fd/image-20210914171427364.png" alt="复制sentinel.conf"></p>
+<blockquote>
+<p>我这里因为之前拷贝过一次，所以这里会提示”是否需要覆盖”</p>
+</blockquote>
+<p>进入到安装目录中修改<code>sentinel.conf</code>，将配置修改为以下值</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">port 26379</span><br><span class="line">daemonize yes</span><br><span class="line">pidfile &quot;/var/run/redis-sentinel-26379.pid&quot;</span><br><span class="line">logfile &quot;/home/redis/build/log/26379.log&quot;</span><br><span class="line">dir &quot;/home/redis/build/log/data&quot;</span><br><span class="line"># sentinel monitor &lt;master-redis-name&gt; &lt;master-redis-ip&gt; &lt;master-redis-port&gt; &lt;quorum&gt;</span><br><span class="line"># quorum是一个数字，指明当有多少个sentinel认为一个master失效时(值一般为：sentinel总数/2 + 1)，master才算真正失效</span><br><span class="line">sentinel monitor mymaster 192.168.49.128 6379 2   # mymaster这个名字随便取，客户端访问时会用到</span><br></pre></td></tr></table></figure>
+
+<h2 id="配置从节点"><a href="#配置从节点" class="headerlink" title="配置从节点"></a>配置从节点</h2><p>从节点配置步骤和主节点一样，所以这里也不再重复<code>sentinel.conf</code>的复制步骤了，参考主节点配置步骤即可，这里只列出配置文件中的配置详细。</p>
+<p>192.168.49.129从节点<code>sentinel.conf</code>配置如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">port 26381</span><br><span class="line">daemonize yes</span><br><span class="line">pidfile &quot;/var/run/redis-sentinel-263819.pid&quot;</span><br><span class="line">logfile &quot;/home/redis/build/log/26381.log&quot;</span><br><span class="line">dir &quot;/home/redis/build/log/data&quot;</span><br><span class="line"># sentinel monitor &lt;master-redis-name&gt; &lt;master-redis-ip&gt; &lt;master-redis-port&gt; &lt;quorum&gt;</span><br><span class="line"># quorum是一个数字，指明当有多少个sentinel认为一个master失效时(值一般为：sentinel总数/2 + 1)，master才算真正失效</span><br><span class="line">sentinel monitor mymaster 192.168.49.129 6381 2   # mymaster这个名字随便取，客户端访问时会用到</span><br></pre></td></tr></table></figure>
+
+<p>192.168.49.130从节点<code>sentinel.conf</code>配置如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">port 26380</span><br><span class="line">daemonize yes</span><br><span class="line">pidfile &quot;/var/run/redis-sentinel-263880.pid&quot;</span><br><span class="line">logfile &quot;/home/redis/build/log/26380.log&quot;</span><br><span class="line">dir &quot;/home/redis/build/log/data&quot;</span><br><span class="line"># sentinel monitor &lt;master-redis-name&gt; &lt;master-redis-ip&gt; &lt;master-redis-port&gt; &lt;quorum&gt;</span><br><span class="line"># quorum是一个数字，指明当有多少个sentinel认为一个master失效时(值一般为：sentinel总数/2 + 1)，master才算真正失效</span><br><span class="line">sentinel monitor mymaster 192.168.49.130 6380 2   # mymaster这个名字随便取，客户端访问时会用到</span><br></pre></td></tr></table></figure>
+
+<h2 id="启动哨兵集群"><a href="#启动哨兵集群" class="headerlink" title="启动哨兵集群"></a>启动哨兵集群</h2><figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">/home/redis/build/bin/redis-sentinel /home/redis/build/bin/sentinel.conf</span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/8bd0f0fd/image-20210914174326163.png" alt="主节点哨兵启动"></p>
+<p><img src="/archives/8bd0f0fd/image-20210914174653067.png" alt="slaver-2哨兵启动(192.168.49.130)"></p>
+<p><img src="/archives/8bd0f0fd/image-20210914174756564.png" alt="slaver-1哨兵启动(192.168.49.129)"></p>
+<p>sentinel集群都启动完毕后，会将哨兵集群的元数据信息写入所有sentinel的配置文件里去(追加在文件的最下面)，我们查看下如下配置文件sentinel-26379.conf，如下所示：</p>
+<p><img src="/archives/8bd0f0fd/image-20210914181849488.png" alt="image-20210914181849488"></p>
+<p>表示已经识别出了redis的主从 了         </p>
+]]></content>
+      <categories>
+        <category>Redis</category>
+      </categories>
+      <tags>
+        <tag>Redis</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Redis持久化</title>
+    <url>/archives/119ed1dc/</url>
+    <content><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>Redis目前提供了三种持久化的方式：</p>
+<blockquote>
+<ul>
+<li>RDB快照(snapshot)持久化</li>
+<li>AOF(append-only-file)持久化</li>
+<li>混合持久化方式(Redis 4.0后加入的新特性)</li>
+</ul>
+</blockquote>
+<h2 id="RDB快照-snapshot"><a href="#RDB快照-snapshot" class="headerlink" title="RDB快照(snapshot)"></a>RDB快照(snapshot)</h2><p>在默认情况下，Redis将内存数据库快照保存在名字为dump.rdb的二进制文件中。当然可以对Redis进行设置，可以让它在“N秒内数据集至少有M个改动”，这一条件被满足时，自动保存一次数据。比如说，以下设置会让Redis在满足“60秒内有至少1000个键被改动”这一条件时，自动保存一次数据。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">save 60 1000 # 关闭RDB只需要将所有的save保存策略注释掉即可</span><br></pre></td></tr></table></figure>
+<p>当然还可以手动执行命令生成RDB快照，进入Redis客户端执行命令<code>save</code>或<code>bgsave</code>可以生成dump.rdb文件，每次命令执行都会将所有Redis内存快照到一个新的rdb文件里，并覆盖原有的rdb快照文件。</p>
+<h3 id="bgsave的写时复制-COW-机制"><a href="#bgsave的写时复制-COW-机制" class="headerlink" title="bgsave的写时复制(COW)机制"></a>bgsave的写时复制(COW)机制</h3><p>Redis借助操作系统提供的写时复制技术(Copy-On-Write，COW)，在生成快照的同时，依然可以正常处理写命令。简单来说，就是<code>bgsave</code>子进程是由主线程<code>fork</code>生成的，可以共享主线程的所有内存数据。<code>bgsave</code>子进程运行后，开始读取主线程的内存数据，并把他们写入RDB文件。此时，如果主线程对这些数据也都是读操作，那么，主线程和<code>bgsave</code>子线程相互不影响。但是，如果主线程要修改一块数据，那么这块数据就会被复制一份，生成改数据的一个副本。然后，<code>bgsave</code>子线程会把这个副本数据写入到RDB文件，而在这个过程中，主线程仍然可以修改原来的数据。</p>
+<blockquote>
+<p><strong>save与bgsave区别</strong></p>
+<table style="width:100%;" cellpadding="2" cellspacing="0" align="center" border="1" bordercolor="#000000">
+  <tbody>
+            <tr>
+                <td style="text-align:center;">
+                    命令
+                </td>
+                <td style="text-align:center;">
+                    save
+                </td>
+                <td style="text-align:center;">
+                    bgsave
+                </td>
+            </tr>
+            <tr>
+                <td style="text-align:center;">
+                    I/O类型
+                </td>
+                <td style="text-align:center;">
+                    同步
+                </td>
+                <td style="text-align:center;">
+                    异步
+                </td>
+            </tr>
+            <tr>
+                <td style="text-align:center;">
+                    是否阻塞Redis其他命令
+                </td>
+                <td style="text-align:center;">
+                    是
+                </td>
+                <td style="text-align:center;">
+                    否(在生成子进程调用fork函数时会短暂阻塞)
+                </td>
+            </tr>
+            <tr>
+                <td style="text-align:center;">
+                    复杂度
+                </td>
+                <td style="text-align:center;">
+                    O(n)
+                </td>
+                <td style="text-align:center;">
+                    O(n)
+                </td>
+            </tr>
+            <tr>
+                <td style="text-align:center;">
+                    优点
+                </td>
+                <td style="text-align:center;">
+                    不会消耗额外内存
+                </td>
+                <td style="text-align:center;">
+                    不阻塞客户端命令
+                </td>
+            </tr>
+            <tr>
+                <td style="text-align:center;">
+                    缺点
+                </td>
+                <td style="text-align:center;">
+                    阻塞客户端命令
+                </td>
+                <td style="text-align:center;">
+                    需要fork子进程，消耗内存
+                </td>
+            </tr>
+        </tbody>
+</table>
+
+<p><strong>配置自动生成rdb文件后台使用的是bgsave方式</strong></p>
+</blockquote>
+<h2 id="AOF-append-only-file-快照"><a href="#AOF-append-only-file-快照" class="headerlink" title="AOF(append-only-file)快照"></a>AOF(append-only-file)快照</h2><p>快照功能并不是非常耐久(durable)：如果Redis因为某些原因造成故障停机，那么服务器将丢失最近写入、且仍未保存到快照中的那些数据。从1.1版本开始，Redis增加了一种完全耐久的持久化方式：AOF持久化，将修改的每一条指令记录到文件<code>appendonly.aof</code>中(先写入OS Cache，每隔一段时间sync到磁盘)</p>
+<p>比如执行<code>set append-only-file true</code>，aof文件里会记录如下数据</p>
+<p><img src="/archives/119ed1dc/image-20210916110754085.png" alt="执行结果"></p>
+<p>AOF功能可以通过以下方式来开启和关闭</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">appendonly yes/no  # yes开启  no关闭</span><br></pre></td></tr></table></figure>
+
+<p>这里也可以配置AOF的持久化策略，默认的话是每秒持久化一次，这样既保证了速度也保证了数据安全。</p>
+<blockquote>
+<ul>
+<li><code>appendfsync always</code>：每次有新命令追加到AOF文件时，都会执行一次fsync，非常慢，也非常安全</li>
+<li><code>appendfsync everysec</code>：每秒fsync一次，足够快，并且在故障时只会就是1秒钟的数据</li>
+<li><code>appendfsync no</code>：从不fsync，将数据交给操作系统来处理。更快，也更安全的选择</li>
+</ul>
+</blockquote>
+<h3 id="AOF重写"><a href="#AOF重写" class="headerlink" title="AOF重写"></a>AOF重写</h3><p>AOF文件中如果有太多没有用的指令时，AOF会定期根据<strong>内存的最新数据</strong>生成aof文件</p>
+<p>例如：在客户端执行了5次自增命令</p>
+<p><img src="/archives/119ed1dc/image-20210916111719187.png" alt="自增命令"></p>
+<p>在aof文件重写之前中显示如下</p>
+<p><img src="/archives/119ed1dc/image-20210916112017276.png" alt="AOF文件重写前数据"></p>
+<p>重写之后aof文件变为了</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">*3</span><br><span class="line">$3</span><br><span class="line">SET</span><br><span class="line">$2</span><br><span class="line">count</span><br><span class="line">$1</span><br><span class="line">5</span><br></pre></td></tr></table></figure>
+
+<p>这里有两个配置可以设置AOF自动重写频率</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">auto-aof-rewrite-min-size 64mb #aof文件至少达到64M才会自动重写，文件太小重写的速度很快，重写意义不大</span><br><span class="line">auto-aof-rewrite-percentage 100 #aof文件自上次重写之后至少增长100%(增长一倍),才会再次触发重写</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>当然AOF可以手动重写，进入redis客户端执行命令<code>bgrewriteaof</code>重写AOF。</p>
+<p><strong>注意：AOF重写redis会fork出一个子进程去做(和bgsave命令类似)，不会对redis正常命令处理有太多影响</strong></p>
+</blockquote>
+<h3 id="RDB和AOF对比"><a href="#RDB和AOF对比" class="headerlink" title="RDB和AOF对比"></a>RDB和AOF对比</h3><table style="width:100%;" cellpadding="2" cellspacing="0" align="center" border="1" bordercolor="#000000">
+  <tbody>
+        <tr>
+            <td style="text-align:center;">
+                命令
+            </td>
+            <td style="text-align:center;">
+                RDB
+            </td>
+            <td style="text-align:center;">
+                AOF
+            </td>
+        </tr>
+        <tr>
+            <td style="text-align:center;">
+                启动优先级
+            </td>
+            <td style="text-align:center;">
+                低
+            </td>
+            <td style="text-align:center;">
+                高
+            </td>
+        </tr>
+        <tr>
+            <td style="text-align:center;">
+                体积
+            </td>
+            <td style="text-align:center;">
+                小
+            </td>
+            <td style="text-align:center;">
+                大
+            </td>
+        </tr>
+        <tr>
+            <td style="text-align:center;">
+                恢复速度
+            </td>
+            <td style="text-align:center;">
+                块
+            </td>
+            <td style="text-align:center;">
+                慢
+            </td>
+        </tr>
+        <tr>
+            <td style="text-align:center;">
+                数据安全性
+            </td>
+            <td style="text-align:center;">
+                容易丢数据
+            </td>
+            <td style="text-align:center;">
+                根据策略决定
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+
+<p>生产环境可以都启用，redis启动时如果既有rdb文件又有aof文件则优先选择aof文件恢复数据，因为aof一般来说数据更全一点。</p>
+<h2 id="Redis4-0-混合持久化"><a href="#Redis4-0-混合持久化" class="headerlink" title="Redis4.0 混合持久化"></a>Redis4.0 混合持久化</h2><p>重启Redis时，我们很少使用RDB来恢复内存中数据，因为会丢失大量数据。我们通常使用AOF日志重放，但是重放AOF日志性能相对RDB来说要慢。这样在Redis实例很大的情况下，启动需要花费很长的时间。Redis 4.0 为了解决这个问题，加入了一个新的持久化方案——<strong>混合持久化</strong></p>
+<p>通过如下配置可以开启混合持久化(<strong>必须先开启aof</strong>)：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">aof-use-rdb-preamble yes</span><br></pre></td></tr></table></figure>
+
+<p>如果开启了混合持久化，<strong>AOF在重写时</strong>，不再是单纯的将内存数据转化为RESP命令写入AOF文件，而是<strong>将这一刻之前</strong>的内存数据做RDB快照处理，并且将RDB快照内容和<strong>增量AOF</strong>修改内存数据的命令保存在一起，都写入新的aof文件，新的文件开始不叫<code>appendonly.aof</code>，等重写完新的AOF文件才会进行改名，覆盖原来的AOF文件，完成新就两个AOF文件的替换。在Redis重启的时候，可以先加载RDB的内容，然后在重放AOF日志就可以完全替代之前的AOF全量文件重放，因此重启效率大幅得到提升。</p>
+<p><img src="/archives/119ed1dc/image-20210916122222002.png" alt="混合持久化appendonly.aof文件数据结构"></p>
+<h3 id="Redis数据备份策略"><a href="#Redis数据备份策略" class="headerlink" title="Redis数据备份策略"></a>Redis数据备份策略</h3><ol>
+<li>写<code>crontab</code>定时调度脚本，每小时都<code>copy</code>一份rdb或者aof的备份到一个目录中去，仅仅保留最近48小时的备份</li>
+<li>每天都保留一份当天的数据备份到一个目录中去，可以保留近一个月的数据备份</li>
+<li>每次<code>copy</code>备份的时候，把太旧的备份给删掉</li>
+<li>每天晚上将当前机器上的备份复制一份到其他机器上，以防止机器损坏</li>
+</ol>
+]]></content>
+      <categories>
+        <category>Redis</category>
+      </categories>
+      <tags>
+        <tag>Redis</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Redis缓存失效和缓存雪崩以及热点缓存key重建优化</title>
+    <url>/archives/134045b4/</url>
+    <content><![CDATA[<h2 id="缓存失效-击穿"><a href="#缓存失效-击穿" class="headerlink" title="缓存失效(击穿)"></a>缓存失效(击穿)</h2><p>缓存失效也称缓存击穿，是由于大批量缓存在同一时间失效可能导致大量请求同时穿透缓存直达数据库，可能造成数据库瞬间压力过大甚至挂掉，对于这种情况我们在批量增加缓存时最好将这一批数据的缓存过期时间设置为一个时间段内的不同时间。</p>
+<p>示例伪代码：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function">String <span class="title">get</span><span class="params">(String key)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 从缓存中获取数据</span></span><br><span class="line">    String cacheValue = cache.get(key);</span><br><span class="line">    <span class="comment">// 缓存为空</span></span><br><span class="line">    <span class="keyword">if</span> (StringUtils.isBlank(cacheValue)) &#123;</span><br><span class="line">        <span class="comment">// 从存储中获取</span></span><br><span class="line">        String storageValue = storage.get(key);</span><br><span class="line">        cache.set(key, storageValue);</span><br><span class="line">        <span class="comment">//设置一个过期时间(300到600之间的一个随机数)</span></span><br><span class="line">        <span class="keyword">int</span> expireTime = <span class="keyword">new</span> Random().nextInt(<span class="number">300</span>)  + <span class="number">300</span>;</span><br><span class="line">        <span class="keyword">if</span> (storageValue == <span class="keyword">null</span>) &#123;</span><br><span class="line">            cache.expire(key, expireTime);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> storageValue;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// 缓存非空</span></span><br><span class="line">        <span class="keyword">return</span> cacheValue;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="缓存雪崩"><a href="#缓存雪崩" class="headerlink" title="缓存雪崩"></a>缓存雪崩</h2><p>缓存雪崩指的是缓存层支撑不住或者宕机后，流量会全部打向存储层。<br>由于缓存层承载着大量请求，有效的保护了存储层，但是如果缓存层由于某些原因不能提供服务（比如超大并发过来，缓存层支撑不住，或者由于缓存设计不好，类似大量请求访问<code>bigkey</code>，导致缓存能支撑的并发急剧下降），于是大量请求都会打到存储层，存储层的调用量会暴增，造成存储层也会级联宕机的情况。</p>
+<p>预防和解决缓存雪崩问题，可以从以下三个方面着手解决：</p>
+<ol>
+<li><p>保证缓存层服务高可用性，比如使用Redis Sentinel或Redis Cluster。</p>
+</li>
+<li><p>依赖隔离组件为后端限流熔断并降级。比如使用阿里开源流控组件Sentinel或Hystrix限流降级组件</p>
+<blockquote>
+<p>比如服务降级，我们可以针对不同的数据采用不同的处理方式，当业务应用访问的是非核心数据（例如电商商品属性，用户信息等）时，暂时停止从缓存中查询这些数据，而是返回预定义的默认降级信息、空值或是错误提示信息；当业务应用访问的是核心数据（例如电商商品库存）时，仍然允许查询缓存，如果缓存缺失，也可以继续通过数据库读取。</p>
+</blockquote>
+</li>
+<li><p>提前演练。在项目上线前，演练缓存层宕机后，应用以及后端的负载情况以及可能出现的问题，在此基础上做一些预案设定。</p>
+</li>
+</ol>
+<h2 id="热点缓存key重建优化"><a href="#热点缓存key重建优化" class="headerlink" title="热点缓存key重建优化"></a>热点缓存key重建优化</h2><p>在使用“缓存+过期时间”的策略时，既可以加速数据读写，又可以保证数据定期更新，这种模式基本上可以满足绝大部分需求，但是相应的也会出现两个问题，可能对应用造成致命bug：</p>
+<ul>
+<li>当前key是一个热点key（例如一个热门的新闻），并发量非常大。</li>
+<li>重建缓存不能在短时间内完成，可能是一个复杂的计算，例如复杂的SQL、多次I/O，多个依赖等。</li>
+</ul>
+<p>在缓存失效的瞬间，有大量线程来重建缓存，造成后端负载加大，甚至可能会让应用崩溃。要解决这个问题主要就是避免大量线程同时重建缓存。</p>
+<p>我们可以利用互斥锁来解决，此方法只允许一个线程重建缓存，其他线程等待重建缓存的线程执行完，重新从缓存获取数据即可。</p>
+<p>示例伪代码：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function">String <span class="title">get</span><span class="params">(String key)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 从Redis中获取数据</span></span><br><span class="line">    String value = redis.get(key);</span><br><span class="line">    <span class="comment">// 如果value为空， 则开始重构缓存</span></span><br><span class="line">    <span class="keyword">if</span> (value == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="comment">// 只允许一个线程重建缓存， 使用nx， 并设置过期时间ex</span></span><br><span class="line">        String mutexKey = <span class="string">&quot;mutext:key:&quot;</span> + key;</span><br><span class="line">        <span class="keyword">if</span> (redis.set(mutexKey, <span class="string">&quot;1&quot;</span>, <span class="string">&quot;ex 180&quot;</span>, <span class="string">&quot;nx&quot;</span>)) &#123;</span><br><span class="line">             <span class="comment">// 从数据源获取数据</span></span><br><span class="line">            value = db.get(key);</span><br><span class="line">            <span class="comment">// 回写Redis， 并设置过期时间</span></span><br><span class="line">            redis.setex(key, timeout, value);</span><br><span class="line">            <span class="comment">// 删除key_mutex</span></span><br><span class="line">            redis.delete(mutexKey);</span><br><span class="line">        &#125;<span class="comment">// 其他线程休息50毫秒后重试</span></span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            Thread.sleep(<span class="number">50</span>);</span><br><span class="line">            get(key);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> value;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="缓存与数据库库双写不一致"><a href="#缓存与数据库库双写不一致" class="headerlink" title="缓存与数据库库双写不一致"></a>缓存与数据库库双写不一致</h2><p>在大并发下，同时操作数据库与缓存会存在数据不一致性问题</p>
+<ol>
+<li><p>双写不一致情况</p>
+<p><img src="/archives/134045b4/image-20210930134748777.png" alt="缓存&amp;数据库双写不一致"></p>
+</li>
+<li><p>读写并发不一致</p>
+<p><img src="/archives/134045b4/image-20210930134845540.png" alt="读写并发不一致"></p>
+</li>
+</ol>
+<p><strong>解决方案：</strong></p>
+<ol>
+<li><p>对于并发几率很小的数据（如个人维度的订单数据、用户数据等），这种几乎不用考虑这个问题，很少会发生缓存不一致，可以给缓存数据加上过期时间，每隔一段时间触发读的主动更新即可。</p>
+</li>
+<li><p>就算并发很高，如果业务上能容忍短时间的缓存数据不一致（如商品名称，商品分类菜单等），缓存加上过期时间依然可以解决大部分业务对于缓存的要求。</p>
+</li>
+<li><p>如果不能容忍缓存不一致，可以通过加<strong>读写锁</strong>保证并发读写或写写的时候按顺序排好队，<strong>读读的时候相当于无锁</strong>。</p>
+</li>
+<li><p>也可以用阿里开源的canal通过监控数据库的binlog日志及时的去修改缓存，但是引入了新的中间件，增加了系统的复杂度。</p>
+<p><img src="/archives/134045b4/image-20210930141046670.png" alt="双写不一致解决方案"></p>
+</li>
+</ol>
+<p><strong>总结：</strong></p>
+<p>以上针对的都是<strong>读多写少</strong>的情况加入缓存提高性能，如果是<strong>写多读多</strong>的情况又不能容忍缓存数据不一致，那就没有必要加缓存了，可以直接操作数据库。放入缓存的数据应该是对实时性、一致性要求不是很高的数据。切记不要为了用缓存，同时又要保证绝对的一致性做大量的过度设计和控制，增加系统的复杂性！</p>
+]]></content>
+      <categories>
+        <category>Redis</category>
+      </categories>
+      <tags>
+        <tag>Redis</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Redis缓存穿透</title>
+    <url>/archives/f435d36e/</url>
+    <content><![CDATA[<p>缓存穿透是指查询一个根本不存在的数据，缓存层和存储层都不会命中，通常处于容错的考虑，如果从存储层查不到数据则不写入缓存层。<br>缓存层将导致不存在的数据每次请求都要存储层去查询，失去了缓存保护后端存储的意义。<br>造成缓存穿透的基本原因有两个：</p>
+<ol>
+<li>自身业务代码或者数据出现问题。</li>
+<li>一些恶意攻击、爬虫等造成大量空命中。</li>
+</ol>
+<h2 id="缓存穿透问题解决方案"><a href="#缓存穿透问题解决方案" class="headerlink" title="缓存穿透问题解决方案"></a>缓存穿透问题解决方案</h2><ol>
+<li><p><strong>缓冲空对象</strong> </p>
+<p>下面是伪代码</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function">String <span class="title">get</span><span class="params">(String key)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 从缓存中获取数据</span></span><br><span class="line">    String cacheValue = cache.get(key);</span><br><span class="line">    <span class="comment">// 缓存为空</span></span><br><span class="line">    <span class="keyword">if</span> (StringUtils.isBlank(cacheValue)) &#123;</span><br><span class="line">        <span class="comment">// 从存储中获取</span></span><br><span class="line">        String storageValue = storage.get(key);</span><br><span class="line">        cache.set(key, storageValue);</span><br><span class="line">        <span class="comment">// 如果存储数据为空， 需要设置一个过期时间(300秒)</span></span><br><span class="line">        <span class="keyword">if</span> (storageValue == <span class="keyword">null</span>) &#123;</span><br><span class="line">            cache.expire(key, <span class="number">60</span> * <span class="number">5</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> storageValue;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// 缓存非空</span></span><br><span class="line">        <span class="keyword">return</span> cacheValue;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li><p>布隆过滤器</p>
+<p>对于恶意攻击，向服务器请求大量不存在的数据造成的缓存穿透，还可以用布隆过滤器先做一次过滤，对于不存在的数据布隆过滤器一般都能够过滤掉，不让请求再往后端发送。当布隆过滤器说<strong>某个值存在时，这个值可能不存在；当他说不存在时，那就肯定不存在。</strong><br><img src="/archives/f435d36e/image-20210930100804245.png" alt="布隆过滤器原理图"></p>
+<blockquote>
+<p>布隆过滤器就是一个<strong>大型的位数组和几个不一样的无偏hash函数</strong>。所谓无偏就是能够把元素的hash值算的比较均匀。  </p>
+</blockquote>
+<p>向布隆过滤器中添加key时，会使用多个hash函数对key进行hash算的一个整数索引值，然后对位数组长度进行取模算的一个位置，每个hash函数都会算得一个不同的位置。再把位数组的这几个位置都置为1就完成了add操作。    向布隆过滤器询问key是否存在时，跟add一样，也会把hash的几个位置都算出来，看看位数组中几个位置是否都为1，只要有一个为0，那么说明布隆过滤器中这个key不存在。如果都是1，这并不能说明这个key就一定存在，只是极有可能存在，因为这些位置为1可能是因为其他的key存在导致的。如果这个位数组比较稀疏，这个概率就会很大，如果这个位数组比较拥挤，这个概率就会降低。</p>
+<p>这种方法适用于数据命中不高、数据相对固定、实时性低（通常是数据集较大）的应用场景，代码维护较为复杂，但是<strong>缓存空间占用很少</strong>。</p>
+<h3 id="布隆过滤器的实现"><a href="#布隆过滤器的实现" class="headerlink" title="布隆过滤器的实现"></a>布隆过滤器的实现</h3><p>可以用<code>redission</code>实现布隆过滤器，引入依赖：</p>
+<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">   <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.redisson<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">   <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>redisson<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">   <span class="tag">&lt;<span class="name">version</span>&gt;</span>3.6.5<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>示例伪代码：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.redisson;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.redisson.Redisson;</span><br><span class="line"><span class="keyword">import</span> org.redisson.api.RBloomFilter;</span><br><span class="line"><span class="keyword">import</span> org.redisson.api.RedissonClient;</span><br><span class="line"><span class="keyword">import</span> org.redisson.config.Config;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">RedissonBloomFilter</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Config config = <span class="keyword">new</span> Config();</span><br><span class="line">        config.useSingleServer().setAddress(<span class="string">&quot;redis://localhost:6379&quot;</span>);</span><br><span class="line">        <span class="comment">//构造Redisson</span></span><br><span class="line">        RedissonClient redisson = Redisson.create(config);</span><br><span class="line"></span><br><span class="line">        RBloomFilter&lt;String&gt; bloomFilter = redisson.getBloomFilter(<span class="string">&quot;nameList&quot;</span>);</span><br><span class="line">        <span class="comment">//初始化布隆过滤器：预计元素为100000000L,误差率为3%,根据这两个参数会计算出底层的bit数组大小</span></span><br><span class="line">        bloomFilter.tryInit(<span class="number">100000000L</span>,<span class="number">0.03</span>);</span><br><span class="line">        <span class="comment">//将zhuge插入到布隆过滤器中</span></span><br><span class="line">        bloomFilter.add(<span class="string">&quot;zhangsan&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//判断下面号码是否在布隆过滤器中</span></span><br><span class="line">        System.out.println(bloomFilter.contains(<span class="string">&quot;lisi&quot;</span>));<span class="comment">//false</span></span><br><span class="line">        System.out.println(bloomFilter.contains(<span class="string">&quot;wangwu&quot;</span>));<span class="comment">//false</span></span><br><span class="line">        System.out.println(bloomFilter.contains(<span class="string">&quot;zhangsan&quot;</span>));<span class="comment">//true</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>使用布隆过滤器需要把所有数据提前放入布隆过滤器，并且在增加数据时也要往布隆过滤器里放，布隆过滤器缓存过滤伪代码：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">//初始化布隆过滤器</span></span><br><span class="line">RBloomFilter&lt;String&gt; bloomFilter = redisson.getBloomFilter(<span class="string">&quot;nameList&quot;</span>);</span><br><span class="line"><span class="comment">//初始化布隆过滤器：预计元素为100000000L,误差率为3%</span></span><br><span class="line">bloomFilter.tryInit(<span class="number">100000000L</span>,<span class="number">0.03</span>);</span><br><span class="line">        </span><br><span class="line"><span class="comment">//把所有数据存入布隆过滤器</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">init</span><span class="params">()</span></span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (String key: keys) &#123;</span><br><span class="line">        bloomFilter.put(key);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function">String <span class="title">get</span><span class="params">(String key)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 从布隆过滤器这一级缓存判断下key是否存在</span></span><br><span class="line">    Boolean exist = bloomFilter.contains(key);</span><br><span class="line">    <span class="keyword">if</span>(!exist)&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 从缓存中获取数据</span></span><br><span class="line">    String cacheValue = cache.get(key);</span><br><span class="line">    <span class="comment">// 缓存为空</span></span><br><span class="line">    <span class="keyword">if</span> (StringUtils.isBlank(cacheValue)) &#123;</span><br><span class="line">        <span class="comment">// 从存储中获取</span></span><br><span class="line">        String storageValue = storage.get(key);</span><br><span class="line">        cache.set(key, storageValue);</span><br><span class="line">        <span class="comment">// 如果存储数据为空， 需要设置一个过期时间(300秒)</span></span><br><span class="line">        <span class="keyword">if</span> (storageValue == <span class="keyword">null</span>) &#123;</span><br><span class="line">            cache.expire(key, <span class="number">60</span> * <span class="number">5</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> storageValue;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// 缓存非空</span></span><br><span class="line">        <span class="keyword">return</span> cacheValue;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>注意：布隆过滤器不能删除数据，如果要删除得重新初始化数据。</strong></p>
+</blockquote>
+</li>
+</ol>
+]]></content>
+      <categories>
+        <category>Redis</category>
+      </categories>
+      <tags>
+        <tag>Redis</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Redis缓存那些事</title>
+    <url>/archives/cfd129cc/</url>
+    <content><![CDATA[<h2 id="Redis有哪些特性？"><a href="#Redis有哪些特性？" class="headerlink" title="Redis有哪些特性？"></a>Redis有哪些特性？</h2><blockquote>
+<ul>
+<li>性能高，读的速度是100000次/s，写的速度是80000次/s</li>
+<li>数据持久化，支持RDB、AOF</li>
+<li>支持事务。通过<code>MULTI</code>和<code>EXEC</code>指令包起来</li>
+<li>多数据结构类型</li>
+<li>主从复制</li>
+<li>其他特性：发布/订阅、通知、key过期等</li>
+</ul>
+</blockquote>
+<h2 id="Redis为什么这么快？"><a href="#Redis为什么这么快？" class="headerlink" title="Redis为什么这么快？"></a>Redis为什么这么快？</h2><blockquote>
+<ul>
+<li>完全基于内存，没有磁盘IO的开销，异步持久化除外</li>
+<li>单线程，避免多线程切换造成的性能损耗</li>
+<li>非阻塞的IO多路复用机制</li>
+<li>底层的数据存储结构优化、使用原生的数据结构提升性能</li>
+</ul>
+</blockquote>
+<h2 id="Redis底层的基础数据结构有哪些？"><a href="#Redis底层的基础数据结构有哪些？" class="headerlink" title="Redis底层的基础数据结构有哪些？"></a>Redis底层的基础数据结构有哪些？</h2><blockquote>
+<ul>
+<li>字符串</li>
+</ul>
+</blockquote>
+]]></content>
+      <categories>
+        <category>面试宝典</category>
+      </categories>
+      <tags>
+        <tag>面试宝典</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Redis键值设计规范与性能优化</title>
+    <url>/archives/c0eb8ebf/</url>
+    <content><![CDATA[<h2 id="一、键值设计"><a href="#一、键值设计" class="headerlink" title="一、键值设计"></a>一、键值设计</h2><h3 id="1、key名设计"><a href="#1、key名设计" class="headerlink" title="1、key名设计"></a>1、key名设计</h3><p>(1) 【建议】：可读性和可管理性<br>以业务名（或数据库名）为前缀（防止key冲突），用冒号分隔，比如业务表:表名:id</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">trade:order:1</span><br></pre></td></tr></table></figure>
+<p>(2)【建议】：简洁性<br>保证语义的前提下，控制key的长度，当key较多时，内存占用也不容忽视，例如：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">user:&#123;uid&#125;:friends:messages:&#123;mid&#125; 简化为 u:&#123;uid&#125;:fr:m:&#123;mid&#125;</span><br></pre></td></tr></table></figure>
+<p>(3)【强制】：不要包含特殊字符<br>反例：包含空格、换行、单双引号以及其他转义字符</p>
+<h3 id="2、value设计"><a href="#2、value设计" class="headerlink" title="2、value设计"></a>2、value设计</h3><p>(1)【强制】：拒绝<code>bigkey</code>(防止网卡流量、慢查询)<br>在Redis中，一个字符串最大512MB，一个二级数据结构（例如hash、list、set、zset）可以存储大约40亿个(2<sup>32-1</sup>)个元素，但是实际中如果下面两种情况，我们认为他是<code>bigkey</code>。</p>
+<ol>
+<li>字符串类型：他的big体现在单个value值很大，一般认为超过10KB就是<code>bigkey</code>。</li>
+<li>非字符串类型：哈希、列表、集合、有序集合，他们的big体现在元素个数太多。</li>
+</ol>
+<p>一般来说，string类型控制在10KB以内，hash、list、set、zset元素个数不要超过5000。<br>反例：一个包含200万个元素的list。<br>非字符串的<code>bigkey</code>，不要使用del删除，使用hscan、sscan、zscan方式渐进式删除，同时要注意防止<code>bigkey</code>过期时间自动删除问题（例如一个200万的zset设置1小时过期，会触发del操作，造成阻塞）</p>
+<h4 id="bigkey的危害"><a href="#bigkey的危害" class="headerlink" title="bigkey的危害"></a>bigkey的危害</h4><ol>
+<li><p>导致redis阻塞</p>
+</li>
+<li><p>网络拥塞</p>
+<p>bigkey也就意味着每次获取要产生的网络流量较大，假设一个bigkey为1MB，客户端每秒访问量为1000，那么每秒产生1000MB的流量，对于普通的千兆网卡（按照字节算是128MB/s）的服务器来说简直是灭顶之灾，而且一般服务器会采用单机多实例方式来部署，也就是说一个bigkey可能会对其他实例造成影响，其后果不堪设想。</p>
+</li>
+<li><p>过期删除</p>
+<p>有个bigkey，它安分守己（只执行简单的命令，例如hget、lpop、zscore等），但他设置了过期时间，当它过期后，会被删除，如果没有使用Redis 4.0的过期异步删除(lazyfree-lazy-expire yes)，就会存在阻塞Redis的可能性。</p>
+</li>
+</ol>
+<h4 id="bigkey的产生"><a href="#bigkey的产生" class="headerlink" title="bigkey的产生"></a>bigkey的产生</h4><p>一般来说bigkey的产生都是由于程序设计不当，或者对于数据规模预料不清楚造成的，看几个例子：</p>
+<ol>
+<li>社交类：粉丝列表，如果某些明星粉丝列表设计不当，必会造成bigkey</li>
+<li>统计类：例如按天存储某项功能或者网站的用户集合，除非没有人用，否则必会bigkey</li>
+<li>缓存类：将数据从数据库load出来序列化到Redis里，这个方式很常用，但是有两个地方需要注意，第一，是不是有必要吧所有字段都缓存；第二，有没有相关关联的数据，有的人为了方便把很多关联数据都存一个key下，产生了bigkey。</li>
+</ol>
+<h4 id="优化bigkey"><a href="#优化bigkey" class="headerlink" title="优化bigkey"></a>优化bigkey</h4><ol>
+<li><p>拆</p>
+<blockquote>
+<p>big list：list1、list2、……listN</p>
+<p>big hash：可以用数据分段存储，比如一个大的key，假设存了100万的用户数据，可以拆分成200个key，每个key下面存放5000个用户数据</p>
+</blockquote>
+</li>
+<li><p>如果bigkey不可避免，也要思考一下要不要每次把所有元素都取出来（例如有的时候需要hmget，而不是hgetall），删除也是一样，尽量使用优雅的方式来处理。</p>
+</li>
+</ol>
+<p>(2)【推荐】：选择合适的数据类型</p>
+<p>例如：实体类型（要合理控制和使用数据结构，但也要注意节省内存和性能之间的平衡）</p>
+<p>反例：</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">set user:1:name zhangsan</span><br><span class="line">set user:1:age 20</span><br><span class="line">set user:1:favor pingpong</span><br></pre></td></tr></table></figure>
+
+<p>正例：</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">hmset user:1 name zhangsan age 19 favor pingpong</span><br></pre></td></tr></table></figure>
+
+<p>(3)【推荐】：控制key的生命 周期</p>
+<p>建议使用expire设置过期时间（条件允许可以打散过期时间，防止集中过期）。</p>
+<h2 id="二、命令使用"><a href="#二、命令使用" class="headerlink" title="二、命令使用"></a>二、命令使用</h2><ol>
+<li><p>【推荐】：O(N)命令关注N的数量</p>
+<p>例如：hgetall、Irange、smembers、zrange、sinter等并非不能使用，但是需要明确N的值。有遍历的需求可以使用hscan、sscan、zscan代替。</p>
+</li>
+<li><p>【推荐】：禁用命令</p>
+<p>禁止线上使用keys、flushall、flushdb等，通过redis的rename机制禁掉命令，或者使用scan的方式渐进式处理。</p>
+</li>
+<li><p>【推荐】：合理使用select</p>
+<p>redis的多数据库较弱，使用数字进行区分，很多客户端支持较差，同时多业务用多数据库实际还是单线程处理，会有干扰。</p>
+</li>
+<li><p>【推荐】：使用批量操作提高效率</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">原生命令：例如mget、mset</span><br><span class="line">非原生命令：可以使用pipeline提高效率</span><br></pre></td></tr></table></figure>
+
+<p>但是注意控制一次批量操作的元素个数（例如500以内，实际也和元素字节数有关）。</p>
+<p>注意两者不同：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">原生命令是原子操作，pipeline是非原子操作。</span><br><span class="line">pipeline可以打包不同的命令，原生命令做不到</span><br><span class="line">pipeline需要客户端和服务端同时支持。</span><br></pre></td></tr></table></figure></li>
+<li><p>【建议】Redis事务功能较弱，不建议过多使用，可以用lua替代</p>
+</li>
+</ol>
+<h2 id="三、客户端使用"><a href="#三、客户端使用" class="headerlink" title="三、客户端使用"></a>三、客户端使用</h2><ol>
+<li><p>【推荐】：避免多个应用使用一个Redis实例</p>
+<p>正例：不相干的业务拆分，公共数据做服务化。</p>
+</li>
+<li><p>【推荐】：使用带有连接池的数据库，可以有效控制连接，同时提高效率，标准使用方式：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">JedisPoolConfig jedisPoolConfig = <span class="keyword">new</span> JedisPoolConfig();</span><br><span class="line">jedisPoolConfig.setMaxTotal(<span class="number">5</span>);</span><br><span class="line">jedisPoolConfig.setMaxIdle(<span class="number">2</span>);</span><br><span class="line">jedisPoolConfig.setTestOnBorrow(<span class="keyword">true</span>);</span><br><span class="line"></span><br><span class="line">JedisPool jedisPool = <span class="keyword">new</span> JedisPool(jedisPoolConfig, <span class="string">&quot;192.168.0.60&quot;</span>, <span class="number">6379</span>, <span class="number">3000</span>, <span class="keyword">null</span>);</span><br><span class="line"></span><br><span class="line">Jedis jedis = <span class="keyword">null</span>;</span><br><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">    jedis = jedisPool.getResource();</span><br><span class="line">    <span class="comment">//具体的命令</span></span><br><span class="line">    jedis.executeCommand()</span><br><span class="line">&#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">    logger.error(<span class="string">&quot;op key &#123;&#125; error: &quot;</span> + e.getMessage(), key, e);</span><br><span class="line">&#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">    <span class="comment">//注意这里不是关闭连接，在JedisPool模式下，Jedis会被归还给资源池。</span></span><br><span class="line">    <span class="keyword">if</span> (jedis != <span class="keyword">null</span>) </span><br><span class="line">        jedis.close();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>连接池参数含义：</p>
+<table>
+  <tr>
+    <th>序号</th>
+    <th>参数名</th>
+    <th>含义</th>
+    <th>默认值</th>
+    <th>建议值</th>
+  </tr>
+  <tr>
+    <td>1</td>
+    <td>maxTotal</td>
+    <td>资源池中最大连接数</td>
+    <td>8</td>
+    <td>设置建议见下面</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td>maxIdle</td>
+    <td>资源池允许最大空闲连接数</td>
+    <td>8</td>
+    <td>设置建议见下面</td>
+  </tr>  
+  <tr>
+    <td>3</td>
+    <td>minIdle</td>
+    <td>资源池确保最少空闲连接数</td>
+    <td>0</td>
+    <td>设置建议见下面</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td>blockWhenExhausted</td>
+    <td>当资源池用尽后，调用者是否要等待。只有当为true时，下面的maxWaitMillis才会生效</td>
+    <td>true</td>
+    <td>建议默认值</td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td>maxWaitMillis</td>
+    <td>当资源池连接用尽后，调用者的最大等待时间(单位为毫秒)</td>
+    <td>-1:表示用不超时</td>
+    <td>不建议使用建议默认值</td>
+  </tr>
+  <tr>
+    <td>6</td>
+    <td>testOnBorrow</td>
+    <td>向资源池借用连接时是否连接有效检验(ping)，无效链接会被移除</td>
+    <td>false</td>
+    <td>业务量很大时候建议设置为false(多一次ping的开销)</td>
+  </tr>
+  <tr>
+    <td>7</td>
+    <td>testOnReturn</td>
+    <td>向资源池归还连接时是否连接有效检验(ping)，无效链接会被移除</td>
+    <td>false</td>
+    <td>业务量很大时候建议设置为false(多一次ping的开销)</td>
+  </tr>
+  <tr>
+    <td>8</td>
+    <td>jmxEnabled</td>
+    <td>是否开启jmx监控，可用于监控</td>
+    <td>true</td>
+    <td>建议开启，但应用本身也要开启</td>
+  </tr>
+</table>
+
+<p><strong>优化建议：</strong></p>
+<ol>
+<li><p>maxTotal：最大连接数，早期版本叫maxActive<br>实际上这个考虑的因素比较多：</p>
+<ul>
+<li><p>业务希望Redis并发量</p>
+</li>
+<li><p>客户端执行命令时间</p>
+</li>
+<li><p>Redis资源：例如nodes(例如应用个数) * maxTotal 是不能超过Redis的最大连接数maxclients。</p>
+<blockquote>
+<p>例如：一次命令执行时间(borrow|return resource + Jedis执行命令(含网络))的平均耗时约为1ms，一个连接的QPS大约是1000；业务期望的QPS是50000；</p>
+<p>那么理论上需要的资源池大小是50000 / 1000 = 50个。但实际上这个是理论值，还要考虑到要比理论值预留一些资源，通常来讲maxTotal可以比理论值大一些。</p>
+<p>但是这个值也不是越大越好，一方面连接太多占用客户端和服务器资源，另一方面对于Redis这种高QPS的服务器，一个命令的阻塞即使设置再大资源池仍然会无济于事。</p>
+</blockquote>
+</li>
+</ul>
+</li>
+<li><p>maxIdle和minIdle</p>
+<p>maxIdle实际上才是业务需要的最大连接数，maxTotal是为了<strong>给出余量</strong>，所以maxIdle不要设置过小，否则会有new Jedis(新连接)开销。</p>
+<p><strong>连接池的最佳性能是maxTotal = maxIdle</strong>，这样可以避免连接池伸缩带了的性能干扰。但是如果并发量不大或者maxTotal设置过高，会导致不必要的连接资源浪费。一般推荐maxIdle可以设置为按上面的业务期望QPS计算出来的理论连接数，maxTotal可以再放大一倍。</p>
+<p>minIdle(最小控线连接数)，与其说是最小连接数，不如说是<strong>至少需要保持的空闲连接</strong>，在使用的过程中，如果连接数超过了minIdle，那么继续建立连接，如果超过了maxIdle，当超过的连接执行完成业务后会慢慢被移除连接池释放掉。</p>
+<p>如果系统启动完马上就会有很多的请求过来，那么可以给redis连接池做<strong>预热处理</strong>，比如快速的创建一些redis连接，执行简单命令，类似ping()，快速的将连接池里的空闲连接提升到minIdle的数量。</p>
+<p><strong>连接池预热示例代码：</strong></p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">List&lt;Jedis&gt; minIdleJedisList = <span class="keyword">new</span> ArrayList&lt;Jedis&gt;(jedisPoolConfig.getMinIdle());</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; jedisPoolConfig.getMinIdle(); i++) &#123;</span><br><span class="line">    Jedis jedis = <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        jedis = pool.getResource();</span><br><span class="line">        minIdleJedisList.add(jedis);</span><br><span class="line">        jedis.ping();</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        logger.error(e.getMessage(), e);</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        <span class="comment">//注意，这里不能马上close将连接还回连接池，否则最后连接池里只会建立1个连接。。</span></span><br><span class="line">        <span class="comment">//jedis.close();</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//统一将预热的连接还回连接池</span></span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; jedisPoolConfig.getMinIdle(); i++) &#123;</span><br><span class="line">    Jedis jedis = <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        jedis = minIdleJedisList.get(i);</span><br><span class="line">        <span class="comment">//将连接归还回连接池</span></span><br><span class="line">        jedis.close();</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        logger.error(e.getMessage(), e);</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>总之，要根据实际系统的QPS和调用redis客户端的规模整体评估每个节点所使用的连接池大小</p>
+</li>
+</ol>
+</li>
+<li><p>【建议】：高并发下建议客户端添加熔断功能(例如Sentinel、Hystrix)</p>
+</li>
+<li><p>【推荐】：设置合理的密码，如有必要可以使用SSL加密访问</p>
+</li>
+<li><p>【建议】：<strong>Redis对于过期建有三种清除策略：</strong> </p>
+<ol>
+<li>被动删除：当读/写一个已经过期的key时，会触发惰性删除策略，直接删除掉这个过期的key</li>
+<li>主动删除：由于惰性删除策略无法保证冷数据被及时删除掉，所以Redis会定期主动淘汰一批已<strong>已经过期</strong> 的key</li>
+<li>当前已用内存超过maxmemory限定时，触发<strong>主动清除策略</strong> </li>
+</ol>
+<blockquote>
+<p><strong>主动清除策略</strong>在Redis4.0之前一共实现了6种内存淘汰策略，在4.0之后，有增加了2中策略，总共8种：</p>
+<p><strong>(a) 针对设置了过期时间的key做处理：</strong></p>
+<ol>
+<li>  volatile-ttl：在筛选时，会针对设置了过期时间的键值对，根据过期时间的先后进行删除，越早过期的越先被删除。</li>
+<li>volatile-random：就像它的名称一样，在设置了过期时间的键值对中，进行随机删除。</li>
+<li>volatile-lru：会使用LRU算法筛选设置了过期时间的键值对删除。</li>
+<li>volatile-lfu：会使用LFU算法筛选设置了过期时间的键值对删除。</li>
+</ol>
+<p><strong>(b)针对所有的key做处理：</strong> </p>
+<ol start="5">
+<li>allkeys-random：从所有键值对中随机选择并删除数据</li>
+<li>allkeys-lru：使用LRU算法在所有的数据中进行筛选删除</li>
+<li>allkeys-lfu：使用LFU算法在所有的数据中进行筛选删除</li>
+</ol>
+<p><strong>(c)不处理：</strong> </p>
+<ol start="8">
+<li>noeviction：不会剔除任何数据，拒绝所有写入操作并返回客户端错误信息”(error) OOM command not allowed when used memory”，此时Redis只响应读操作</li>
+</ol>
+</blockquote>
+</li>
+</ol>
+<h2 id="LRU算法"><a href="#LRU算法" class="headerlink" title="LRU算法"></a>LRU算法</h2><p>LRU（Least Recently Used  最近最少使用）：淘汰很久没有被访问过的数据，以<strong>最近一次访问时间</strong>作为参考。</p>
+<h2 id="LFU算法"><a href="#LFU算法" class="headerlink" title="LFU算法"></a>LFU算法</h2><p>LFU（Least Frequently Used 最不经常使用）：淘汰最近一段时间被访问次数最少的数据，以<strong>次数</strong>作为参考。</p>
+<p>当存在热点数据时，LRU的效率很好，但偶发性的、周期性的批量操作会导致LRU命中急剧下降，缓存污染情况比较严重。这时使用LFU可能更好。</p>
+<p>根据自身业务类型，配置好maxmemory-policy（默认是noeviction），推荐使用volatile-lru。如果不设置最大内存，当Redis内存超出物理内存限制时，内存的数据会开始和磁盘产生频繁的交换（swap），会让Redis的性能急剧下降。当Redis运行在主从模式时，只有主节点才会执行过期删除策略，然后把删除操作“del key”同步到从节点删除数据。</p>
+]]></content>
+      <categories>
+        <category>Redis</category>
+      </categories>
+      <tags>
+        <tag>Redis</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Redis集群原理分析</title>
+    <url>/archives/c0af2eb/</url>
+    <content><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>Redis Cluster将所有数据划分为16384个slots(槽位)，每个节点负责其中一部分槽位。槽位的信息存储于每个节点中；当Redis Cluster的客户端连接集群时，它也会得到一份槽位配置信息并将其缓存在客户端本地。这样当客户端要查找某个key时，可以直接定位到目标节点。同时也会带来一个问题”槽位信息在客户端和服务器不一致的情况，这就需要纠正机制来实现槽位信息的纠正”。</p>
+<h3 id="槽位定位算法"><a href="#槽位定位算法" class="headerlink" title="槽位定位算法"></a>槽位定位算法</h3><p>Cluster默认会对key使用CRC16算法进行hash得到一个整数值，然后用这个整数值对16384进行取模得到具体的槽位。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">HASH_SLOT = CRC16(key) mod 16384</span><br></pre></td></tr></table></figure>
+
+<h3 id="跳转重定位"><a href="#跳转重定位" class="headerlink" title="跳转重定位"></a>跳转重定位</h3><p>当客户端向一个错误的节点发出了指令，该节点会发现指令的key所在的槽位不是自己管理的，这时它会像客户端发送一个特殊的跳转指令携带目标操作的节点地址，告诉客户端去连接这个指定的节点去获取数据。客户端收到指令之后跳转到正确的节点上去操作，还会同步更新纠正本地的槽位映射表缓存，后续所有key将使用新的槽位映射表。</p>
+<p><img src="/archives/c0af2eb/image-20210922092847540.png" alt="跳转重定向"></p>
+<h3 id="Redis集群节点间的通信机制"><a href="#Redis集群节点间的通信机制" class="headerlink" title="Redis集群节点间的通信机制"></a>Redis集群节点间的通信机制</h3><p>Redis Cluster节点间采用gossip协议进行通信，来<strong>维护集群的元数据(集群节点信息、主从角色、节点数量、各节点共享的数据等)</strong> 。</p>
+<p>维护集群元数据的方式有两种：</p>
+<ol>
+<li>集中式</li>
+<li>gossip</li>
+</ol>
+<h4 id="集中式"><a href="#集中式" class="headerlink" title="集中式"></a>集中式</h4><p>优点：在于元数据的更新和读取时效性非常好，一旦元数据出现变更就会立即同步到集中式存储中，其他节点读取的时候就会立即感知到数据的变化；</p>
+<p>缺点：在于所有的元数据的更新压力全部会集中在一个地方，可能导致元数据的存储压力。很多中间件会借助zookeeper集中式存储元数据。</p>
+<h4 id="gossip协议"><a href="#gossip协议" class="headerlink" title="gossip协议"></a>gossip协议</h4><p><img src="/archives/c0af2eb/gossip%E5%8D%8F%E8%AE%AE%E9%80%9A%E4%BF%A1.gif" alt="gossip协议通信"></p>
+<p>gossip协议包含多种信息，包括<code>ping</code>、<code>pong</code>、<code>meet</code>、<code>fail</code>等。</p>
+<blockquote>
+<p><code>meet</code>：某个节点发送<code>meet</code>给新加入的节点，让新节点加入集群中，然后新节点就会开始和其他节点开始通信；</p>
+<p><code>ping</code>：每个节点都会频繁的给其他节点发送<code>ping</code>，其中包含自己的状态还有自己维护的集群元数据，互相通过<code>ping</code>交换元数据(类似感知到集群节点增加和删除，hash slot信息等)；</p>
+<p><code>pong</code>：对<code>ping</code>和<code>meet</code>信息的返回，包含自己的状态和其他信息，也可以用于广播和更新；</p>
+<p><code>fail</code>：某个节点判断另一个节点<code>fail</code>之后，就会发送<code>fail</code>给其他节点，通知其他节点，指定节点宕机了；</p>
+</blockquote>
+<p><strong>优点：</strong> 在于元数据的更新比较分散，不是集中在一个地方，更新请求会陆陆续续打到所有节点上去更新，有一定的延时，降低了压力；</p>
+<p><strong>缺点：</strong> 在于数据更新有一定的延时，可能导致集群的一些操作会有些滞后；</p>
+<h4 id="gossip协议通信端口"><a href="#gossip协议通信端口" class="headerlink" title="gossip协议通信端口"></a>gossip协议通信端口</h4><p>每个节点都有一个专门用于节点之间gossip通信的端口，就是自己提供服务的端口号+10000，比如：节点端口是7001，那么用于节点通信的端口就是17001。</p>
+<p>每个节点每隔一段时间都会往另外几个节点发送<code>ping</code>消息，同时其他几个接收到<code>ping</code>消息之后返回<code>pong</code>消息。</p>
+<h3 id="网络抖动问题"><a href="#网络抖动问题" class="headerlink" title="网络抖动问题"></a>网络抖动问题</h3><p>在正常生产环境中，经常会出现突然部分连接不可访问，过一会之后又恢复正常。对于这样的问题Redis集群模式也提供了解决方案；可以配置选项<code>cluster-node-timeout</code>，表示当某个节点持续timeout的时间失联时，才可以认定该节点出现故障，需要进行主从机器换。如果没有这个选项，网络抖动导致主从频繁切换，数据重复复制。</p>
+<h3 id="Redis集群选举原理"><a href="#Redis集群选举原理" class="headerlink" title="Redis集群选举原理"></a>Redis集群选举原理</h3><p>当slave发现自己的master变为fail状态时，便会尝试进行<code>Failover</code>，让其成为新的master。由于挂掉了master可能会有多个slave，从而存在多个slave竞争成为master节点的过程，过程如下：</p>
+<ol>
+<li><p>slave发现自己的master变为FAIL；</p>
+</li>
+<li><p>将自己记录的集群<code>currentEpoch</code>加1，并广播<code>FAILOVER_AUTH_RERQUEST</code>信息；</p>
+</li>
+<li><p>其他节点接收到该信息，只有master响应，判断请求者的合法性，并发送<code>FAILOVER_AUTH_ACK</code>，对每一个<code>epoch</code>只发送一次<code>ack</code>；</p>
+</li>
+<li><p>尝试<code>failover</code>的slave收集master返回的<code>FAILOVER_AUTH_ACK</code>；</p>
+</li>
+<li><p>slave收到<strong>超过半数master的ack</strong>后变成新的master</p>
+<blockquote>
+<p>这里解释了集群为什么至少需要三个主节点，如果只有两个，当其中一个挂了，只剩下一个主节点是不能选举成功的。</p>
+</blockquote>
+</li>
+<li><p>slave广播<code>pong</code>消息通知其他集群节点</p>
+</li>
+</ol>
+<p>从节点并不是在主节点已进入<code>FAIL</code>状态就马上尝试发起选举，而是有一定的延时，这个延时确保我们等待<code>FAIL</code>状态在集群中传播，slave如果立即尝试选举，其他masters或许没有意识到<code>FAIL</code>状态，可能会拒绝投票。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">延时计算公式：`DELAY = 500ms + random(0~500ms) + SLAVE_RANK * 1000ms`</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><code>SLAVE_RANK</code>表示此slave已经从master复制数据的总量的rank。Rank越小表示已经复制的数据越新。这种方式下，持有最新数据的slave将会首先发起选举。</p>
+</blockquote>
+<h3 id="集群脑裂数据丢失问题"><a href="#集群脑裂数据丢失问题" class="headerlink" title="集群脑裂数据丢失问题"></a>集群脑裂数据丢失问题</h3><p>redis集群没有过半机制会有脑裂问题，网络分区导致脑裂后多个主节点对外提供写服务，一旦网络分区恢复，会将其中一个主节点变为从节点，这时会有大量数据丢失。</p>
+<p>规避方法可以在redis配置里加上参数(这种方法不可能百分之百避免数据丢失，参考集群leader选举机制)：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">min-replicas-to-write 1 # 写数据成功最少同步的slave数量，这个数量可以模仿大于半数机制配置，比如集群总共三个节点可以配置1，加上leader就是2，超过了半数</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>注意：</strong></p>
+<p>这个配置在一定程度上影响集群的可用性，比如slave要是少于1个，这个集群就算leader正常也不能提供服务了，需要具体场景权衡选择。</p>
+</blockquote>
+<h3 id="集群是否完整才能对外提供服务？"><a href="#集群是否完整才能对外提供服务？" class="headerlink" title="集群是否完整才能对外提供服务？"></a>集群是否完整才能对外提供服务？</h3><p>当<code>redis.conf</code>的配置<code>cluster-require-full-coverage</code>为no时，表示负责一个插槽的主库下线且没有相应的从库进行故障恢复时，集群任然可用，如果为yes则集群不可用。</p>
+<h3 id="Redis集群为什么至少需要三个master节点，且推荐节点数为奇数？"><a href="#Redis集群为什么至少需要三个master节点，且推荐节点数为奇数？" class="headerlink" title="Redis集群为什么至少需要三个master节点，且推荐节点数为奇数？"></a>Redis集群为什么至少需要三个master节点，且推荐节点数为奇数？</h3><p>因为新master的选举需要大于半数的集群master同意才能选举成功，如果只有两个master节点，当其中一个挂了，是达不到选举新master的条件的。  </p>
+<p>奇数个master节点可以在满足选举该条件的基础上节省一个节点，比如三个master节点和四个master节点的集群相比，大家如果都挂了一个master节点都能选举新master节点，如果都挂了两个master节点都没有办法选举新master节点了，所以奇数的master节点更多的是从<strong>节省机器资源角度出发</strong>的。</p>
+<h3 id="Redis集群对批量操作指令的支持"><a href="#Redis集群对批量操作指令的支持" class="headerlink" title="Redis集群对批量操作指令的支持"></a>Redis集群对批量操作指令的支持</h3><p>对于类似<code>mset</code>，这样的多个key的原生批量操作指令，redis集群只支持所有key落在同一slot的情况，如果有多个key一定要使用<code>mset</code>命令在redis集群上操作，则可以在可以的前面加上<code>&#123;XXX&#125;</code>，这样参数数据分片hash计算的只会是大括号中的值，这样能确保不同的key能落在同一slot中，示例如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mset &#123;user1&#125;:1:name zhangsan &#123;user1&#125;:1:age 20</span><br></pre></td></tr></table></figure>
+
+<p>假如name和age计算的hash slot值不一样，但是这条命令在集群下执行，redis只会用大括号里的<code>user1</code>做hash slot计算，所以算出来的slot值肯定相同，最后能落在同一slot。</p>
+<h3 id="哨兵leader选举流程"><a href="#哨兵leader选举流程" class="headerlink" title="哨兵leader选举流程"></a>哨兵leader选举流程</h3><p>当一个master服务器被某个sentinel视为下线状态后，该sentinel会与其他sentinel协商选出sentinel的leader进行故障转移工作。每个发现master服务器下线的sentinel都可以要求其他sentinel选举自己为sentinel的leader，选举是先到先得。同时每一个sentinel每次选举都会自增配置选举周期，每个选举周期只会选择一个sentinel的leader。如果所有<strong>超过一半</strong>的sentinel选举某个sentinel作为leader。之后该sentinel进行故障转移操作，从存活的slave中选举出新的master，这个选举过程和集群的master选举很类似。</p>
+<p>哨兵集群只有一个哨兵节点，redis的主从也能正常运行以及选举master，如果master挂了，那唯一的那个哨兵节点就是哨兵leader了，可以正常选举新的master。不过为了高可用一般都推荐至少部署三个哨兵节点。为什么推荐奇数个哨兵节点，原理和集群奇数个master节点类似。</p>
+]]></content>
+      <categories>
+        <category>Redis</category>
+      </categories>
+      <tags>
+        <tag>Redis</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Redis高可用集群水平扩展</title>
+    <url>/archives/c709d40a/</url>
+    <content><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在<a href="/archives/1d883d6c/">《Redis高可用集群部署》</a>中我们部署了Redis高可用架构。整个集群由6个节点组成，这6个节点分布在三台机器上，采用了三主三从模式。</p>
+<p><img src="/archives/c709d40a/image-20210924125557525.png" alt="Redis高可用三主三从架构"></p>
+<h2 id="1、启动集群"><a href="#1、启动集群" class="headerlink" title="1、启动集群"></a>1、启动集群</h2><p>启动<a href="/archives/1d883d6c/">《Redis高可用集群部署》</a>中搭建好的三主三从高可用集群</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">/home/redis/build/bin/redis-server /home/redis/cluster/8001/redis.conf</span><br><span class="line">/home/redis/build/bin/redis-server /home/redis/cluster/8002/redis.conf</span><br><span class="line">/home/redis/build/bin/redis-server /home/redis/cluster/8003/redis.conf</span><br><span class="line">/home/redis/build/bin/redis-server /home/redis/cluster/8004/redis.conf</span><br><span class="line">/home/redis/build/bin/redis-server /home/redis/cluster/8005/redis.conf</span><br><span class="line">/home/redis/build/bin/redis-server /home/redis/cluster/8006/redis.conf</span><br></pre></td></tr></table></figure>
+
+<h3 id="登录端口为8001的redis客户端"><a href="#登录端口为8001的redis客户端" class="headerlink" title="登录端口为8001的redis客户端"></a>登录端口为8001的redis客户端</h3><figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">/home/redis/build/bin/redis-cli -c -h 192.168.31.16 -p 8001</span><br></pre></td></tr></table></figure>
+
+<h3 id="查看集群状态"><a href="#查看集群状态" class="headerlink" title="查看集群状态"></a>查看集群状态</h3><figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">192.168.31.16:8001&gt; cluster nodes</span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/c709d40a/image-20210924131031247.png" alt="Redis高可用集群节点状态"></p>
+<p>从上面的集群状态信息中可以看出，这个集群运行正常，三个master节点和三个slave节点，8001端口的实例节点存储0-5460这些hash slot，8002端口的节点存储5461-10922这个范围的hash slot；8003端口的实例节点存储10923-16383这个范围的hash slot；这三个master节点存储的所有hash slot组成整个集群的存储槽位，slave节点是每个主节点的备份从节点，不会显示存储槽位。</p>
+<h2 id="2、集群操作"><a href="#2、集群操作" class="headerlink" title="2、集群操作"></a>2、集群操作</h2><p>我们在原始的集群基础上在新增一主(8007)一从(8008)，增加节点后的集群架构如下图：虚线节点为新加入的节点</p>
+<p><img src="/archives/c709d40a/image-20210924132147346.png" alt="新增节点之后集群架构"></p>
+<h3 id="增加Redis节点实例"><a href="#增加Redis节点实例" class="headerlink" title="增加Redis节点实例"></a>增加Redis节点实例</h3><p>在/home/redis/cluster下新建8007和8008文件夹</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">mkdir 8007 8008</span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/c709d40a/image-20210924132807201.png" alt="创建文件夹"></p>
+<p>并把8006文件夹下的<code>redis.conf</code>配置文件拷贝到8007和8008两个文件夹中，如下</p>
+<p><img src="/archives/c709d40a/image-20210924133002072.png" alt="拷贝配置文件"></p>
+<p>修改8007文件夹下的<code>redis.conf</code>配置文件</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">vim ./8007/redis.conf</span><br></pre></td></tr></table></figure>
+
+<p>修改内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">port: 8007</span><br><span class="line">dir /home/redis/cluster/8007/</span><br><span class="line">cluster-config-file nodes-8007.conf</span><br></pre></td></tr></table></figure>
+
+<p>修改8008文件下的<code>redis.conf</code>配置文件</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">vim ./8008/redis.conf</span><br></pre></td></tr></table></figure>
+
+<p>修改内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">port: 8008</span><br><span class="line">dir /home/redis/cluster/8008/</span><br><span class="line">cluster-config-file nodes-8008.conf</span><br></pre></td></tr></table></figure>
+
+<p>启动8007和8008两个服务，并查看启动状态</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">/home/redis/buile/bin/redis-server /home/redis/cluster/8007/redis.conf</span><br><span class="line">/home/redis/buile/bin/redis-server /home/redis/cluster/8008/redis.conf</span><br><span class="line">ps -ef | grep redis</span><br></pre></td></tr></table></figure>
+
+<h3 id="通过redis帮助命令查找加入节点的命令"><a href="#通过redis帮助命令查找加入节点的命令" class="headerlink" title="通过redis帮助命令查找加入节点的命令"></a>通过redis帮助命令查找加入节点的命令</h3><figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">/home/redis/build/bin/redis-cli --cluster <span class="built_in">help</span></span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/c709d40a/image-20210924150425805.png" alt="cluster help手册"></p>
+<blockquote>
+<p><strong><code>create</code>：</strong> 创建一个集群环境<code>host1:port1</code>……<code>hostN:portN</code><br><strong><code>call</code>：</strong> 可以知晓redis命令<br><strong><code>add-node</code>：</strong> 将一个节点添加到集群里，第一个参数为新节点的IP:Port，第二个参数为集群中任意一个已经存在的节点的IP:Port<br><strong><code>del-node</code>：</strong> 删除一个节点<br><strong><code>reshard</code>：</strong> 重新分片<br><strong><code>check</code>：</strong> 检查集群状态</p>
+</blockquote>
+<h3 id="配置8007为集群主节点"><a href="#配置8007为集群主节点" class="headerlink" title="配置8007为集群主节点"></a>配置8007为集群主节点</h3><p>使用<code>add-node</code> 命令新增一个主节点8007(master)，前面的IP:Port为新增节点，后面的IP:Port为已知存活的节点。</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">/home/redis/build/bin/redis-cli --cluster add-node 192.168.31.80:8007 192.168.31.80:8003</span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/c709d40a/image-20210924151637255.png" alt="新节点加入集群"></p>
+<p>出现”[OK] New node added correctly”表示新节点加入成功。</p>
+<p>再查看集群状态，确认一下是否真正加入成功</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">/home/redis/build/bin/redis-cli -c -h 192.168.31.80 -p 8003</span><br><span class="line">192.168.31.80:8003&gt; cluster nodes</span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/c709d40a/image-20210924152021907.png" alt="8007节点加入成功"></p>
+<blockquote>
+<p><strong>注意：当添加节点成功之后，新增的节点不会有任何数据，因为它还没有分配任何的slot(hash槽)，我们需要手动为新节点分配hash槽</strong></p>
+</blockquote>
+<p>使用<code>redis-cli</code>命令为8007分配hash槽，找到集群中的任意一个主节点，对其进行重新分片工作</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">/home/redis/build/bin/redis-cli --cluster reshard 192.168.31.80:8006</span><br></pre></td></tr></table></figure>
+
+<p>输出信息：</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">[OK] All nodes agree about slots configuration.</span><br><span class="line">&gt;&gt;&gt; Check <span class="keyword">for</span> open slots...</span><br><span class="line">&gt;&gt;&gt; Check slots coverage...</span><br><span class="line">[OK] All 16384 slots covered.</span><br><span class="line">How many slots <span class="keyword">do</span> you want to move (from 1 to 16384)? 600</span><br><span class="line"><span class="comment"># (ps:需要多少个槽移动到新的节点上，自己设置，比如600个hash槽)</span></span><br><span class="line">What is the receiving node ID? a269eb14c20c00bce5277f1ab7d185a0b4ff7081</span><br><span class="line"><span class="comment"># (ps:把这600个hash槽移动到哪个节点上去，需要指定节点id)</span></span><br><span class="line">Please enter all the <span class="built_in">source</span> node IDs.</span><br><span class="line">  Type <span class="string">&#x27;all&#x27;</span> to use all the nodes as <span class="built_in">source</span> nodes <span class="keyword">for</span> the <span class="built_in">hash</span> slots.</span><br><span class="line">  Type <span class="string">&#x27;done&#x27;</span> once you entered all the <span class="built_in">source</span> nodes IDs.</span><br><span class="line">Source node <span class="comment">#1: all</span></span><br><span class="line"><span class="comment"># (ps:输入all为从所有主节点(8001,8002,8003)中分别抽取相应的槽数指定到新节点中，抽取的总槽数为600个)</span></span><br><span class="line"></span><br><span class="line">Ready to move 600 slots.</span><br><span class="line">  Source nodes:</span><br><span class="line">    M: 9733f9dcf9f49366c20ba48e9255ed8dacbf3ce9 192.168.31.16:8004</span><br><span class="line">       slots:[10923-16383] (5461 slots) master</span><br><span class="line">       1 additional replica(s)</span><br><span class="line">    M: 7335dcf54192b1015ff9b386391e424bd5379bb3 192.168.31.224:8002</span><br><span class="line">       slots:[5461-10922] (5462 slots) master</span><br><span class="line">       1 additional replica(s)</span><br><span class="line">    M: 1e0e204666cc8eab8c138913df4dd23135b38a05 192.168.31.16:8001</span><br><span class="line">       slots:[0-5460] (5461 slots) master</span><br><span class="line">       1 additional replica(s)</span><br><span class="line">  Destination node:</span><br><span class="line">    M: a269eb14c20c00bce5277f1ab7d185a0b4ff7081 192.168.31.80:8007</span><br><span class="line">       slots: (0 slots) master</span><br><span class="line">  Resharding plan:</span><br><span class="line">    Moving slot 5461 from 7335dcf54192b1015ff9b386391e424bd5379bb3</span><br><span class="line">    Moving slot 5462 from 7335dcf54192b1015ff9b386391e424bd5379bb3</span><br><span class="line">……………………</span><br><span class="line"></span><br><span class="line">Do you want to proceed with the proposed reshard plan (yes/no)? yes</span><br><span class="line"><span class="comment"># (ps:输入yes确认开始执行分片任务)</span></span><br><span class="line">……………………</span><br></pre></td></tr></table></figure>
+
+<p>查看最新集群状态</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">/home/redis/build/bin/redis-cli -c -h 192.168.31.16 -p 8004</span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/c709d40a/image-20210924153543684.png" alt="最新集群状态"></p>
+<blockquote>
+<p><strong>如上图所示，现在我们的8007已经有hash槽了，也就是现在可以在8007上写数据了，到此为止8007已经加入到集群中，并且是主节点(master)</strong></p>
+</blockquote>
+<h3 id="配置8008为8007的从节点"><a href="#配置8008为8007的从节点" class="headerlink" title="配置8008为8007的从节点"></a>配置8008为8007的从节点</h3><p>添加从节点8008到集群中去并查看集群状态</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">/home/redis/build/bin/redis-cli --cluster add-node 192.168.31.80:8008 192.168.31.80:8007</span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/c709d40a/image-20210924155734308.png" alt="配置8008为8007的从节点"></p>
+<p>查看集群状态信息：</p>
+<p><img src="/archives/c709d40a/image-20210924155923889.png" alt="集群状态"></p>
+<p>如图所示，存在一个master(8008)节点，没有被分配任何的hash槽。</p>
+<p>我们需要执行<code>replicate</code>命令来指定当前节点(从节点)的主节点id为哪个，首先需要连接新加的8008节点的客户端，然后使用集群命令进行操作，把当前的8008(slave)节点指定到一个主节点下(这里使用之前创建的8007主节点)</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">/home/redis/build/bin/redis-cli -c -h 192.168.31.80 -p 8008</span><br><span class="line">cluster replicate a269eb14c20c00bce5277f1ab7d185a0b4ff7081 <span class="comment">#后面这串id为8007的节点id</span></span><br></pre></td></tr></table></figure>
+
+<p>查看集群状态，8008节点已成功添加为8007节点的从节点</p>
+<p><img src="/archives/c709d40a/image-20210924160713937.png" alt="集群状态"></p>
+<h3 id="删除8008从节点"><a href="#删除8008从节点" class="headerlink" title="删除8008从节点"></a>删除8008从节点</h3><p>用<code>del-node</code>删除从节点8008，指定删除节点IP和端口，以及节点id</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">/home/redis/build/bin/redis-cli --cluster del-node 192.168.31.80:8008 63aef88d1fda94a340f045f386eef8f61453c755</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><code>192.168.31.80:8008</code> 为要删除节点的IP和端口<br><code>63aef88d1fda94a340f045f386eef8f61453c755</code> 为要删除节点的id</p>
+</blockquote>
+<p><img src="/archives/c709d40a/image-20210924161819857.png" alt="删除8008节点"></p>
+<p>查看集群状态，如下图所示，8008这个slave节点已经移除了。</p>
+<p><img src="/archives/c709d40a/image-20210924171054803.png" alt="集群状态"></p>
+<p>查看redis运行的实例，并关掉8008服务</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">ps -ef | grep redis</span><br><span class="line"><span class="built_in">kill</span> 进程ID</span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/c709d40a/image-20210924171652442.png" alt="关闭8008进程"></p>
+<h3 id="删除8007主节点"><a href="#删除8007主节点" class="headerlink" title="删除8007主节点"></a>删除8007主节点</h3><p>最后，我们删除之前加入的主节点8007，这个步骤比较麻烦，因为主节点的里面是有分配hash槽的，所以我们这里必须要先把8007里的hash槽放入到其他可用主节点中去，然后进行移除节点操作，不然会出现数据丢失问题(目前只能把master的数据迁移到一个节点上，暂时做不了平均分配功能)，执行命令如下：</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">/home/redis/build/bin/redis-cli --cluster reshard 192.168.31.80:8007</span><br></pre></td></tr></table></figure>
+
+<p><strong>输出如下结果：</strong></p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv cluster]<span class="comment"># /home/redis/build/bin/redis-cli --cluster reshard 192.168.31.80:8007</span></span><br><span class="line">&gt;&gt;&gt; Performing Cluster Check (using node 192.168.31.80:8007)</span><br><span class="line">M: a269eb14c20c00bce5277f1ab7d185a0b4ff7081 192.168.31.80:8007</span><br><span class="line">   slots:[0-198],[5461-5661],[10923-11121] (599 slots) master</span><br><span class="line">S: 93b31cae2f224d31c3c2e64c72ae3415dda34b2c 192.168.31.80:8006</span><br><span class="line">   slots: (0 slots) slave</span><br><span class="line">   replicates 7335dcf54192b1015ff9b386391e424bd5379bb3</span><br><span class="line">M: 9733f9dcf9f49366c20ba48e9255ed8dacbf3ce9 192.168.31.16:8004</span><br><span class="line">   slots:[11122-16383] (5262 slots) master</span><br><span class="line">   1 additional replica(s)</span><br><span class="line">S: caf9f23f9e339c640d35d181f2c5c398b5ba2f30 192.168.31.224:8005</span><br><span class="line">   slots: (0 slots) slave</span><br><span class="line">   replicates 1e0e204666cc8eab8c138913df4dd23135b38a05</span><br><span class="line">S: 37e9a109f56d0e86995ff02482df4d0d94b6fc2c 192.168.31.80:8003</span><br><span class="line">   slots: (0 slots) slave</span><br><span class="line">   replicates 9733f9dcf9f49366c20ba48e9255ed8dacbf3ce9</span><br><span class="line">M: 1e0e204666cc8eab8c138913df4dd23135b38a05 192.168.31.16:8001</span><br><span class="line">   slots:[199-5460] (5262 slots) master</span><br><span class="line">   1 additional replica(s)</span><br><span class="line">M: 7335dcf54192b1015ff9b386391e424bd5379bb3 192.168.31.224:8002</span><br><span class="line">   slots:[5662-10922] (5261 slots) master</span><br><span class="line">   1 additional replica(s)</span><br><span class="line">[OK] All nodes agree about slots configuration.</span><br><span class="line">&gt;&gt;&gt; Check <span class="keyword">for</span> open slots...</span><br><span class="line">&gt;&gt;&gt; Check slots coverage...</span><br><span class="line">[OK] All 16384 slots covered.</span><br><span class="line">How many slots <span class="keyword">do</span> you want to move (from 1 to 16384)? 600</span><br><span class="line">What is the receiving node ID? 1e0e204666cc8eab8c138913df4dd23135b38a05</span><br><span class="line"><span class="comment"># (ps:这里是需要把数据移动到哪？我们这里指定8001的主节点id)</span></span><br><span class="line">Please enter all the <span class="built_in">source</span> node IDs.</span><br><span class="line">  Type <span class="string">&#x27;all&#x27;</span> to use all the nodes as <span class="built_in">source</span> nodes <span class="keyword">for</span> the <span class="built_in">hash</span> slots.</span><br><span class="line">  Type <span class="string">&#x27;done&#x27;</span> once you entered all the <span class="built_in">source</span> nodes IDs.</span><br><span class="line">Source node <span class="comment">#1: a269eb14c20c00bce5277f1ab7d185a0b4ff7081</span></span><br><span class="line"><span class="comment"># (ps:这里是需要数据源，也就是我们要移除的8007节点id)</span></span><br><span class="line">Source node <span class="comment">#2: done</span></span><br><span class="line"><span class="comment"># (ps:这里直接输入done 开始生成迁移计划)</span></span><br><span class="line"></span><br><span class="line">Ready to move 600 slots.</span><br><span class="line">  Source nodes:</span><br><span class="line">    M: a269eb14c20c00bce5277f1ab7d185a0b4ff7081 192.168.31.80:8007</span><br><span class="line">       slots:[0-198],[5461-5661],[10923-11121] (599 slots) master</span><br><span class="line">  Destination node:</span><br><span class="line">    M: 1e0e204666cc8eab8c138913df4dd23135b38a05 192.168.31.16:8001</span><br><span class="line">       slots:[199-5460] (5262 slots) master</span><br><span class="line">       1 additional replica(s)</span><br><span class="line">  Resharding plan:</span><br><span class="line">    Moving slot 0 from a269eb14c20c00bce5277f1ab7d185a0b4ff7081</span><br><span class="line">    Moving slot 1 from a269eb14c20c00bce5277f1ab7d185a0b4ff7081</span><br><span class="line">………………</span><br><span class="line">    Moving slot 11121 from a269eb14c20c00bce5277f1ab7d185a0b4ff7081</span><br><span class="line">    Do you want to proceed with the proposed reshard plan (yes/no)? yes</span><br><span class="line">    <span class="comment"># (ps:这里输入yes开始迁移)</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>致此，我们已经成功把8007主节点的数据迁移到8001上去了，我们可以看一下集群状态：</p>
+<p><img src="/archives/c709d40a/image-20210924174054621.png" alt="集群节点状态"></p>
+<blockquote>
+<p>从上图可以看出8007下面已经没有任何hash槽了，证明数据迁移成功！</p>
+</blockquote>
+<p>最后直接使用<code>del-node</code>命令删除8007主节点即可</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">/home/redis/build/bin/redis-cli --cluster del-node 192.168.31.80:8007 a269eb14c20c00bce5277f1ab7d185a0b4ff7081</span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/c709d40a/image-20210924174816518.png" alt="删除8007主节点"></p>
+<p>在查看集群状态，还原到了原来的状态：</p>
+<p><img src="/archives/c709d40a/image-20210924174859543.png" alt="集群状态"></p>
+]]></content>
+      <categories>
+        <category>Redis</category>
+      </categories>
+      <tags>
+        <tag>Redis</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Redis高可用集群部署</title>
+    <url>/archives/1d883d6c/</url>
+    <content><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在<a href="/archives/8bd0f0fd/">《Redis哨兵架构搭建》</a>中我们说了怎么搭建哨兵架构，既然有了哨兵架构，为什么还要提供<strong>Redis高可用集群模式</strong>呢？那就的从哨兵模式的缺点开始说起；</p>
+<p>在redis3.0以前的版本要实现集群一般都是借助哨兵Sentinel工具来监控master节点的状态，如果master节点异常，则会主动切换，将某一台slave作为master，哨兵配置略微复杂，并且在性能和高可用方面都表现一般，特别是在主从切换的瞬间存在<em><strong>访问瞬断</strong></em>的情况，而且哨兵模式只有一个主节点是对外提供服务的，没有办法支持很高的并发量，还有单个节点的内存也不适合设置过大，否则会导致持久化文件太大，影像数据恢复或主从数据同步的效率。</p>
+<p>基于以上哨兵模式的种种的缺点，所以Redis又给我们提供了高可用集群模式。</p>
+<h2 id="高可用集群模式"><a href="#高可用集群模式" class="headerlink" title="高可用集群模式"></a>高可用集群模式</h2><p><img src="/archives/1d883d6c/image-20210918123415239.png" alt="Redis高可用集群架构图"></p>
+<p>redis集群是一个有多个<strong>主从节点群组成的分布式服务器群</strong>，它具有<strong>复制、高可用和分片</strong>特性。Redis集群不需要Sentinel哨兵也能完成节点的移除和故障的转移功能。只是在启动的时候需要将每个节点设置成集群模式即可，这种集群模式没有中心节点，可以水平扩展，按照官方文档描述可以扩展到上万个节点(<em><strong>官方推荐不超过1000个节点</strong></em>)。<strong>redis集群的性能和高可用性都优于之前版本的哨兵模式，且集群配置也非常简单</strong>。</p>
+<h2 id="Redis高可用集群搭建"><a href="#Redis高可用集群搭建" class="headerlink" title="Redis高可用集群搭建"></a>Redis高可用集群搭建</h2><blockquote>
+<p>redis集群需要至少<strong>三个master节点</strong>，我们这里搭建三个master节点，并且每个master在搭建一个slave节点，总共6个redis节点，这里用三台机器部署6个redis实例，每台机器一主一从。</p>
+</blockquote>
+<p>最终我们搭建的高可用架构图如下：</p>
+<p><img src="/archives/1d883d6c/image-20210924125414621.png" alt="Redis高可用三主三从结构"></p>
+<h3 id="第一步"><a href="#第一步" class="headerlink" title="第一步"></a>第一步</h3><p>在第一台机器的/home/redis/下创建文件夹<code>cluster</code>，然后在其下面分别创建2个文件夹如下：</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">mkdir -p /home/redis/cluster</span><br><span class="line">mkdir 8001 8004</span><br></pre></td></tr></table></figure>
+
+<h3 id="第二步"><a href="#第二步" class="headerlink" title="第二步"></a>第二步</h3><p>把之前的<code>redis.conf</code>配置文件copy到8001下，修改以下内容：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">daemonize yes</span><br><span class="line">port 8001 #（分别对每个机器的端口号进行设置）</span><br><span class="line">pidfile /var/run/redis_8001.pid  #把pid进程写入pidfile配置的文件</span><br><span class="line">dir /home/redis/cluster/8001/ # （指定数据文件存放位置，必须要指定不同的目录位置，不然会丢数据）</span><br><span class="line">cluster-enabled yes # 启动集群模式</span><br><span class="line">cluster-config-file nodes-8001.config # (集群节点信息文件，这里800X最好和port对应)</span><br><span class="line">cluster-node-timeout 10000</span><br><span class="line"># bind 127.0.0.1（bind绑定的是自己机器网卡的ip，如果有多块网卡可以配多个ip，代表允许客户端通过机器的哪些网卡ip去访问，内网一般可以不配置bind，注释掉即可）</span><br><span class="line">protected-mode no # 关闭保护模式</span><br><span class="line"># 如果要设置密码需要增加以下配置</span><br><span class="line">requirepass 123456 # 设置redis访问密码</span><br><span class="line">masterauth 123456 # 设置集群节点间访问密码，跟上面一致</span><br></pre></td></tr></table></figure>
+
+<h3 id="第三步"><a href="#第三步" class="headerlink" title="第三步"></a>第三步</h3><p>把修改后的配置文件，copy到8004，修改第二步中的2,3,4,6行的端口号。</p>
+<h3 id="第四步"><a href="#第四步" class="headerlink" title="第四步"></a>第四步</h3><p>另外两台机器也需要做上面几步操作，第二台机器用8002和8005，第三台机器用8003和8006</p>
+<h3 id="第五步"><a href="#第五步" class="headerlink" title="第五步"></a>第五步</h3><p>分别启动6个redis实例，然后检查是否启动成功</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">ps -ef | grep redis</span><br></pre></td></tr></table></figure>
+
+<h3 id="第六步"><a href="#第六步" class="headerlink" title="第六步"></a>第六步</h3><p>用<code>redis-cli</code>创建整个redis集群</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">/home/redis/build/bin/redis-cli -a mst --cluster create --cluster-replicas 1 192.168.31.16:8001 192.168.31.224:8002 192.168.31.80:8003 192.168.31.16:8004 192.168.31.224:8005 192.168.31.80 8006</span><br></pre></td></tr></table></figure>
+
+<p>上面命令中的 1 代表每个创建的主服务器节点创建一个从服务器节点</p>
+<p><strong>注意：</strong></p>
+<blockquote>
+<p>执行上述命令需要先确认三台机器之间的redis实例能不能互相访问，如果不能访问需要我们把防火墙关闭，如果不关闭防火墙，则需要打开redis服务端口和集群节点gossip通信端口16379（默认是在redis端口上加10000）</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">systemctl stop firewalld # 临时关闭防火墙</span><br><span class="line">systemctl disable firewalld # 禁止开机启动</span><br></pre></td></tr></table></figure>
+
+
+</blockquote>
+<h3 id="第七步"><a href="#第七步" class="headerlink" title="第七步"></a>第七步</h3><p>验证集群是否成功</p>
+<ol>
+<li><p>连接任意一个客户端即可：<code>./redis-cli -c -h -p (-a访问服务端密码，-c表示集群模式，-h表示指定ip地址，-p表示指定端口号)</code>，如：</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">/home/redis/build/bin/redis-cli -a mst -c -h 192.168.31.16 -p 800*</span><br></pre></td></tr></table></figure></li>
+<li><p>进行验证：</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">cluster info <span class="comment">#查看集群信息</span></span><br><span class="line">cluster nodes <span class="comment"># 查看节点列表</span></span><br></pre></td></tr></table></figure></li>
+<li><p>进行数据操作验证</p>
+</li>
+<li><p>关闭集群规则需要逐个进行关闭，使用命令</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">/home/redis/build/bin/redis-cli -a mst -c -h 192.168.31.16 -p 800* shutdown</span><br></pre></td></tr></table></figure></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Redis</category>
+      </categories>
+      <tags>
+        <tag>Redis</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Spring-IOC原理(一)</title>
     <url>/archives/81aeb1f/</url>
     <content><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在Spring中最重要的就属<code>IOC</code>了，不论是在面试中，还是在一些中间件与Spring的继承中，都离不开<code>IOC</code>，下面就来瞧瞧<code>IOC</code>是个什么东西，他是怎么一个加载流程，先大致粗略的了解一下！</p>
@@ -143,6 +1065,62 @@
       </tags>
   </entry>
   <entry>
+    <title>html播放.m3u8格式视频</title>
+    <url>/archives/e6ea49db/</url>
+    <content><![CDATA[<p>播放<code>.m3u8</code>格式视频时需要借助<code>hls.js</code>，为了下载速度快点，我们直接通过国内的cdn访问<a href="https://www.bootcdn.cn/hls.js/">https://www.bootcdn.cn/hls.js/</a></p>
+<p><img src="/archives/e6ea49db/image-20210926170928950.png" alt="hls.js"></p>
+<p>然后编写如下html内容</p>
+<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="meta">&lt;!DOCTYPE <span class="meta-keyword">html</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">html</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">head</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">head</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">body</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span> <span class="attr">src</span>=<span class="string">&quot;https://cdn.bootcdn.net/ajax/libs/hls.js/1.0.8-0.canary.7807/hls.js&quot;</span>&gt;</span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">h3</span>&gt;</span>.m3u8视频播放效果<span class="tag">&lt;/<span class="name">h3</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">video</span> <span class="attr">controls</span> <span class="attr">autoplay</span> <span class="attr">muted</span> <span class="attr">id</span>=<span class="string">&quot;hlsVedio&quot;</span>&gt;</span><span class="tag">&lt;/<span class="name">video</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span> <span class="attr">type</span>=<span class="string">&quot;text/javascript&quot;</span>&gt;</span><span class="javascript"></span></span><br><span class="line"><span class="javascript">  <span class="built_in">window</span>.onload = <span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span></span><br><span class="line"><span class="javascript">    <span class="keyword">var</span> video = <span class="built_in">document</span>.getElementById(<span class="string">&#x27;hlsVedio&#x27;</span>);</span></span><br><span class="line"><span class="javascript">    <span class="keyword">var</span> videoSrc = <span class="string">&#x27;https://hls.videocc.net/cef5baf690/f/cef5baf690579d94244803412596e82f.m3u8&#x27;</span>;</span></span><br><span class="line"><span class="javascript">    <span class="keyword">if</span> (Hls.isSupported()) &#123;</span></span><br><span class="line"><span class="javascript">      <span class="keyword">var</span> hls = <span class="keyword">new</span> Hls();</span></span><br><span class="line"><span class="javascript">      hls.loadSource(videoSrc);</span></span><br><span class="line"><span class="javascript">      hls.attachMedia(video);</span></span><br><span class="line"><span class="javascript">      hls.on(Hls.Events.MANIFEST_PARSED, <span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</span></span><br><span class="line"><span class="javascript">        <span class="keyword">if</span>(video.paused) &#123;</span></span><br><span class="line"><span class="javascript">          video.play();</span></span><br><span class="line"><span class="javascript">        &#125; <span class="keyword">else</span> &#123;</span></span><br><span class="line"><span class="javascript">          video.pause();</span></span><br><span class="line"><span class="javascript">        &#125;</span></span><br><span class="line"><span class="javascript">      &#125;);</span></span><br><span class="line"><span class="javascript">    &#125;</span></span><br><span class="line"><span class="javascript">    <span class="keyword">else</span> <span class="keyword">if</span> (video.canPlayType(<span class="string">&#x27;application/vnd.apple.mpegurl&#x27;</span>)) &#123;</span></span><br><span class="line"><span class="javascript">      video.src = videoSrc;</span></span><br><span class="line"><span class="javascript">      video.addEventListener(<span class="string">&#x27;loadedmetadata&#x27;</span>, <span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</span></span><br><span class="line"><span class="javascript">        <span class="keyword">if</span>(video.paused) &#123;</span></span><br><span class="line"><span class="javascript">          video.play();</span></span><br><span class="line"><span class="javascript">        &#125; <span class="keyword">else</span> &#123;</span></span><br><span class="line"><span class="javascript">          video.pause();</span></span><br><span class="line"><span class="javascript">        &#125;</span></span><br><span class="line"><span class="javascript">      &#125;);</span></span><br><span class="line"><span class="javascript">    &#125;</span></span><br><span class="line"><span class="javascript">  &#125;</span></span><br><span class="line"><span class="javascript"></span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">body</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">html</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>运行之后的效果如下图</p>
+<!DOCTYPE html>
+<html>
+<head>
+</head>
+<body>
+<script src="https://cdn.bootcdn.net/ajax/libs/hls.js/1.0.8-0.canary.7807/hls.js"></script>
+<h3>.m3u8视频播放效果</h3>
+<video controls autoplay muted id="hlsVedio"></video>
+<script type="text/javascript">
+  window.onload = function() {
+    var video = document.getElementById('hlsVedio');
+    var videoSrc = 'https://hls.videocc.net/cef5baf690/f/cef5baf690579d94244803412596e82f.m3u8';
+    if (Hls.isSupported()) {
+      var hls = new Hls();
+      hls.loadSource(videoSrc);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, function () {
+        if(video.paused) {
+          video.play();
+        } else {
+          video.pause();
+        }
+      });
+    }
+    else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = videoSrc;
+      video.addEventListener('loadedmetadata', function () {
+        if(video.paused) {
+          video.play();
+        } else {
+          video.pause();
+        }
+      });
+    }
+  }
+</script>
+</body>
+</html>
+
+]]></content>
+      <categories>
+        <category>html</category>
+      </categories>
+      <tags>
+        <tag>html</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>invokeBeanDefinitionRegistryPostProcessors方法解析</title>
     <url>/archives/8d05e930/</url>
     <content><![CDATA[<p>在上一篇<a href="/archives/e74be873">《Spring-IOC原理之invokeBeanFactoryPostProcessor详解》</a>中我们提到了一个方法<code>invokeBeanDefinitionRegistryPostProcessors()</code>。也说了这个方法最终会调用<code>ConfigurationClassPostProcessor</code>类中的<code>postProcessBeanDefinitionRegistry</code>方法。并且在这个方法中会解析<code>@Import</code>、<code>@Component</code>等注解和创建<code>CGLIB</code>动态代理。那么这一篇我们来详细看一下这个调用链中的方法。</p>
@@ -168,14 +1146,97 @@
       </tags>
   </entry>
   <entry>
-    <title>processConfigBeanDefinitions方法解析</title>
-    <url>/archives/79103379/</url>
-    <content><![CDATA[]]></content>
+    <title>redis主从架构搭建</title>
+    <url>/archives/ba77e58/</url>
+    <content><![CDATA[<h2 id="一、环境准备"><a href="#一、环境准备" class="headerlink" title="一、环境准备"></a>一、环境准备</h2><blockquote>
+<p>搭建采用虚拟机来搭建，所有的操作都是在虚拟机中操作的</p>
+</blockquote>
+<h3 id="1、CentOs镜像下载"><a href="#1、CentOs镜像下载" class="headerlink" title="1、CentOs镜像下载"></a>1、<a href="https://www.centos.org/download/"><code>CentOs</code>镜像下载</a></h3><p><img src="/archives/ba77e58/image-20210914113157200.png" alt="image-20210914113157200"></p>
+<p><img src="/archives/ba77e58/image-20210914113220179.png" alt="image-20210914113220179"></p>
+<p>这里选择一个距离自己比较近的镜像源，这样下载速度快点。</p>
+<p><img src="/archives/ba77e58/image-20210914113304957.png" alt="image-20210914113304957"></p>
+<h3 id="2、VMWare下载安装"><a href="#2、VMWare下载安装" class="headerlink" title="2、VMWare下载安装"></a>2、<code>VMWare下载安装</code></h3><p>2.1、<a href="https://www.vmware.com/products/workstation-player/workstation-player-evaluation.html">下载<code>vmware workstation16 player</code></a></p>
+<p><img src="/archives/ba77e58/image-20210914112126565.png" alt="vmware下载"></p>
+<p>根据需求下载对应版本，我们采用的是<code>Windows</code>版本，下载好之后安装，这里不列举安装步骤了，默认已经安装好。</p>
+<p>2.2、安装省略，默认已经安装好</p>
+<p>2.3、破解，参考之前写的一个博客<a href="/archives/59b9c4e6/">《vmare_workstation16许可证秘钥》</a></p>
+<h3 id="3、创建虚拟机"><a href="#3、创建虚拟机" class="headerlink" title="3、创建虚拟机"></a>3、创建虚拟机</h3><p>创建过程也按照默认流程操作即可，只是在创建完毕之后，启动虚拟机时可能会遇到报错</p>
+<blockquote>
+<p>无法打开内核设备“.\VMCIDev\VMX”: 系统找不到指定的文件。你想要在安装 VMware Workstation 前重启吗?</p>
+</blockquote>
+<p>对于这个问题可以通过以下方法来解决：</p>
+<ul>
+<li>找到对应虚拟机的.vmx文件，通过记事本打开该文件</li>
+<li>找到<code>vmci0.present=TRUE</code>这一行，将<code>TRUE</code>改为<code>FALSE</code>或者直接删除这一行</li>
+<li>保存修改好的.vmx文件,并重启虚拟机</li>
+</ul>
+<h3 id="4、在虚拟机Centos系统中安装redis"><a href="#4、在虚拟机Centos系统中安装redis" class="headerlink" title="4、在虚拟机Centos系统中安装redis"></a>4、在虚拟机Centos系统中安装redis</h3><p>参考博文<a href="/archives/a813391e/">《Linux安装配置Redis》</a>，这里介绍了。</p>
+<h3 id="5、主从架构搭建"><a href="#5、主从架构搭建" class="headerlink" title="5、主从架构搭建"></a>5、主从架构搭建</h3><p>以上一个步骤完成之后，接下来就开始搭建我们的redis主从架构了，首先我们搭建一主两从，搭建步骤参考步骤4；所以需要三台redis服务器，一台端口为6379作为主节点，另外两台端口分别为6380、6381作为两台从节点。</p>
+<p><img src="/archives/ba77e58/image-20210924094756516.png" alt="主从架构"></p>
+<p>5.1、首先来配置主节点(6379)</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">port 6379</span><br><span class="line">daemonize yes</span><br><span class="line"># bind 127.0.0.1</span><br><span class="line">pidfile /var/run/redis_6379.pid</span><br><span class="line">logfile &quot;/home/redis/build/log/6379.log&quot;</span><br></pre></td></tr></table></figure>
+
+<p>5.2 配置端口号为6380的从节点</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">port 6380</span><br><span class="line">daemonize yes</span><br><span class="line"># bind 127.0.0.1</span><br><span class="line">pidfile /var/run/redis_6380.pid</span><br><span class="line">logfile &quot;/home/redis/build/log/6380.log&quot;</span><br><span class="line">replicaof 192.168.34.128 6379  # 从本机6379的redis实例复制数据，Redis 5.0之前使用slaveof</span><br><span class="line">replica-read-only yes  # 配置从节点只读</span><br></pre></td></tr></table></figure>
+
+<p> 5.3 配置端口为6381的从节点</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">port 6381</span><br><span class="line">daemonize yes</span><br><span class="line"># bind 127.0.0.1</span><br><span class="line">pidfile /var/run/redis_6381.pid</span><br><span class="line">logfile &quot;/home/redis/build/log/6381.log&quot;</span><br><span class="line">replicaof 192.168.34.128 6379  # 从本机6379的redis实例复制数据，Redis 5.0之前使用slaveof</span><br><span class="line">replica-read-only yes  # 配置从节点只读</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>注意：</strong></p>
+<p>配置以上主从节点都配置完成之后，还不能够同步成功。因为此时Centos的防火墙还处于打开状态，从节点是访问不到主节点，所以我们需要关闭防火墙，执行以下命令</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">$ firewall-cmd --state      <span class="comment">##查看防火墙状态</span></span><br><span class="line">running                     <span class="comment">##防火墙开启</span></span><br><span class="line"></span><br><span class="line">$ systemctl stop firewalld  <span class="comment">##关闭防火墙</span></span><br><span class="line">$ firewall-cmd --state</span><br><span class="line">not running                 <span class="comment">##防火墙关闭</span></span><br></pre></td></tr></table></figure>
+</blockquote>
+<h3 id="启动主从节点"><a href="#启动主从节点" class="headerlink" title="启动主从节点"></a>启动主从节点</h3><ul>
+<li>先启动主节点</li>
+<li>再启动从节点</li>
+</ul>
+<h3 id="检查主从信息"><a href="#检查主从信息" class="headerlink" title="检查主从信息"></a>检查主从信息</h3><p><img src="/archives/ba77e58/image-20210914150857692.png" alt="image-20210914150857692"></p>
+<blockquote>
+<p>主节点：192.168.49.128:6379</p>
+<p>从节点：192.168.49.129:6381 ，192.168.49.130:6380</p>
+</blockquote>
+<h3 id="验证同步数据"><a href="#验证同步数据" class="headerlink" title="验证同步数据"></a>验证同步数据</h3><p>登录主节点(192.168.49.128)客户端</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">/home/redis/build/bin/redis-cli -h 192.168.49.128</span><br></pre></td></tr></table></figure>
+
+<p>在主节点客户端中添加测试数据;</p>
+<p><img src="/archives/ba77e58/image-20210914151255794.png" alt="主节点192.168.49.128:6379"></p>
+<p>登录从节点(192.168.49.129)客户端</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">/home/redis/build/bin/redis-cli -h 192.168.49.129 -p 6381</span><br></pre></td></tr></table></figure>
+
+<p>在从节点客户端中执行<code>keys *</code>查看数据同步情况，如下图</p>
+<p><img src="/archives/ba77e58/image-20210914151512277.png" alt="从节点192.168.49.129:6381"></p>
+<p>登录从节点(192.168.49.130)客户端</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">/home/redis/build/bin/redis-cli -h 192.168.49.130 -p 6380</span><br></pre></td></tr></table></figure>
+
+<p>在从节点客户端中执行<code>keys *</code>查看数据同步情况，如下图</p>
+<p><img src="/archives/ba77e58/image-20210914151605027.png" alt="从节点192.168.49.130:6380"></p>
+<p>redis主从数据同步成功，主从配置成功。</p>
+]]></content>
       <categories>
-        <category>Spring源码</category>
+        <category>Redis</category>
       </categories>
       <tags>
-        <tag>Spring源码</tag>
+        <tag>Redis</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>vmare_workstation16许可证秘钥</title>
+    <url>/archives/59b9c4e6/</url>
+    <content><![CDATA[<p><code>vmare workstation16 player</code>虚拟机许可秘钥</p>
+<blockquote>
+<p>ZF3R0-FHED2-M80TY-8QYGC-NPKYF<br>YF390-0HF8P-M81RQ-2DXQE-M2UT6<br>ZF71R-DMX85-08DQY-8YMNC-PPHV8</p>
+</blockquote>
+<p>如果上面三个已经失效可以使用下面这个秘钥</p>
+<blockquote>
+<p>FA1M0-89YE3-081TQ-AFNX9-NKUC0</p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>软件破解</category>
+      </categories>
+      <tags>
+        <tag>软件破解</tag>
       </tags>
   </entry>
   <entry>
@@ -356,6 +1417,59 @@
 <blockquote>
 <p>从代码中可以看出，<code>beanDefinitionMap</code>是一个Map，并且key是<code>beanName</code>，value是<code>BeanDefinition</code>，<code>beanDefinitionNames</code>是一个集合，并且是线程可见变量集合，用来保存<code>beanName</code>。</p>
 </blockquote>
+]]></content>
+      <categories>
+        <category>Spring源码</category>
+      </categories>
+      <tags>
+        <tag>Spring源码</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>invokeBeanDefinitionRegistryPostProcessors方法解析</title>
+    <url>/archives/79103379/</url>
+    <content><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>首先来回顾一下上周学习的内容。在上周我们主要解析了<code>refresh()</code>方法中的<code>invokeBeanFactoryPostProcessors(beanFactory)</code>方法。这个方法主要是实例化并调用所有注册的<code>BeanFactoryPostProcessor</code>，我们也知道了<code>invokeBeanFactoryPostProcessors</code>方法中主要是处理<code>BeanFactoryPostProcessor</code>接口的，而<code>BeanFactoryPostProcessor</code>是针对<code>BeanFactory</code>的扩展，所以在bean实例化之前，可以读取bean定义，也可以修改bean定义。同时我们说到了在第一次调用bean定义后置处理器的时候会去解析我们的<code>@Import</code>、<code>@Component</code>等注解，而解析这个注解又调用了<code>invokeBeanDefinitionRegistryPostProcessors</code>方法，在这个方法中最终会调用<code>ConfigurationClassPostProcessor</code>类中的<code>processConfigBeanDefinitions</code>方法。上周 没有讲到这个方法，下来我们详细说一下。</p>
+<h3 id="一、processConfigBeanDefinitions方法调用链"><a href="#一、processConfigBeanDefinitions方法调用链" class="headerlink" title="一、processConfigBeanDefinitions方法调用链"></a>一、<code>processConfigBeanDefinitions</code>方法调用链</h3><p><img src="/archives/79103379/invokeBeanDefinitionRegistryPostProcessors%E6%96%B9%E6%B3%95%E8%B0%83%E7%94%A8%E9%93%BE.png" alt="processConfigBeanDefinitions方法调用链"></p>
+<p>跟着<code>processConfigBeanDefinitions</code>方法调用链我们找到这个方法如下图</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">processConfigBeanDefinitions</span><span class="params">(BeanDefinitionRegistry registry)</span> </span>&#123;</span><br><span class="line">	List&lt;BeanDefinitionHolder&gt; configCandidates = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * 获得所有的BeanDefinition的Name，存放到candidateNames</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	String[] candidateNames = registry.getBeanDefinitionNames();</span><br><span class="line"></span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * 循环从所有BeanDefinition拿到配置类并且标记：CONFIGURATION_CLASS_ATTRIBUTE属性</span></span><br><span class="line"><span class="comment">	 * CONFIGURATION_CLASS_ATTRIBUTE属性分两种：</span></span><br><span class="line"><span class="comment">	 * full完整配置类：<span class="doctag">@Configuration</span></span></span><br><span class="line"><span class="comment">	 * lite精简版配置类：<span class="doctag">@Component</span>、<span class="doctag">@Import</span>、<span class="doctag">@ComponentScan</span>、<span class="doctag">@Bean</span>、<span class="doctag">@ImportSource</span></span></span><br><span class="line"><span class="comment">	 *</span></span><br><span class="line"><span class="comment">	 * 内部有两个标记位来标记是否已经处理过了，这里也会有一串只是盲区</span></span><br><span class="line"><span class="comment">	 * 当我们注册配置类的时候，可以不加<span class="doctag">@Configuration</span>注解，直接使用<span class="doctag">@Component</span>、<span class="doctag">@ComponentScan</span>、<span class="doctag">@Import</span>、<span class="doctag">@ImportSource</span>注解，这时候我们称这个类叫Lite配置类</span></span><br><span class="line"><span class="comment">	 * 如果类上加了<span class="doctag">@Configuration</span>注解，我们称这类叫Full配置类</span></span><br><span class="line"><span class="comment">	 * 如果我们注册了Lite配置类，那么我们getBean(...)这个配置类的时候，会发现他就是原本的那个配置类。</span></span><br><span class="line"><span class="comment">	 * 如果我们注册了Full配置类，那么我们getBean(...)这个配置类的时候，会发现他已经不是原本的那个配置类了，反而已经成CGLIB代理的类了。</span></span><br><span class="line"><span class="comment">	 *</span></span><br><span class="line"><span class="comment">	 *</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">for</span> (String beanName : candidateNames) &#123;</span><br><span class="line">		BeanDefinition beanDef = registry.getBeanDefinition(beanName);</span><br><span class="line">		<span class="keyword">if</span> (beanDef.getAttribute(ConfigurationClassUtils.CONFIGURATION_CLASS_ATTRIBUTE) != <span class="keyword">null</span>) &#123;</span><br><span class="line">			<span class="keyword">if</span> (logger.isDebugEnabled()) &#123;</span><br><span class="line">				logger.debug(<span class="string">&quot;Bean definition has already been processed as a configuration class: &quot;</span> + beanDef);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="comment">/**</span></span><br><span class="line"><span class="comment">		 *  检查bean是否是configutation类，同时这里会设置bean定义的元数据以及CONFIGURATION_CLASS_ATTRIBUTE属性（full/lite）</span></span><br><span class="line"><span class="comment">		 *  判断是否为配置类，在ConfigurationClassUtils.checkConfigurationClassCandidate(beanDef,this.metadataReaderFactory)</span></span><br><span class="line"><span class="comment">		 *  内部会做判断，这个类是Full配置类还是Lite配置类，并给CONFIGURATION_CLASS_ATTRIBUTE属性加上full/lite标记</span></span><br><span class="line"><span class="comment">		 *  满足条件下将bean定义封装成BeanDefinitionHolder并加入到configCandidates中</span></span><br><span class="line"><span class="comment">		 */</span></span><br><span class="line">		<span class="keyword">else</span> <span class="keyword">if</span> (ConfigurationClassUtils.checkConfigurationClassCandidate(beanDef, <span class="keyword">this</span>.metadataReaderFactory)) &#123;</span><br><span class="line">			configCandidates.add(<span class="keyword">new</span> BeanDefinitionHolder(beanDef, beanName));</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Return immediately if no @Configuration classes were found</span></span><br><span class="line">	<span class="comment">/** 如果没有注解<span class="doctag">@Configuration</span>类则返回 */</span></span><br><span class="line">	<span class="keyword">if</span> (configCandidates.isEmpty()) &#123;</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Sort by previously determined @Order value, if applicable</span></span><br><span class="line">	<span class="comment">/** 按照注解中<span class="doctag">@Order</span>给定的顺序排序 */</span></span><br><span class="line">	configCandidates.sort((bd1, bd2) -&gt; &#123;</span><br><span class="line">		<span class="keyword">int</span> i1 = ConfigurationClassUtils.getOrder(bd1.getBeanDefinition());</span><br><span class="line">		<span class="keyword">int</span> i2 = ConfigurationClassUtils.getOrder(bd2.getBeanDefinition());</span><br><span class="line">		<span class="keyword">return</span> Integer.compare(i1, i2);</span><br><span class="line">	&#125;);</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Detect any custom bean name generation strategy supplied through the enclosing application context</span></span><br><span class="line">	SingletonBeanRegistry sbr = <span class="keyword">null</span>;</span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * registry是DefaultListableBeanFactory类型，DefaultListableBeanFactory最终会实现SingletonBeanRegistry接口</span></span><br><span class="line"><span class="comment">	 * 所以可以进入这个if</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">if</span> (registry <span class="keyword">instanceof</span> SingletonBeanRegistry) &#123;</span><br><span class="line">		sbr = (SingletonBeanRegistry) registry;</span><br><span class="line">		<span class="keyword">if</span> (!<span class="keyword">this</span>.localBeanNameGeneratorSet) &#123;</span><br><span class="line">			<span class="comment">/**</span></span><br><span class="line"><span class="comment">			 * spring中可以修改默认的bean命名方式，这里就是看用户有没有自定义bean的命名方式。</span></span><br><span class="line"><span class="comment">			 * 如果有自定义bean命名方式，那么会用自定义的bean命名方式替换掉默认命名方式</span></span><br><span class="line"><span class="comment">			 */</span></span><br><span class="line">			BeanNameGenerator generator = (BeanNameGenerator) sbr.getSingleton(</span><br><span class="line">					AnnotationConfigUtils.CONFIGURATION_BEAN_NAME_GENERATOR);</span><br><span class="line">			<span class="keyword">if</span> (generator != <span class="keyword">null</span>) &#123;</span><br><span class="line">				<span class="keyword">this</span>.componentScanBeanNameGenerator = generator;</span><br><span class="line">				<span class="keyword">this</span>.importBeanNameGenerator = generator;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (<span class="keyword">this</span>.environment == <span class="keyword">null</span>) &#123;</span><br><span class="line">		<span class="keyword">this</span>.environment = <span class="keyword">new</span> StandardEnvironment();</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Parse each @Configuration class</span></span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * 创建配置类解析器</span></span><br><span class="line"><span class="comment">	 * 解析<span class="doctag">@Component</span>、<span class="doctag">@ComponentScan</span>、<span class="doctag">@Import</span>、<span class="doctag">@Bean</span>、<span class="doctag">@ImportSource</span></span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	ConfigurationClassParser parser = <span class="keyword">new</span> ConfigurationClassParser(</span><br><span class="line">			<span class="keyword">this</span>.metadataReaderFactory, <span class="keyword">this</span>.problemReporter, <span class="keyword">this</span>.environment,</span><br><span class="line">			<span class="keyword">this</span>.resourceLoader, <span class="keyword">this</span>.componentScanBeanNameGenerator, registry);</span><br><span class="line"></span><br><span class="line">	Set&lt;BeanDefinitionHolder&gt; candidates = <span class="keyword">new</span> LinkedHashSet&lt;&gt;(configCandidates);</span><br><span class="line">	Set&lt;ConfigurationClass&gt; alreadyParsed = <span class="keyword">new</span> HashSet&lt;&gt;(configCandidates.size());</span><br><span class="line">	<span class="keyword">do</span> &#123;</span><br><span class="line">		<span class="comment">/** 这里真正的解析注解，解析配置类，<span class="doctag">@Components</span>、<span class="doctag">@ComponentScan</span>、<span class="doctag">@Import</span>等 */</span></span><br><span class="line">		parser.parse(candidates);</span><br><span class="line">		parser.validate();</span><br><span class="line"></span><br><span class="line">		Set&lt;ConfigurationClass&gt; configClasses = <span class="keyword">new</span> LinkedHashSet&lt;&gt;(parser.getConfigurationClasses());</span><br><span class="line">		configClasses.removeAll(alreadyParsed);</span><br><span class="line"></span><br><span class="line">		<span class="comment">// Read the model and create bean definitions based on its content</span></span><br><span class="line">		<span class="comment">/** 通过ConfigurationClassBeanDefinitionReader读取配置数据，并且根据他的内容创建一个Bean定义 */</span></span><br><span class="line">		<span class="keyword">if</span> (<span class="keyword">this</span>.reader == <span class="keyword">null</span>) &#123;</span><br><span class="line">			<span class="keyword">this</span>.reader = <span class="keyword">new</span> ConfigurationClassBeanDefinitionReader(</span><br><span class="line">					registry, <span class="keyword">this</span>.sourceExtractor, <span class="keyword">this</span>.resourceLoader, <span class="keyword">this</span>.environment,</span><br><span class="line">					<span class="keyword">this</span>.importBeanNameGenerator, parser.getImportRegistry());</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="comment">/**</span></span><br><span class="line"><span class="comment">		 * 注册bean定义</span></span><br><span class="line"><span class="comment">		 * 这一步才会把<span class="doctag">@Import</span>、<span class="doctag">@Bean</span>、<span class="doctag">@ImportSource</span>注解的类转化成BeanDefinition</span></span><br><span class="line"><span class="comment">		 */</span></span><br><span class="line">		<span class="keyword">this</span>.reader.loadBeanDefinitions(configClasses);</span><br><span class="line">		<span class="comment">/**</span></span><br><span class="line"><span class="comment">		 * 把configClasses加入到alreadyParsed</span></span><br><span class="line"><span class="comment">		 */</span></span><br><span class="line">		alreadyParsed.addAll(configClasses);</span><br><span class="line"></span><br><span class="line">		candidates.clear();</span><br><span class="line">		<span class="comment">/**</span></span><br><span class="line"><span class="comment">		 * 获取注册器里面BeanDefinition的数量和candidateNames进行比较</span></span><br><span class="line"><span class="comment">		 * 如果大于的话，说明有新的BeanDefinition注册进来</span></span><br><span class="line"><span class="comment">		 */</span></span><br><span class="line">		<span class="keyword">if</span> (registry.getBeanDefinitionCount() &gt; candidateNames.length) &#123;</span><br><span class="line">			<span class="comment">/** 从注册器里获取BeanDefinitionNames */</span></span><br><span class="line">			String[] newCandidateNames = registry.getBeanDefinitionNames();</span><br><span class="line">			<span class="comment">/** candidateNames转化为set */</span></span><br><span class="line">			Set&lt;String&gt; oldCandidateNames = <span class="keyword">new</span> HashSet&lt;&gt;(Arrays.asList(candidateNames));</span><br><span class="line">			Set&lt;String&gt; alreadyParsedClasses = <span class="keyword">new</span> HashSet&lt;&gt;();</span><br><span class="line">			<span class="comment">/** 循环alreadyParsed，把ConfigurationClass加入到alreadyParsedClasses */</span></span><br><span class="line">			<span class="keyword">for</span> (ConfigurationClass configurationClass : alreadyParsed) &#123;</span><br><span class="line">				alreadyParsedClasses.add(configurationClass.getMetadata().getClassName());</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">for</span> (String candidateName : newCandidateNames) &#123;</span><br><span class="line">				<span class="keyword">if</span> (!oldCandidateNames.contains(candidateName)) &#123;</span><br><span class="line">					BeanDefinition bd = registry.getBeanDefinition(candidateName);</span><br><span class="line">					<span class="comment">/** checkConfigurationClassCandidate(...)判断bean是否符合注入条件 */</span></span><br><span class="line">					<span class="keyword">if</span> (ConfigurationClassUtils.checkConfigurationClassCandidate(bd, <span class="keyword">this</span>.metadataReaderFactory) &amp;&amp;</span><br><span class="line">							!alreadyParsedClasses.contains(bd.getBeanClassName())) &#123;</span><br><span class="line">						candidates.add(<span class="keyword">new</span> BeanDefinitionHolder(bd, candidateName));</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">			candidateNames = newCandidateNames;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">while</span> (!candidates.isEmpty());</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Register the ImportRegistry as a bean in order to support ImportAware @Configuration classes</span></span><br><span class="line">	<span class="comment">/** 将 ImportRegistry 注册为 bean 以支持 ImportAware <span class="doctag">@Configuration</span> 类 */</span></span><br><span class="line">	<span class="keyword">if</span> (sbr != <span class="keyword">null</span> &amp;&amp; !sbr.containsSingleton(IMPORT_REGISTRY_BEAN_NAME)) &#123;</span><br><span class="line">		sbr.registerSingleton(IMPORT_REGISTRY_BEAN_NAME, parser.getImportRegistry());</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (<span class="keyword">this</span>.metadataReaderFactory <span class="keyword">instanceof</span> CachingMetadataReaderFactory) &#123;</span><br><span class="line">		<span class="comment">// Clear cache in externally provided MetadataReaderFactory; this is a no-op</span></span><br><span class="line">		<span class="comment">// for a shared cache since it&#x27;ll be cleared by the ApplicationContext.</span></span><br><span class="line">		((CachingMetadataReaderFactory) <span class="keyword">this</span>.metadataReaderFactory).clearCache();</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="二、解析"><a href="#二、解析" class="headerlink" title="二、解析"></a>二、解析</h2><p>找到方法实现之后，接下来我们对方法中逻辑做一下解释。</p>
+<h3 id="1、获取所有BeanName"><a href="#1、获取所有BeanName" class="headerlink" title="1、获取所有BeanName"></a>1、获取所有<code>BeanName</code></h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/** 获得所有的BeanDefinition的Name，存放到candidateNames */</span></span><br><span class="line">String[] candidateNames = registry.getBeanDefinitionNames();</span><br></pre></td></tr></table></figure>
+
+<p>来获取所有<code>BeanName</code>，并将其放入<code>candidateNames</code>数组中；</p>
+<h3 id="2、循环candidateNames数组"><a href="#2、循环candidateNames数组" class="headerlink" title="2、循环candidateNames数组"></a>2、循环<code>candidateNames</code>数组</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> (String beanName : candidateNames) &#123;</span><br><span class="line">	BeanDefinition beanDef = registry.getBeanDefinition(beanName);</span><br><span class="line">	<span class="keyword">if</span> (beanDef.getAttribute(ConfigurationClassUtils.CONFIGURATION_CLASS_ATTRIBUTE) != <span class="keyword">null</span>) &#123;</span><br><span class="line">		<span class="keyword">if</span> (logger.isDebugEnabled()) &#123;</span><br><span class="line">			logger.debug(<span class="string">&quot;Bean definition has already been processed as a configuration class: &quot;</span> + beanDef);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 *  检查bean是否是configutation类，同时这里会设置bean定义的元数据以及CONFIGURATION_CLASS_ATTRIBUTE属性（full/lite）</span></span><br><span class="line"><span class="comment">	 *  判断是否为配置类，在ConfigurationClassUtils.checkConfigurationClassCandidate(beanDef,this.metadataReaderFactory)</span></span><br><span class="line"><span class="comment">	 *  内部会做判断，这个类是Full配置类还是Lite配置类，并给CONFIGURATION_CLASS_ATTRIBUTE属性加上full/lite标记</span></span><br><span class="line"><span class="comment">	 *  满足条件下将bean定义封装成BeanDefinitionHolder并加入到configCandidates中</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">else</span> <span class="keyword">if</span> (ConfigurationClassUtils.checkConfigurationClassCandidate(beanDef, <span class="keyword">this</span>.metadataReaderFactory)) &#123;</span><br><span class="line">		configCandidates.add(<span class="keyword">new</span> BeanDefinitionHolder(beanDef, beanName));</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>循环在第一步获取到的<code>candidateNames</code>数组，根据<code>beanName</code>获得<code>BeanDefinition</code>，判断此<code>BeanDefinition</code>是否已经被处理过了；接着会判断是否为配置类，如果是的话。加入到<code>configCandidates</code>数组；在判断的时候还会标记配置类是属于<code>Full</code>配置类还是属于<code>Lite</code>配置类。</p>
+<blockquote>
+<p><strong>扫盲点：</strong></p>
+<ol>
+<li>当注册配置类的时候，可以不加<code>@Configuration</code>注解，直接使用<code>@Component</code>、<code>@ComponentScan</code>、<code>@Import</code>、<code>@ImportResource</code>等注解，在Spring中这类的配置类称为<code>Lite</code>配置类，如果加了<code>@Component</code>注解，就称之为<code>Full</code>配置类。</li>
+<li>如果注册了<code>Lite</code>配置类，当我们在使用<code>getBean()</code>获取这配置类时，会发现他就是原本的那个配置类，如果我们注册了<code>Full</code>配置类，再通过<code>getBean()</code>获取这个配置类的时候，会发现他已经不是原来的那个配置类了，而是被<code>CGLIB</code>代理之后的类。</li>
+<li>写一个A类，其中有一个构造方法，打印出”hello word”，在写一个配置类，里面有两个被<code>@Bean</code>注解的方法，其中一个方法<code>new </code>了A类，并且返回A对象，把此方法称之为<code>getA</code>，第二个方法有调用了<code>getA</code>方法，如果配置类是<code>Lite</code>配置类，会发现打印了两次”hello word”，也就是说A类被new了两次，如果配置类是<code>Full</code>配置类，会发现只打印一次”hello word”，也就是说A类被new了一次，这是因为这个类被<code>CGLIB</code>代理了，方法已经被改写了。</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">A</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="title">A</span><span class="params">()</span></span>&#123;System.out.println(<span class="string">&quot;hello word&quot;</span>);&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Configuration</span> <span class="comment">// 只会打印一次&quot;hello word&quot;</span></span><br><span class="line"><span class="meta">@Component</span> <span class="comment">// 会打印两次&quot;hello Word&quot;</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">B</span> </span>&#123;</span><br><span class="line">  <span class="meta">@AutoWired</span></span><br><span class="line">  <span class="keyword">private</span> A a;</span><br><span class="line">  </span><br><span class="line">  <span class="meta">@Bean</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> A <span class="title">getA</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> A();</span><br><span class="line">  &#125;</span><br><span class="line">  </span><br><span class="line">  <span class="meta">@Bean</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> A <span class="title">getA2</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> getA();</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+</blockquote>
+<h3 id="3、是否有注解-Configuration"><a href="#3、是否有注解-Configuration" class="headerlink" title="3、是否有注解@Configuration"></a>3、是否有注解<code>@Configuration</code></h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">if</span> (configCandidates.isEmpty()) &#123;</span><br><span class="line">	<span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>判断bean有没有被<code>@Configuration</code>标记，如果没有被标记说明不是配置类，直接返回</p>
+<h3 id="4、根据-Order排序"><a href="#4、根据-Order排序" class="headerlink" title="4、根据@Order排序"></a>4、根据<code>@Order</code>排序</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line">configCandidates.sort((bd1, bd2) -&gt; &#123;</span><br><span class="line">	<span class="keyword">int</span> i1 = ConfigurationClassUtils.getOrder(bd1.getBeanDefinition());</span><br><span class="line">	<span class="keyword">int</span> i2 = ConfigurationClassUtils.getOrder(bd2.getBeanDefinition());</span><br><span class="line">	<span class="keyword">return</span> Integer.compare(i1, i2);</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>这里会按照<code>@Order</code>中指定的顺序进行排序</p>
+<h3 id="5、解析配置类"><a href="#5、解析配置类" class="headerlink" title="5、解析配置类"></a>5、解析配置类</h3><p>通过<code>parser.parse</code>方法来解析配置类，改配置类可能是<code>Full</code>配置类，也可能是<code>Lite</code>配置类，进入到这个方法中看一看</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">parse</span><span class="params">(Set&lt;BeanDefinitionHolder&gt; configCandidates)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">for</span> (BeanDefinitionHolder holder : configCandidates) &#123;</span><br><span class="line">		BeanDefinition bd = holder.getBeanDefinition();</span><br><span class="line">		<span class="keyword">try</span> &#123;</span><br><span class="line">			<span class="comment">/**</span></span><br><span class="line"><span class="comment">			 * 如果BeanDefinition是AnnotatedBeanDefinition实例，解析注解</span></span><br><span class="line"><span class="comment">			 */</span></span><br><span class="line">			<span class="keyword">if</span> (bd <span class="keyword">instanceof</span> AnnotatedBeanDefinition) &#123;</span><br><span class="line">				<span class="comment">/** 解析配置类，<span class="doctag">@Component</span>、<span class="doctag">@Components</span>、<span class="doctag">@Import</span>等 */</span></span><br><span class="line">				parse(((AnnotatedBeanDefinition) bd).getMetadata(), holder.getBeanName());</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">else</span> <span class="keyword">if</span> (bd <span class="keyword">instanceof</span> AbstractBeanDefinition &amp;&amp; ((AbstractBeanDefinition) bd).hasBeanClass()) &#123;</span><br><span class="line">				parse(((AbstractBeanDefinition) bd).getBeanClass(), holder.getBeanName());</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">else</span> &#123;</span><br><span class="line">				parse(bd.getBeanClassName(), holder.getBeanName());</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">catch</span> (BeanDefinitionStoreException ex) &#123;</span><br><span class="line">			<span class="keyword">throw</span> ex;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">catch</span> (Throwable ex) &#123;</span><br><span class="line">			<span class="keyword">throw</span> <span class="keyword">new</span> BeanDefinitionStoreException(</span><br><span class="line">					<span class="string">&quot;Failed to parse configuration class [&quot;</span> + bd.getBeanClassName() + <span class="string">&quot;]&quot;</span>, ex);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">this</span>.deferredImportSelectorHandler.process();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>因为这里可以配置多个配置类，所以需要做循环处理，因为我们的配置类是<code>AnnotatedBeanDefinition</code>的实例，所以这里会进入到第一个if中的<code>parse()</code>方法中，我们继续点进入看一看逻辑</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">final</span> <span class="keyword">void</span> <span class="title">parse</span><span class="params">(AnnotationMetadata metadata, String beanName)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">	processConfigurationClass(<span class="keyword">new</span> ConfigurationClass(metadata, beanName), DEFAULT_EXCLUSION_FILTER);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">processConfigurationClass</span><span class="params">(ConfigurationClass configClass, Predicate&lt;String&gt; filter)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * 判断是否跳过注解,解析<span class="doctag">@Conditional</span>注解</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">if</span> (<span class="keyword">this</span>.conditionEvaluator.shouldSkip(configClass.getMetadata(), ConfigurationPhase.PARSE_CONFIGURATION)) &#123;</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	ConfigurationClass existingClass = <span class="keyword">this</span>.configurationClasses.get(configClass);</span><br><span class="line">	<span class="keyword">if</span> (existingClass != <span class="keyword">null</span>) &#123;</span><br><span class="line">		<span class="keyword">if</span> (configClass.isImported()) &#123;</span><br><span class="line">			<span class="keyword">if</span> (existingClass.isImported()) &#123;</span><br><span class="line">				existingClass.mergeImportedBy(configClass);</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="comment">// Otherwise ignore new imported config class; existing non-imported class overrides it.</span></span><br><span class="line">			<span class="keyword">return</span>;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">else</span> &#123;</span><br><span class="line">			<span class="comment">// Explicit bean definition found, probably replacing an import.</span></span><br><span class="line">			<span class="comment">// Let&#x27;s remove the old one and go with the new one.</span></span><br><span class="line">			<span class="keyword">this</span>.configurationClasses.remove(configClass);</span><br><span class="line">			<span class="keyword">this</span>.knownSuperclasses.values().removeIf(configClass::equals);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Recursively process the configuration class and its superclass hierarchy.</span></span><br><span class="line">	<span class="comment">/** 递归处理配置类及其子类的层次结构 */</span></span><br><span class="line">	SourceClass sourceClass = asSourceClass(configClass, filter);</span><br><span class="line">	<span class="keyword">do</span> &#123;</span><br><span class="line">		<span class="comment">/**</span></span><br><span class="line"><span class="comment">		 * 重点关注的方法</span></span><br><span class="line"><span class="comment">		 * 解析注解<span class="doctag">@Component</span>、<span class="doctag">@ComponentScan</span>、<span class="doctag">@Components</span>、<span class="doctag">@Import</span>等</span></span><br><span class="line"><span class="comment">		 */</span></span><br><span class="line">		sourceClass = doProcessConfigurationClass(configClass, sourceClass, filter);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">while</span> (sourceClass != <span class="keyword">null</span>);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">this</span>.configurationClasses.put(configClass, configClass);</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>这个方法中进行了判断，以及递归配置类，最终调用<code>doProcessConfigurationClass</code>，来正则实现解析注解</p>
+<h3 id="6、doProcessConfigurationClass执行真正解析注解"><a href="#6、doProcessConfigurationClass执行真正解析注解" class="headerlink" title="6、doProcessConfigurationClass执行真正解析注解"></a>6、<code>doProcessConfigurationClass</code>执行真正解析注解</h3><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Nullable</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">final</span> SourceClass <span class="title">doProcessConfigurationClass</span><span class="params">(</span></span></span><br><span class="line"><span class="params"><span class="function">		ConfigurationClass configClass, SourceClass sourceClass, Predicate&lt;String&gt; filter)</span></span></span><br><span class="line"><span class="function">		<span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/** 解析注解<span class="doctag">@Component</span> */</span></span><br><span class="line">	<span class="keyword">if</span> (configClass.getMetadata().isAnnotated(Component.class.getName())) &#123;</span><br><span class="line">		<span class="comment">// Recursively process any member (nested) classes first</span></span><br><span class="line">		processMemberClasses(configClass, sourceClass, filter);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Process any @PropertySource annotations</span></span><br><span class="line">	<span class="comment">/** 解析注解<span class="doctag">@PropertySource</span>，<span class="doctag">@PropertySource</span>注解用来加载properties文件 */</span></span><br><span class="line">	<span class="keyword">for</span> (AnnotationAttributes propertySource : AnnotationConfigUtils.attributesForRepeatable(</span><br><span class="line">			sourceClass.getMetadata(), PropertySources.class,</span><br><span class="line">			org.springframework.context.annotation.PropertySource.class)) &#123;</span><br><span class="line">		<span class="keyword">if</span> (<span class="keyword">this</span>.environment <span class="keyword">instanceof</span> ConfigurableEnvironment) &#123;</span><br><span class="line">			processPropertySource(propertySource);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">else</span> &#123;</span><br><span class="line">			logger.info(<span class="string">&quot;Ignoring @PropertySource annotation on [&quot;</span> + sourceClass.getMetadata().getClassName() +</span><br><span class="line">					<span class="string">&quot;]. Reason: Environment must implement ConfigurableEnvironment&quot;</span>);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Process any @ComponentScan annotations</span></span><br><span class="line">	<span class="comment">/** 解析注解<span class="doctag">@ComponentScan</span>， <span class="doctag">@ComponentScan</span>注解除了常用的basePackage之外，还有includeFilters，excludeFilters等属性  */</span></span><br><span class="line">	Set&lt;AnnotationAttributes&gt; componentScans = AnnotationConfigUtils.attributesForRepeatable(</span><br><span class="line">			sourceClass.getMetadata(), ComponentScans.class, ComponentScan.class);</span><br><span class="line">	<span class="comment">/** 如果没有加<span class="doctag">@ComponentScan</span>注解或者用<span class="doctag">@Condition</span>注解跳过的，就不再进入这个if */</span></span><br><span class="line">	<span class="keyword">if</span> (!componentScans.isEmpty() &amp;&amp;</span><br><span class="line">			!<span class="keyword">this</span>.conditionEvaluator.shouldSkip(sourceClass.getMetadata(), ConfigurationPhase.REGISTER_BEAN)) &#123;</span><br><span class="line">		<span class="keyword">for</span> (AnnotationAttributes componentScan : componentScans) &#123;</span><br><span class="line">			<span class="comment">// The config class is annotated with @ComponentScan -&gt; perform the scan immediately</span></span><br><span class="line">			<span class="comment">/** 如果一个类配置了<span class="doctag">@ComponentScan</span>注解，则会立即执行parse(...)进行扫描，sourceClass.getMetadata().getClassName()就是配置类的名称 */</span></span><br><span class="line">			Set&lt;BeanDefinitionHolder&gt; scannedBeanDefinitions =</span><br><span class="line">					<span class="keyword">this</span>.componentScanParser.parse(componentScan, sourceClass.getMetadata().getClassName());</span><br><span class="line">			<span class="comment">// Check the set of scanned definitions for any further config classes and parse recursively if needed</span></span><br><span class="line">			<span class="comment">/** 检查其他的配置类是否设置了扫描定义，并且在需要的是否递归解析 */</span></span><br><span class="line">			<span class="keyword">for</span> (BeanDefinitionHolder holder : scannedBeanDefinitions) &#123;</span><br><span class="line">				BeanDefinition bdCand = holder.getBeanDefinition().getOriginatingBeanDefinition();</span><br><span class="line">				<span class="keyword">if</span> (bdCand == <span class="keyword">null</span>) &#123;</span><br><span class="line">					bdCand = holder.getBeanDefinition();</span><br><span class="line">				&#125;</span><br><span class="line">				<span class="keyword">if</span> (ConfigurationClassUtils.checkConfigurationClassCandidate(bdCand, <span class="keyword">this</span>.metadataReaderFactory)) &#123;</span><br><span class="line">					<span class="comment">// 二次扫描，因为可能组件类有被@Bean标记的方法，或者组件类本身也有@ComponentScan注解，需要再一次扫描</span></span><br><span class="line">					parse(bdCand.getBeanClassName(), holder.getBeanName());</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Process any @Import annotations</span></span><br><span class="line">	<span class="comment">/** 解析<span class="doctag">@Import</span>注解</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@Import</span> 注解是spring中很重要的一个注解，SpringBoot中大量应用了这个注解</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@Import</span> 三种类， 一种是<span class="doctag">@Import</span>普通类，一种是Import ImportSelector，还有一种是Import ImportBeanDefinitionRegister</span></span><br><span class="line"><span class="comment">	 * getImports(sourceClass)是获取import的内容，返回的是一个set</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	processImports(configClass, sourceClass, getImports(sourceClass), filter, <span class="keyword">true</span>);</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Process any @ImportResource annotations</span></span><br><span class="line">	<span class="comment">/** 解析<span class="doctag">@ImportResource</span>注解 */</span></span><br><span class="line">	AnnotationAttributes importResource =</span><br><span class="line">			AnnotationConfigUtils.attributesFor(sourceClass.getMetadata(), ImportResource.class);</span><br><span class="line">	<span class="keyword">if</span> (importResource != <span class="keyword">null</span>) &#123;</span><br><span class="line">		String[] resources = importResource.getStringArray(<span class="string">&quot;locations&quot;</span>);</span><br><span class="line">		Class&lt;? extends BeanDefinitionReader&gt; readerClass = importResource.getClass(<span class="string">&quot;reader&quot;</span>);</span><br><span class="line">		<span class="keyword">for</span> (String resource : resources) &#123;</span><br><span class="line">			String resolvedResource = <span class="keyword">this</span>.environment.resolveRequiredPlaceholders(resource);</span><br><span class="line">			configClass.addImportedResource(resolvedResource, readerClass);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Process individual @Bean methods</span></span><br><span class="line">	<span class="comment">/** 解析<span class="doctag">@Bean</span>注解 可以看出获取了带<span class="doctag">@Bean</span>的方法后，不是马上转换成BeanDefinition，而是先用一个set&lt;AnnotationAttributes&gt;接收 */</span></span><br><span class="line">	Set&lt;MethodMetadata&gt; beanMethods = retrieveBeanMethodMetadata(sourceClass);</span><br><span class="line">	<span class="keyword">for</span> (MethodMetadata methodMetadata : beanMethods) &#123;</span><br><span class="line">		configClass.addBeanMethod(<span class="keyword">new</span> BeanMethod(methodMetadata, configClass));</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Process default methods on interfaces</span></span><br><span class="line">	<span class="comment">/** 解析接口默认方法 */</span></span><br><span class="line">	processInterfaces(configClass, sourceClass);</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Process superclass, if any</span></span><br><span class="line">	<span class="comment">/** 解析超类 */</span></span><br><span class="line">	<span class="keyword">if</span> (sourceClass.getMetadata().hasSuperClass()) &#123;</span><br><span class="line">		String superclass = sourceClass.getMetadata().getSuperClassName();</span><br><span class="line">		<span class="keyword">if</span> (superclass != <span class="keyword">null</span> &amp;&amp; !superclass.startsWith(<span class="string">&quot;java&quot;</span>) &amp;&amp;</span><br><span class="line">				!<span class="keyword">this</span>.knownSuperclasses.containsKey(superclass)) &#123;</span><br><span class="line">			<span class="keyword">this</span>.knownSuperclasses.put(superclass, configClass);</span><br><span class="line">			<span class="comment">// Superclass found, return its annotation metadata and recurse</span></span><br><span class="line">			<span class="keyword">return</span> sourceClass.getSuperClass();</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// No superclass -&gt; processing is complete</span></span><br><span class="line">	<span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在这个方法中才是我们关注的重点，这里将会解析<code>@Component</code>、<code>@PropertySource</code>、<code>@Import</code>、<code>@ImportResource</code>、<code>@Bean</code>注解，并且他们的解析顺序也是从左到右一次进行解析。</p>
+<p><img src="/archives/79103379/image-20210906170334883.png" alt="doProcessConfigurationClass解析流程"></p>
 ]]></content>
       <categories>
         <category>Spring源码</category>

@@ -6,7 +6,7 @@
   <link href="https://www.lihuibin.top/atom.xml" rel="self"/>
   
   <link href="https://www.lihuibin.top/"/>
-  <updated>2021-09-03T13:51:21.406Z</updated>
+  <updated>2021-10-01T14:14:41.407Z</updated>
   <id>https://www.lihuibin.top/</id>
   
   <author>
@@ -17,12 +17,374 @@
   <generator uri="https://hexo.io/">Hexo</generator>
   
   <entry>
-    <title>processConfigBeanDefinitions方法解析</title>
+    <title>Redis缓存那些事</title>
+    <link href="https://www.lihuibin.top/archives/cfd129cc/"/>
+    <id>https://www.lihuibin.top/archives/cfd129cc/</id>
+    <published>2021-10-01T13:48:18.000Z</published>
+    <updated>2021-10-01T14:14:41.407Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h2 id=&quot;Redis有哪些特性？&quot;&gt;&lt;a href=&quot;#Redis有哪些特性？&quot; class=&quot;headerlink&quot;</summary>
+        
+      
+    
+    
+    
+    <category term="面试宝典" scheme="https://www.lihuibin.top/categories/%E9%9D%A2%E8%AF%95%E5%AE%9D%E5%85%B8/"/>
+    
+    
+    <category term="面试宝典" scheme="https://www.lihuibin.top/tags/%E9%9D%A2%E8%AF%95%E5%AE%9D%E5%85%B8/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Redis键值设计规范与性能优化</title>
+    <link href="https://www.lihuibin.top/archives/c0eb8ebf/"/>
+    <id>https://www.lihuibin.top/archives/c0eb8ebf/</id>
+    <published>2021-09-30T06:47:37.000Z</published>
+    <updated>2021-10-01T13:46:40.136Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h2 id=&quot;一、键值设计&quot;&gt;&lt;a href=&quot;#一、键值设计&quot; class=&quot;headerlink&quot; title=&quot;一、键值设计&quot;&gt;&lt;/a&gt;一、键值设计&lt;/h2&gt;&lt;h3 id=&quot;1、key名设计&quot;&gt;&lt;a href=&quot;#1、key名设计&quot; class=&quot;headerlink&quot;</summary>
+        
+      
+    
+    
+    
+    <category term="Redis" scheme="https://www.lihuibin.top/categories/Redis/"/>
+    
+    
+    <category term="Redis" scheme="https://www.lihuibin.top/tags/Redis/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Redis缓存失效和缓存雪崩以及热点缓存key重建优化</title>
+    <link href="https://www.lihuibin.top/archives/134045b4/"/>
+    <id>https://www.lihuibin.top/archives/134045b4/</id>
+    <published>2021-09-30T03:25:30.000Z</published>
+    <updated>2021-10-01T13:46:40.130Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h2 id=&quot;缓存失效-击穿&quot;&gt;&lt;a href=&quot;#缓存失效-击穿&quot; class=&quot;headerlink&quot;</summary>
+        
+      
+    
+    
+    
+    <category term="Redis" scheme="https://www.lihuibin.top/categories/Redis/"/>
+    
+    
+    <category term="Redis" scheme="https://www.lihuibin.top/tags/Redis/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Redis缓存穿透</title>
+    <link href="https://www.lihuibin.top/archives/f435d36e/"/>
+    <id>https://www.lihuibin.top/archives/f435d36e/</id>
+    <published>2021-09-29T08:06:46.000Z</published>
+    <updated>2021-10-01T13:46:40.134Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;缓存穿透是指查询一个根本不存在的数据，缓存层和存储层都不会命中，通常处于容错的考虑，如果从存储层查不到数据则不写入缓存层。&lt;br&gt;缓存层将导致不存在的数据每次请求都要存储层去查询，失去了缓存保护后端存储的意义。&lt;br&gt;造成缓存穿透的基本原因有两个：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li</summary>
+        
+      
+    
+    
+    
+    <category term="Redis" scheme="https://www.lihuibin.top/categories/Redis/"/>
+    
+    
+    <category term="Redis" scheme="https://www.lihuibin.top/tags/Redis/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>html播放.m3u8格式视频</title>
+    <link href="https://www.lihuibin.top/archives/e6ea49db/"/>
+    <id>https://www.lihuibin.top/archives/e6ea49db/</id>
+    <published>2021-09-26T09:07:22.000Z</published>
+    <updated>2021-10-01T13:46:40.174Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;播放&lt;code&gt;.m3u8&lt;/code&gt;格式视频时需要借助&lt;code&gt;hls.js&lt;/code&gt;，为了下载速度快点，我们直接通过国内的cdn访问&lt;a</summary>
+        
+      
+    
+    
+    
+    <category term="html" scheme="https://www.lihuibin.top/categories/html/"/>
+    
+    
+    <category term="html" scheme="https://www.lihuibin.top/tags/html/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Redis高可用集群水平扩展</title>
+    <link href="https://www.lihuibin.top/archives/c709d40a/"/>
+    <id>https://www.lihuibin.top/archives/c709d40a/</id>
+    <published>2021-09-24T04:42:34.000Z</published>
+    <updated>2021-10-01T13:46:40.164Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h2 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h2&gt;&lt;p&gt;在&lt;a</summary>
+        
+      
+    
+    
+    
+    <category term="Redis" scheme="https://www.lihuibin.top/categories/Redis/"/>
+    
+    
+    <category term="Redis" scheme="https://www.lihuibin.top/tags/Redis/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Redis集群原理分析</title>
+    <link href="https://www.lihuibin.top/archives/c0af2eb/"/>
+    <id>https://www.lihuibin.top/archives/c0af2eb/</id>
+    <published>2021-09-22T01:03:39.000Z</published>
+    <updated>2021-10-01T13:46:40.137Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h2 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h2&gt;&lt;p&gt;Redis</summary>
+        
+      
+    
+    
+    
+    <category term="Redis" scheme="https://www.lihuibin.top/categories/Redis/"/>
+    
+    
+    <category term="Redis" scheme="https://www.lihuibin.top/tags/Redis/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Redis高可用集群部署</title>
+    <link href="https://www.lihuibin.top/archives/1d883d6c/"/>
+    <id>https://www.lihuibin.top/archives/1d883d6c/</id>
+    <published>2021-09-18T04:24:13.000Z</published>
+    <updated>2021-10-01T13:46:40.172Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h2 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h2&gt;&lt;p&gt;在&lt;a</summary>
+        
+      
+    
+    
+    
+    <category term="Redis" scheme="https://www.lihuibin.top/categories/Redis/"/>
+    
+    
+    <category term="Redis" scheme="https://www.lihuibin.top/tags/Redis/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Redis持久化</title>
+    <link href="https://www.lihuibin.top/archives/119ed1dc/"/>
+    <id>https://www.lihuibin.top/archives/119ed1dc/</id>
+    <published>2021-09-16T01:03:31.000Z</published>
+    <updated>2021-10-01T13:46:40.124Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h2 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot;</summary>
+        
+      
+    
+    
+    
+    <category term="Redis" scheme="https://www.lihuibin.top/categories/Redis/"/>
+    
+    
+    <category term="Redis" scheme="https://www.lihuibin.top/tags/Redis/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Redis哨兵架构搭建</title>
+    <link href="https://www.lihuibin.top/archives/8bd0f0fd/"/>
+    <id>https://www.lihuibin.top/archives/8bd0f0fd/</id>
+    <published>2021-09-14T09:02:23.000Z</published>
+    <updated>2021-10-01T13:46:40.110Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h1 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h1&gt;&lt;p&gt;安装Redis教程这里就不说了，我们在之前搭建的&lt;a</summary>
+        
+      
+    
+    
+    
+    <category term="Redis" scheme="https://www.lihuibin.top/categories/Redis/"/>
+    
+    
+    <category term="Redis" scheme="https://www.lihuibin.top/tags/Redis/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Redis主从工作原理</title>
+    <link href="https://www.lihuibin.top/archives/1b578af4/"/>
+    <id>https://www.lihuibin.top/archives/1b578af4/</id>
+    <published>2021-09-14T07:24:58.000Z</published>
+    <updated>2021-10-01T13:46:40.075Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h1 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h1&gt;&lt;p&gt;接前面讲到的&lt;a</summary>
+        
+      
+    
+    
+    
+    <category term="Redis" scheme="https://www.lihuibin.top/categories/Redis/"/>
+    
+    
+    <category term="Redis" scheme="https://www.lihuibin.top/tags/Redis/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Linux安装配置Redis</title>
+    <link href="https://www.lihuibin.top/archives/a813391e/"/>
+    <id>https://www.lihuibin.top/archives/a813391e/</id>
+    <published>2021-09-14T04:33:19.000Z</published>
+    <updated>2021-10-01T13:46:40.059Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h2 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;Redis版本 6.2.5&lt;/li&gt;
+&lt;li&gt;服务器版本 Linux Centos 7.6</summary>
+        
+      
+    
+    
+    
+    <category term="Redis" scheme="https://www.lihuibin.top/categories/Redis/"/>
+    
+    
+    <category term="Redis" scheme="https://www.lihuibin.top/tags/Redis/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>redis主从架构搭建</title>
+    <link href="https://www.lihuibin.top/archives/ba77e58/"/>
+    <id>https://www.lihuibin.top/archives/ba77e58/</id>
+    <published>2021-09-14T03:15:37.000Z</published>
+    <updated>2021-10-01T13:46:40.199Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h2 id=&quot;一、环境准备&quot;&gt;&lt;a href=&quot;#一、环境准备&quot; class=&quot;headerlink&quot;</summary>
+        
+      
+    
+    
+    
+    <category term="Redis" scheme="https://www.lihuibin.top/categories/Redis/"/>
+    
+    
+    <category term="Redis" scheme="https://www.lihuibin.top/tags/Redis/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>vmare_workstation16许可证秘钥</title>
+    <link href="https://www.lihuibin.top/archives/59b9c4e6/"/>
+    <id>https://www.lihuibin.top/archives/59b9c4e6/</id>
+    <published>2021-09-13T09:11:18.000Z</published>
+    <updated>2021-10-01T13:46:40.206Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;&lt;code&gt;vmare workstation16</summary>
+        
+      
+    
+    
+    
+    <category term="软件破解" scheme="https://www.lihuibin.top/categories/%E8%BD%AF%E4%BB%B6%E7%A0%B4%E8%A7%A3/"/>
+    
+    
+    <category term="软件破解" scheme="https://www.lihuibin.top/tags/%E8%BD%AF%E4%BB%B6%E7%A0%B4%E8%A7%A3/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>invokeBeanDefinitionRegistryPostProcessors方法解析</title>
     <link href="https://www.lihuibin.top/archives/79103379/"/>
     <id>https://www.lihuibin.top/archives/79103379/</id>
     <published>2021-08-28T06:29:17.000Z</published>
-    <updated>2021-09-03T13:51:21.406Z</updated>
+    <updated>2021-10-01T13:46:40.175Z</updated>
     
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h2 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot;</summary>
+        
+      
     
     
     
@@ -155,109 +517,6 @@
     
     
     <category term="Spring源码" scheme="https://www.lihuibin.top/tags/Spring%E6%BA%90%E7%A0%81/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Spring-IOC原理(一)</title>
-    <link href="https://www.lihuibin.top/archives/81aeb1f/"/>
-    <id>https://www.lihuibin.top/archives/81aeb1f/</id>
-    <published>2021-08-13T09:39:44.000Z</published>
-    <updated>2021-09-03T13:51:21.310Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;h2 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot;</summary>
-        
-      
-    
-    
-    
-    <category term="Spring源码" scheme="https://www.lihuibin.top/categories/Spring%E6%BA%90%E7%A0%81/"/>
-    
-    
-    <category term="Spring源码" scheme="https://www.lihuibin.top/tags/Spring%E6%BA%90%E7%A0%81/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>设计模式-工厂模式</title>
-    <link href="https://www.lihuibin.top/archives/ccff2b22/"/>
-    <id>https://www.lihuibin.top/archives/ccff2b22/</id>
-    <published>2021-08-10T06:08:06.000Z</published>
-    <updated>2021-08-14T03:37:45.601Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;h1 id=&quot;工厂模式&quot;&gt;&lt;a href=&quot;#工厂模式&quot; class=&quot;headerlink&quot;</summary>
-        
-      
-    
-    
-    
-    <category term="设计模式" scheme="https://www.lihuibin.top/categories/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"/>
-    
-    
-    <category term="设计模式" scheme="https://www.lihuibin.top/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>hexo静态页面图片不显示问题</title>
-    <link href="https://www.lihuibin.top/archives/e4419141/"/>
-    <id>https://www.lihuibin.top/archives/e4419141/</id>
-    <published>2021-07-28T04:22:14.000Z</published>
-    <updated>2021-09-03T13:51:21.351Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;p&gt;hexo静态页面图片不显示一般有几个原因：&lt;/p&gt;
-&lt;p&gt;1、&lt;code&gt;_config.yml&lt;/code&gt;中没有设置&lt;code&gt;post_asset_folder: true&lt;/code&gt;；这个设置默认是false&lt;/p&gt;
-&lt;p&gt;2、没有安装插件</summary>
-        
-      
-    
-    
-    
-    <category term="解决方案" scheme="https://www.lihuibin.top/categories/%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/"/>
-    
-    
-    <category term="问题解决" scheme="https://www.lihuibin.top/tags/%E9%97%AE%E9%A2%98%E8%A7%A3%E5%86%B3/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>hexo+github搭建博客详细教程</title>
-    <link href="https://www.lihuibin.top/archives/8eb04e19/"/>
-    <id>https://www.lihuibin.top/archives/8eb04e19/</id>
-    <published>2021-07-27T05:49:32.000Z</published>
-    <updated>2021-07-29T13:49:39.628Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;p&gt;经历了两天的折腾，终于搭建好了个人博客。由于第一次搭建个人博客，所以在搭建过程中也遇到了很多的问题。现在特意整理一下整个搭建过程以及中间遇到的问题。&lt;/p&gt;
-&lt;h4 id=&quot;一、软件准备&quot;&gt;&lt;a href=&quot;#一、软件准备&quot; class=&quot;headerlink&quot;</summary>
-        
-      
-    
-    
-    
-    <category term="解决方案" scheme="https://www.lihuibin.top/categories/%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/"/>
-    
-    
-    <category term="环境搭建" scheme="https://www.lihuibin.top/tags/%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA/"/>
     
   </entry>
   

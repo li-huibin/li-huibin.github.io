@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+  
+
+    <head>
+      <meta charset="utf-8" />
+       
+      <meta
+        name="keywords"
+        content="Redis键值设计规范与性能优化,lihuibin,lhb,Java,hexo+github,spring,springboot,springcloud,nacos,jvm,mysql,k8s,docker,gateway,springcloudAlibaba"
+      />
+       
+      <meta name="description" content="学习，生活分享" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>Redis键值设计规范与性能优化 |  不忘初心</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/favicon.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css"
+      />
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+       
+ 
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <script src="https://cdn.jsdelivr.net/npm/mermaid@8.9.2/dist/mermaid.min.js"></script>
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    <link rel="alternate" href="/atom.xml" title="不忘初心" type="application/atom+xml">
+</head>
+  </html>
+</html>
+
+
+<body>
+  <div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-Redis键值设计规范与性能优化"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  Redis键值设计规范与性能优化
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/archives/c0eb8ebf/" class="article-date">
+  <time datetime="2021-09-30T06:47:37.000Z" itemprop="datePublished">2021-09-30</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Redis/">Redis</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">3.2k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">11 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h2 id="一、键值设计"><a href="#一、键值设计" class="headerlink" title="一、键值设计"></a>一、键值设计</h2><h3 id="1、key名设计"><a href="#1、key名设计" class="headerlink" title="1、key名设计"></a>1、key名设计</h3><p>(1) 【建议】：可读性和可管理性<br>以业务名（或数据库名）为前缀（防止key冲突），用冒号分隔，比如业务表:表名:id</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">trade:order:1</span><br></pre></td></tr></table></figure>
+<p>(2)【建议】：简洁性<br>保证语义的前提下，控制key的长度，当key较多时，内存占用也不容忽视，例如：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">user:&#123;uid&#125;:friends:messages:&#123;mid&#125; 简化为 u:&#123;uid&#125;:fr:m:&#123;mid&#125;</span><br></pre></td></tr></table></figure>
+<p>(3)【强制】：不要包含特殊字符<br>反例：包含空格、换行、单双引号以及其他转义字符</p>
+<h3 id="2、value设计"><a href="#2、value设计" class="headerlink" title="2、value设计"></a>2、value设计</h3><p>(1)【强制】：拒绝<code>bigkey</code>(防止网卡流量、慢查询)<br>在Redis中，一个字符串最大512MB，一个二级数据结构（例如hash、list、set、zset）可以存储大约40亿个(2<sup>32-1</sup>)个元素，但是实际中如果下面两种情况，我们认为他是<code>bigkey</code>。</p>
+<ol>
+<li>字符串类型：他的big体现在单个value值很大，一般认为超过10KB就是<code>bigkey</code>。</li>
+<li>非字符串类型：哈希、列表、集合、有序集合，他们的big体现在元素个数太多。</li>
+</ol>
+<p>一般来说，string类型控制在10KB以内，hash、list、set、zset元素个数不要超过5000。<br>反例：一个包含200万个元素的list。<br>非字符串的<code>bigkey</code>，不要使用del删除，使用hscan、sscan、zscan方式渐进式删除，同时要注意防止<code>bigkey</code>过期时间自动删除问题（例如一个200万的zset设置1小时过期，会触发del操作，造成阻塞）</p>
+<h4 id="bigkey的危害"><a href="#bigkey的危害" class="headerlink" title="bigkey的危害"></a>bigkey的危害</h4><ol>
+<li><p>导致redis阻塞</p>
+</li>
+<li><p>网络拥塞</p>
+<p>bigkey也就意味着每次获取要产生的网络流量较大，假设一个bigkey为1MB，客户端每秒访问量为1000，那么每秒产生1000MB的流量，对于普通的千兆网卡（按照字节算是128MB/s）的服务器来说简直是灭顶之灾，而且一般服务器会采用单机多实例方式来部署，也就是说一个bigkey可能会对其他实例造成影响，其后果不堪设想。</p>
+</li>
+<li><p>过期删除</p>
+<p>有个bigkey，它安分守己（只执行简单的命令，例如hget、lpop、zscore等），但他设置了过期时间，当它过期后，会被删除，如果没有使用Redis 4.0的过期异步删除(lazyfree-lazy-expire yes)，就会存在阻塞Redis的可能性。</p>
+</li>
+</ol>
+<h4 id="bigkey的产生"><a href="#bigkey的产生" class="headerlink" title="bigkey的产生"></a>bigkey的产生</h4><p>一般来说bigkey的产生都是由于程序设计不当，或者对于数据规模预料不清楚造成的，看几个例子：</p>
+<ol>
+<li>社交类：粉丝列表，如果某些明星粉丝列表设计不当，必会造成bigkey</li>
+<li>统计类：例如按天存储某项功能或者网站的用户集合，除非没有人用，否则必会bigkey</li>
+<li>缓存类：将数据从数据库load出来序列化到Redis里，这个方式很常用，但是有两个地方需要注意，第一，是不是有必要吧所有字段都缓存；第二，有没有相关关联的数据，有的人为了方便把很多关联数据都存一个key下，产生了bigkey。</li>
+</ol>
+<h4 id="优化bigkey"><a href="#优化bigkey" class="headerlink" title="优化bigkey"></a>优化bigkey</h4><ol>
+<li><p>拆</p>
+<blockquote>
+<p>big list：list1、list2、……listN</p>
+<p>big hash：可以用数据分段存储，比如一个大的key，假设存了100万的用户数据，可以拆分成200个key，每个key下面存放5000个用户数据</p>
+</blockquote>
+</li>
+<li><p>如果bigkey不可避免，也要思考一下要不要每次把所有元素都取出来（例如有的时候需要hmget，而不是hgetall），删除也是一样，尽量使用优雅的方式来处理。</p>
+</li>
+</ol>
+<p>(2)【推荐】：选择合适的数据类型</p>
+<p>例如：实体类型（要合理控制和使用数据结构，但也要注意节省内存和性能之间的平衡）</p>
+<p>反例：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">set user:1:name zhangsan</span><br><span class="line">set user:1:age 20</span><br><span class="line">set user:1:favor pingpong</span><br></pre></td></tr></table></figure>
+
+<p>正例：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hmset user:1 name zhangsan age 19 favor pingpong</span><br></pre></td></tr></table></figure>
+
+<p>(3)【推荐】：控制key的生命 周期</p>
+<p>建议使用expire设置过期时间（条件允许可以打散过期时间，防止集中过期）。</p>
+<h2 id="二、命令使用"><a href="#二、命令使用" class="headerlink" title="二、命令使用"></a>二、命令使用</h2><ol>
+<li><p>【推荐】：O(N)命令关注N的数量</p>
+<p>例如：hgetall、Irange、smembers、zrange、sinter等并非不能使用，但是需要明确N的值。有遍历的需求可以使用hscan、sscan、zscan代替。</p>
+</li>
+<li><p>【推荐】：禁用命令</p>
+<p>禁止线上使用keys、flushall、flushdb等，通过redis的rename机制禁掉命令，或者使用scan的方式渐进式处理。</p>
+</li>
+<li><p>【推荐】：合理使用select</p>
+<p>redis的多数据库较弱，使用数字进行区分，很多客户端支持较差，同时多业务用多数据库实际还是单线程处理，会有干扰。</p>
+</li>
+<li><p>【推荐】：使用批量操作提高效率</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">原生命令：例如mget、mset</span><br><span class="line">非原生命令：可以使用pipeline提高效率</span><br></pre></td></tr></table></figure>
+
+<p>但是注意控制一次批量操作的元素个数（例如500以内，实际也和元素字节数有关）。</p>
+<p>注意两者不同：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">原生命令是原子操作，pipeline是非原子操作。</span><br><span class="line">pipeline可以打包不同的命令，原生命令做不到</span><br><span class="line">pipeline需要客户端和服务端同时支持。</span><br></pre></td></tr></table></figure></li>
+<li><p>【建议】Redis事务功能较弱，不建议过多使用，可以用lua替代</p>
+</li>
+</ol>
+<h2 id="三、客户端使用"><a href="#三、客户端使用" class="headerlink" title="三、客户端使用"></a>三、客户端使用</h2><ol>
+<li><p>【推荐】：避免多个应用使用一个Redis实例</p>
+<p>正例：不相干的业务拆分，公共数据做服务化。</p>
+</li>
+<li><p>【推荐】：使用带有连接池的数据库，可以有效控制连接，同时提高效率，标准使用方式：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">JedisPoolConfig jedisPoolConfig = <span class="keyword">new</span> JedisPoolConfig();</span><br><span class="line">jedisPoolConfig.setMaxTotal(<span class="number">5</span>);</span><br><span class="line">jedisPoolConfig.setMaxIdle(<span class="number">2</span>);</span><br><span class="line">jedisPoolConfig.setTestOnBorrow(<span class="keyword">true</span>);</span><br><span class="line"></span><br><span class="line">JedisPool jedisPool = <span class="keyword">new</span> JedisPool(jedisPoolConfig, <span class="string">&quot;192.168.0.60&quot;</span>, <span class="number">6379</span>, <span class="number">3000</span>, <span class="keyword">null</span>);</span><br><span class="line"></span><br><span class="line">Jedis jedis = <span class="keyword">null</span>;</span><br><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">    jedis = jedisPool.getResource();</span><br><span class="line">    <span class="comment">//具体的命令</span></span><br><span class="line">    jedis.executeCommand()</span><br><span class="line">&#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">    logger.error(<span class="string">&quot;op key &#123;&#125; error: &quot;</span> + e.getMessage(), key, e);</span><br><span class="line">&#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">    <span class="comment">//注意这里不是关闭连接，在JedisPool模式下，Jedis会被归还给资源池。</span></span><br><span class="line">    <span class="keyword">if</span> (jedis != <span class="keyword">null</span>) </span><br><span class="line">        jedis.close();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>连接池参数含义：</p>
+<table>
+  <tr>
+    <th>序号</th>
+    <th>参数名</th>
+    <th>含义</th>
+    <th>默认值</th>
+    <th>建议值</th>
+  </tr>
+  <tr>
+    <td>1</td>
+    <td>maxTotal</td>
+    <td>资源池中最大连接数</td>
+    <td>8</td>
+    <td>设置建议见下面</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td>maxIdle</td>
+    <td>资源池允许最大空闲连接数</td>
+    <td>8</td>
+    <td>设置建议见下面</td>
+  </tr>  
+  <tr>
+    <td>3</td>
+    <td>minIdle</td>
+    <td>资源池确保最少空闲连接数</td>
+    <td>0</td>
+    <td>设置建议见下面</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td>blockWhenExhausted</td>
+    <td>当资源池用尽后，调用者是否要等待。只有当为true时，下面的maxWaitMillis才会生效</td>
+    <td>true</td>
+    <td>建议默认值</td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td>maxWaitMillis</td>
+    <td>当资源池连接用尽后，调用者的最大等待时间(单位为毫秒)</td>
+    <td>-1:表示用不超时</td>
+    <td>不建议使用建议默认值</td>
+  </tr>
+  <tr>
+    <td>6</td>
+    <td>testOnBorrow</td>
+    <td>向资源池借用连接时是否连接有效检验(ping)，无效链接会被移除</td>
+    <td>false</td>
+    <td>业务量很大时候建议设置为false(多一次ping的开销)</td>
+  </tr>
+  <tr>
+    <td>7</td>
+    <td>testOnReturn</td>
+    <td>向资源池归还连接时是否连接有效检验(ping)，无效链接会被移除</td>
+    <td>false</td>
+    <td>业务量很大时候建议设置为false(多一次ping的开销)</td>
+  </tr>
+  <tr>
+    <td>8</td>
+    <td>jmxEnabled</td>
+    <td>是否开启jmx监控，可用于监控</td>
+    <td>true</td>
+    <td>建议开启，但应用本身也要开启</td>
+  </tr>
+</table>
+
+<p><strong>优化建议：</strong></p>
+<ol>
+<li><p>maxTotal：最大连接数，早期版本叫maxActive<br>实际上这个考虑的因素比较多：</p>
+<ul>
+<li><p>业务希望Redis并发量</p>
+</li>
+<li><p>客户端执行命令时间</p>
+</li>
+<li><p>Redis资源：例如nodes(例如应用个数) * maxTotal 是不能超过Redis的最大连接数maxclients。</p>
+<blockquote>
+<p>例如：一次命令执行时间(borrow|return resource + Jedis执行命令(含网络))的平均耗时约为1ms，一个连接的QPS大约是1000；业务期望的QPS是50000；</p>
+<p>那么理论上需要的资源池大小是50000 / 1000 = 50个。但实际上这个是理论值，还要考虑到要比理论值预留一些资源，通常来讲maxTotal可以比理论值大一些。</p>
+<p>但是这个值也不是越大越好，一方面连接太多占用客户端和服务器资源，另一方面对于Redis这种高QPS的服务器，一个命令的阻塞即使设置再大资源池仍然会无济于事。</p>
+</blockquote>
+</li>
+</ul>
+</li>
+<li><p>maxIdle和minIdle</p>
+<p>maxIdle实际上才是业务需要的最大连接数，maxTotal是为了<strong>给出余量</strong>，所以maxIdle不要设置过小，否则会有new Jedis(新连接)开销。</p>
+<p><strong>连接池的最佳性能是maxTotal = maxIdle</strong>，这样可以避免连接池伸缩带了的性能干扰。但是如果并发量不大或者maxTotal设置过高，会导致不必要的连接资源浪费。一般推荐maxIdle可以设置为按上面的业务期望QPS计算出来的理论连接数，maxTotal可以再放大一倍。</p>
+<p>minIdle(最小控线连接数)，与其说是最小连接数，不如说是<strong>至少需要保持的空闲连接</strong>，在使用的过程中，如果连接数超过了minIdle，那么继续建立连接，如果超过了maxIdle，当超过的连接执行完成业务后会慢慢被移除连接池释放掉。</p>
+<p>如果系统启动完马上就会有很多的请求过来，那么可以给redis连接池做<strong>预热处理</strong>，比如快速的创建一些redis连接，执行简单命令，类似ping()，快速的将连接池里的空闲连接提升到minIdle的数量。</p>
+<p><strong>连接池预热示例代码：</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">List&lt;Jedis&gt; minIdleJedisList = <span class="keyword">new</span> ArrayList&lt;Jedis&gt;(jedisPoolConfig.getMinIdle());</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; jedisPoolConfig.getMinIdle(); i++) &#123;</span><br><span class="line">    Jedis jedis = <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        jedis = pool.getResource();</span><br><span class="line">        minIdleJedisList.add(jedis);</span><br><span class="line">        jedis.ping();</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        logger.error(e.getMessage(), e);</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        <span class="comment">//注意，这里不能马上close将连接还回连接池，否则最后连接池里只会建立1个连接。。</span></span><br><span class="line">        <span class="comment">//jedis.close();</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//统一将预热的连接还回连接池</span></span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; jedisPoolConfig.getMinIdle(); i++) &#123;</span><br><span class="line">    Jedis jedis = <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        jedis = minIdleJedisList.get(i);</span><br><span class="line">        <span class="comment">//将连接归还回连接池</span></span><br><span class="line">        jedis.close();</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        logger.error(e.getMessage(), e);</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>总之，要根据实际系统的QPS和调用redis客户端的规模整体评估每个节点所使用的连接池大小</p>
+</li>
+</ol>
+</li>
+<li><p>【建议】：高并发下建议客户端添加熔断功能(例如Sentinel、Hystrix)</p>
+</li>
+<li><p>【推荐】：设置合理的密码，如有必要可以使用SSL加密访问</p>
+</li>
+<li><p>【建议】：<strong>Redis对于过期建有三种清除策略：</strong> </p>
+<ol>
+<li>被动删除：当读/写一个已经过期的key时，会触发惰性删除策略，直接删除掉这个过期的key</li>
+<li>主动删除：由于惰性删除策略无法保证冷数据被及时删除掉，所以Redis会定期主动淘汰一批已<strong>已经过期</strong> 的key</li>
+<li>当前已用内存超过maxmemory限定时，触发<strong>主动清除策略</strong> </li>
+</ol>
+<blockquote>
+<p><strong>主动清除策略</strong>在Redis4.0之前一共实现了6种内存淘汰策略，在4.0之后，有增加了2中策略，总共8种：</p>
+<p><strong>(a) 针对设置了过期时间的key做处理：</strong></p>
+<ol>
+<li>  volatile-ttl：在筛选时，会针对设置了过期时间的键值对，根据过期时间的先后进行删除，越早过期的越先被删除。</li>
+<li>volatile-random：就像它的名称一样，在设置了过期时间的键值对中，进行随机删除。</li>
+<li>volatile-lru：会使用LRU算法筛选设置了过期时间的键值对删除。</li>
+<li>volatile-lfu：会使用LFU算法筛选设置了过期时间的键值对删除。</li>
+</ol>
+<p><strong>(b)针对所有的key做处理：</strong> </p>
+<ol start="5">
+<li>allkeys-random：从所有键值对中随机选择并删除数据</li>
+<li>allkeys-lru：使用LRU算法在所有的数据中进行筛选删除</li>
+<li>allkeys-lfu：使用LFU算法在所有的数据中进行筛选删除</li>
+</ol>
+<p><strong>(c)不处理：</strong> </p>
+<ol start="8">
+<li>noeviction：不会剔除任何数据，拒绝所有写入操作并返回客户端错误信息”(error) OOM command not allowed when used memory”，此时Redis只响应读操作</li>
+</ol>
+</blockquote>
+</li>
+</ol>
+<h2 id="LRU算法"><a href="#LRU算法" class="headerlink" title="LRU算法"></a>LRU算法</h2><p>LRU（Least Recently Used  最近最少使用）：淘汰很久没有被访问过的数据，以<strong>最近一次访问时间</strong>作为参考。</p>
+<h2 id="LFU算法"><a href="#LFU算法" class="headerlink" title="LFU算法"></a>LFU算法</h2><p>LFU（Least Frequently Used 最不经常使用）：淘汰最近一段时间被访问次数最少的数据，以<strong>次数</strong>作为参考。</p>
+<p>当存在热点数据时，LRU的效率很好，但偶发性的、周期性的批量操作会导致LRU命中急剧下降，缓存污染情况比较严重。这时使用LFU可能更好。</p>
+<p>根据自身业务类型，配置好maxmemory-policy（默认是noeviction），推荐使用volatile-lru。如果不设置最大内存，当Redis内存超出物理内存限制时，内存的数据会开始和磁盘产生频繁的交换（swap），会让Redis的性能急剧下降。当Redis运行在主从模式时，只有主节点才会执行过期删除策略，然后把删除操作“del key”同步到从节点删除数据。</p>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://www.lihuibin.top/archives/c0eb8ebf/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Redis/" rel="tag">Redis</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+<div class="gitalk" id="gitalk-container"></div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.css">
+
+
+<script src="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+
+
+<script src="https://cdn.jsdelivr.net/npm/blueimp-md5@2.10.0/js/md5.min.js"></script>
+
+<script type="text/javascript">
+  var gitalk = new Gitalk({
+    clientID: 'e247716e4bc0bde03887',
+    clientSecret: '9c3304bbd2652553a5d9b31b843c82ee9e80f434',
+    repo: 'blog.comments',
+    owner: 'li-huibin',
+    admin: ['li-huibin'],
+    // id: location.pathname,      // Ensure uniqueness and length less than 50
+    id: md5(location.pathname),
+    distractionFreeMode: false,  // Facebook-like distraction free mode
+    pagerDirection: 'last'
+  })
+
+  gitalk.render('gitalk-container')
+</script>
+
+   
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2021
+        <i class="ri-heart-fill heart_icon"></i> Li HuiBin
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>访问人数:<span id="busuanzi_value_site_uv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>浏览次数:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+        <li>
+          <a href="https://beian.miit.gov.cn/" target="_black" rel="nofollow">晋ICP备2021014677号</a>
+        </li>
+        
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://v1.cnzz.com/z_stat.php?id=1280277223&amp;web_id=1280277223'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>
+      <div class="float_btns">
+        <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+      </div>
+    </main>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/ayer-side.svg" alt="不忘初心"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/friends">友链</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于我</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+      <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+        <i class="ri-rss-line"></i>
+      </a>
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/img/alipay.jpg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/img/wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css">
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+ 
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+ 
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>

@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+  
+
+    <head>
+      <meta charset="utf-8" />
+       
+      <meta
+        name="keywords"
+        content="Redis高可用集群水平扩展,lihuibin,lhb,Java,hexo+github,spring,springboot,springcloud,nacos,jvm,mysql,k8s,docker,gateway,springcloudAlibaba"
+      />
+       
+      <meta name="description" content="学习，生活分享" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>Redis高可用集群水平扩展 |  不忘初心</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/favicon.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css"
+      />
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+       
+ 
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <script src="https://cdn.jsdelivr.net/npm/mermaid@8.9.2/dist/mermaid.min.js"></script>
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    <link rel="alternate" href="/atom.xml" title="不忘初心" type="application/atom+xml">
+</head>
+  </html>
+</html>
+
+
+<body>
+  <div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-Redis高可用集群水平扩展"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  Redis高可用集群水平扩展
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/archives/c709d40a/" class="article-date">
+  <time datetime="2021-09-24T04:42:34.000Z" itemprop="datePublished">2021-09-24</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Redis/">Redis</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">2.2k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">9 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在<a href="/archives/1d883d6c/">《Redis高可用集群部署》</a>中我们部署了Redis高可用架构。整个集群由6个节点组成，这6个节点分布在三台机器上，采用了三主三从模式。</p>
+<p><img src="/archives/c709d40a/image-20210924125557525.png" alt="Redis高可用三主三从架构"></p>
+<h2 id="1、启动集群"><a href="#1、启动集群" class="headerlink" title="1、启动集群"></a>1、启动集群</h2><p>启动<a href="/archives/1d883d6c/">《Redis高可用集群部署》</a>中搭建好的三主三从高可用集群</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">/home/redis/build/bin/redis-server /home/redis/cluster/8001/redis.conf</span><br><span class="line">/home/redis/build/bin/redis-server /home/redis/cluster/8002/redis.conf</span><br><span class="line">/home/redis/build/bin/redis-server /home/redis/cluster/8003/redis.conf</span><br><span class="line">/home/redis/build/bin/redis-server /home/redis/cluster/8004/redis.conf</span><br><span class="line">/home/redis/build/bin/redis-server /home/redis/cluster/8005/redis.conf</span><br><span class="line">/home/redis/build/bin/redis-server /home/redis/cluster/8006/redis.conf</span><br></pre></td></tr></table></figure>
+
+<h3 id="登录端口为8001的redis客户端"><a href="#登录端口为8001的redis客户端" class="headerlink" title="登录端口为8001的redis客户端"></a>登录端口为8001的redis客户端</h3><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/home/redis/build/bin/redis-cli -c -h 192.168.31.16 -p 8001</span><br></pre></td></tr></table></figure>
+
+<h3 id="查看集群状态"><a href="#查看集群状态" class="headerlink" title="查看集群状态"></a>查看集群状态</h3><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">192.168.31.16:8001&gt; cluster nodes</span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/c709d40a/image-20210924131031247.png" alt="Redis高可用集群节点状态"></p>
+<p>从上面的集群状态信息中可以看出，这个集群运行正常，三个master节点和三个slave节点，8001端口的实例节点存储0-5460这些hash slot，8002端口的节点存储5461-10922这个范围的hash slot；8003端口的实例节点存储10923-16383这个范围的hash slot；这三个master节点存储的所有hash slot组成整个集群的存储槽位，slave节点是每个主节点的备份从节点，不会显示存储槽位。</p>
+<h2 id="2、集群操作"><a href="#2、集群操作" class="headerlink" title="2、集群操作"></a>2、集群操作</h2><p>我们在原始的集群基础上在新增一主(8007)一从(8008)，增加节点后的集群架构如下图：虚线节点为新加入的节点</p>
+<p><img src="/archives/c709d40a/image-20210924132147346.png" alt="新增节点之后集群架构"></p>
+<h3 id="增加Redis节点实例"><a href="#增加Redis节点实例" class="headerlink" title="增加Redis节点实例"></a>增加Redis节点实例</h3><p>在/home/redis/cluster下新建8007和8008文件夹</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mkdir 8007 8008</span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/c709d40a/image-20210924132807201.png" alt="创建文件夹"></p>
+<p>并把8006文件夹下的<code>redis.conf</code>配置文件拷贝到8007和8008两个文件夹中，如下</p>
+<p><img src="/archives/c709d40a/image-20210924133002072.png" alt="拷贝配置文件"></p>
+<p>修改8007文件夹下的<code>redis.conf</code>配置文件</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vim ./8007/redis.conf</span><br></pre></td></tr></table></figure>
+
+<p>修改内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">port: 8007</span><br><span class="line">dir /home/redis/cluster/8007/</span><br><span class="line">cluster-config-file nodes-8007.conf</span><br></pre></td></tr></table></figure>
+
+<p>修改8008文件下的<code>redis.conf</code>配置文件</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vim ./8008/redis.conf</span><br></pre></td></tr></table></figure>
+
+<p>修改内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">port: 8008</span><br><span class="line">dir /home/redis/cluster/8008/</span><br><span class="line">cluster-config-file nodes-8008.conf</span><br></pre></td></tr></table></figure>
+
+<p>启动8007和8008两个服务，并查看启动状态</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">/home/redis/buile/bin/redis-server /home/redis/cluster/8007/redis.conf</span><br><span class="line">/home/redis/buile/bin/redis-server /home/redis/cluster/8008/redis.conf</span><br><span class="line">ps -ef | grep redis</span><br></pre></td></tr></table></figure>
+
+<h3 id="通过redis帮助命令查找加入节点的命令"><a href="#通过redis帮助命令查找加入节点的命令" class="headerlink" title="通过redis帮助命令查找加入节点的命令"></a>通过redis帮助命令查找加入节点的命令</h3><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/home/redis/build/bin/redis-cli --cluster <span class="built_in">help</span></span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/c709d40a/image-20210924150425805.png" alt="cluster help手册"></p>
+<blockquote>
+<p><strong><code>create</code>：</strong> 创建一个集群环境<code>host1:port1</code>……<code>hostN:portN</code><br><strong><code>call</code>：</strong> 可以知晓redis命令<br><strong><code>add-node</code>：</strong> 将一个节点添加到集群里，第一个参数为新节点的IP:Port，第二个参数为集群中任意一个已经存在的节点的IP:Port<br><strong><code>del-node</code>：</strong> 删除一个节点<br><strong><code>reshard</code>：</strong> 重新分片<br><strong><code>check</code>：</strong> 检查集群状态</p>
+</blockquote>
+<h3 id="配置8007为集群主节点"><a href="#配置8007为集群主节点" class="headerlink" title="配置8007为集群主节点"></a>配置8007为集群主节点</h3><p>使用<code>add-node</code> 命令新增一个主节点8007(master)，前面的IP:Port为新增节点，后面的IP:Port为已知存活的节点。</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/home/redis/build/bin/redis-cli --cluster add-node 192.168.31.80:8007 192.168.31.80:8003</span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/c709d40a/image-20210924151637255.png" alt="新节点加入集群"></p>
+<p>出现”[OK] New node added correctly”表示新节点加入成功。</p>
+<p>再查看集群状态，确认一下是否真正加入成功</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">/home/redis/build/bin/redis-cli -c -h 192.168.31.80 -p 8003</span><br><span class="line">192.168.31.80:8003&gt; cluster nodes</span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/c709d40a/image-20210924152021907.png" alt="8007节点加入成功"></p>
+<blockquote>
+<p><strong>注意：当添加节点成功之后，新增的节点不会有任何数据，因为它还没有分配任何的slot(hash槽)，我们需要手动为新节点分配hash槽</strong></p>
+</blockquote>
+<p>使用<code>redis-cli</code>命令为8007分配hash槽，找到集群中的任意一个主节点，对其进行重新分片工作</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/home/redis/build/bin/redis-cli --cluster reshard 192.168.31.80:8006</span><br></pre></td></tr></table></figure>
+
+<p>输出信息：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">[OK] All nodes agree about slots configuration.</span><br><span class="line">&gt;&gt;&gt; Check <span class="keyword">for</span> open slots...</span><br><span class="line">&gt;&gt;&gt; Check slots coverage...</span><br><span class="line">[OK] All 16384 slots covered.</span><br><span class="line">How many slots <span class="keyword">do</span> you want to move (from 1 to 16384)? 600</span><br><span class="line"><span class="comment"># (ps:需要多少个槽移动到新的节点上，自己设置，比如600个hash槽)</span></span><br><span class="line">What is the receiving node ID? a269eb14c20c00bce5277f1ab7d185a0b4ff7081</span><br><span class="line"><span class="comment"># (ps:把这600个hash槽移动到哪个节点上去，需要指定节点id)</span></span><br><span class="line">Please enter all the <span class="built_in">source</span> node IDs.</span><br><span class="line">  Type <span class="string">&#x27;all&#x27;</span> to use all the nodes as <span class="built_in">source</span> nodes <span class="keyword">for</span> the <span class="built_in">hash</span> slots.</span><br><span class="line">  Type <span class="string">&#x27;done&#x27;</span> once you entered all the <span class="built_in">source</span> nodes IDs.</span><br><span class="line">Source node <span class="comment">#1: all</span></span><br><span class="line"><span class="comment"># (ps:输入all为从所有主节点(8001,8002,8003)中分别抽取相应的槽数指定到新节点中，抽取的总槽数为600个)</span></span><br><span class="line"></span><br><span class="line">Ready to move 600 slots.</span><br><span class="line">  Source nodes:</span><br><span class="line">    M: 9733f9dcf9f49366c20ba48e9255ed8dacbf3ce9 192.168.31.16:8004</span><br><span class="line">       slots:[10923-16383] (5461 slots) master</span><br><span class="line">       1 additional replica(s)</span><br><span class="line">    M: 7335dcf54192b1015ff9b386391e424bd5379bb3 192.168.31.224:8002</span><br><span class="line">       slots:[5461-10922] (5462 slots) master</span><br><span class="line">       1 additional replica(s)</span><br><span class="line">    M: 1e0e204666cc8eab8c138913df4dd23135b38a05 192.168.31.16:8001</span><br><span class="line">       slots:[0-5460] (5461 slots) master</span><br><span class="line">       1 additional replica(s)</span><br><span class="line">  Destination node:</span><br><span class="line">    M: a269eb14c20c00bce5277f1ab7d185a0b4ff7081 192.168.31.80:8007</span><br><span class="line">       slots: (0 slots) master</span><br><span class="line">  Resharding plan:</span><br><span class="line">    Moving slot 5461 from 7335dcf54192b1015ff9b386391e424bd5379bb3</span><br><span class="line">    Moving slot 5462 from 7335dcf54192b1015ff9b386391e424bd5379bb3</span><br><span class="line">……………………</span><br><span class="line"></span><br><span class="line">Do you want to proceed with the proposed reshard plan (yes/no)? yes</span><br><span class="line"><span class="comment"># (ps:输入yes确认开始执行分片任务)</span></span><br><span class="line">……………………</span><br></pre></td></tr></table></figure>
+
+<p>查看最新集群状态</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/home/redis/build/bin/redis-cli -c -h 192.168.31.16 -p 8004</span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/c709d40a/image-20210924153543684.png" alt="最新集群状态"></p>
+<blockquote>
+<p><strong>如上图所示，现在我们的8007已经有hash槽了，也就是现在可以在8007上写数据了，到此为止8007已经加入到集群中，并且是主节点(master)</strong></p>
+</blockquote>
+<h3 id="配置8008为8007的从节点"><a href="#配置8008为8007的从节点" class="headerlink" title="配置8008为8007的从节点"></a>配置8008为8007的从节点</h3><p>添加从节点8008到集群中去并查看集群状态</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/home/redis/build/bin/redis-cli --cluster add-node 192.168.31.80:8008 192.168.31.80:8007</span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/c709d40a/image-20210924155734308.png" alt="配置8008为8007的从节点"></p>
+<p>查看集群状态信息：</p>
+<p><img src="/archives/c709d40a/image-20210924155923889.png" alt="集群状态"></p>
+<p>如图所示，存在一个master(8008)节点，没有被分配任何的hash槽。</p>
+<p>我们需要执行<code>replicate</code>命令来指定当前节点(从节点)的主节点id为哪个，首先需要连接新加的8008节点的客户端，然后使用集群命令进行操作，把当前的8008(slave)节点指定到一个主节点下(这里使用之前创建的8007主节点)</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">/home/redis/build/bin/redis-cli -c -h 192.168.31.80 -p 8008</span><br><span class="line">cluster replicate a269eb14c20c00bce5277f1ab7d185a0b4ff7081 <span class="comment">#后面这串id为8007的节点id</span></span><br></pre></td></tr></table></figure>
+
+<p>查看集群状态，8008节点已成功添加为8007节点的从节点</p>
+<p><img src="/archives/c709d40a/image-20210924160713937.png" alt="集群状态"></p>
+<h3 id="删除8008从节点"><a href="#删除8008从节点" class="headerlink" title="删除8008从节点"></a>删除8008从节点</h3><p>用<code>del-node</code>删除从节点8008，指定删除节点IP和端口，以及节点id</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/home/redis/build/bin/redis-cli --cluster del-node 192.168.31.80:8008 63aef88d1fda94a340f045f386eef8f61453c755</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><code>192.168.31.80:8008</code> 为要删除节点的IP和端口<br><code>63aef88d1fda94a340f045f386eef8f61453c755</code> 为要删除节点的id</p>
+</blockquote>
+<p><img src="/archives/c709d40a/image-20210924161819857.png" alt="删除8008节点"></p>
+<p>查看集群状态，如下图所示，8008这个slave节点已经移除了。</p>
+<p><img src="/archives/c709d40a/image-20210924171054803.png" alt="集群状态"></p>
+<p>查看redis运行的实例，并关掉8008服务</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ps -ef | grep redis</span><br><span class="line"><span class="built_in">kill</span> 进程ID</span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/c709d40a/image-20210924171652442.png" alt="关闭8008进程"></p>
+<h3 id="删除8007主节点"><a href="#删除8007主节点" class="headerlink" title="删除8007主节点"></a>删除8007主节点</h3><p>最后，我们删除之前加入的主节点8007，这个步骤比较麻烦，因为主节点的里面是有分配hash槽的，所以我们这里必须要先把8007里的hash槽放入到其他可用主节点中去，然后进行移除节点操作，不然会出现数据丢失问题(目前只能把master的数据迁移到一个节点上，暂时做不了平均分配功能)，执行命令如下：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/home/redis/build/bin/redis-cli --cluster reshard 192.168.31.80:8007</span><br></pre></td></tr></table></figure>
+
+<p><strong>输出如下结果：</strong></p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv cluster]<span class="comment"># /home/redis/build/bin/redis-cli --cluster reshard 192.168.31.80:8007</span></span><br><span class="line">&gt;&gt;&gt; Performing Cluster Check (using node 192.168.31.80:8007)</span><br><span class="line">M: a269eb14c20c00bce5277f1ab7d185a0b4ff7081 192.168.31.80:8007</span><br><span class="line">   slots:[0-198],[5461-5661],[10923-11121] (599 slots) master</span><br><span class="line">S: 93b31cae2f224d31c3c2e64c72ae3415dda34b2c 192.168.31.80:8006</span><br><span class="line">   slots: (0 slots) slave</span><br><span class="line">   replicates 7335dcf54192b1015ff9b386391e424bd5379bb3</span><br><span class="line">M: 9733f9dcf9f49366c20ba48e9255ed8dacbf3ce9 192.168.31.16:8004</span><br><span class="line">   slots:[11122-16383] (5262 slots) master</span><br><span class="line">   1 additional replica(s)</span><br><span class="line">S: caf9f23f9e339c640d35d181f2c5c398b5ba2f30 192.168.31.224:8005</span><br><span class="line">   slots: (0 slots) slave</span><br><span class="line">   replicates 1e0e204666cc8eab8c138913df4dd23135b38a05</span><br><span class="line">S: 37e9a109f56d0e86995ff02482df4d0d94b6fc2c 192.168.31.80:8003</span><br><span class="line">   slots: (0 slots) slave</span><br><span class="line">   replicates 9733f9dcf9f49366c20ba48e9255ed8dacbf3ce9</span><br><span class="line">M: 1e0e204666cc8eab8c138913df4dd23135b38a05 192.168.31.16:8001</span><br><span class="line">   slots:[199-5460] (5262 slots) master</span><br><span class="line">   1 additional replica(s)</span><br><span class="line">M: 7335dcf54192b1015ff9b386391e424bd5379bb3 192.168.31.224:8002</span><br><span class="line">   slots:[5662-10922] (5261 slots) master</span><br><span class="line">   1 additional replica(s)</span><br><span class="line">[OK] All nodes agree about slots configuration.</span><br><span class="line">&gt;&gt;&gt; Check <span class="keyword">for</span> open slots...</span><br><span class="line">&gt;&gt;&gt; Check slots coverage...</span><br><span class="line">[OK] All 16384 slots covered.</span><br><span class="line">How many slots <span class="keyword">do</span> you want to move (from 1 to 16384)? 600</span><br><span class="line">What is the receiving node ID? 1e0e204666cc8eab8c138913df4dd23135b38a05</span><br><span class="line"><span class="comment"># (ps:这里是需要把数据移动到哪？我们这里指定8001的主节点id)</span></span><br><span class="line">Please enter all the <span class="built_in">source</span> node IDs.</span><br><span class="line">  Type <span class="string">&#x27;all&#x27;</span> to use all the nodes as <span class="built_in">source</span> nodes <span class="keyword">for</span> the <span class="built_in">hash</span> slots.</span><br><span class="line">  Type <span class="string">&#x27;done&#x27;</span> once you entered all the <span class="built_in">source</span> nodes IDs.</span><br><span class="line">Source node <span class="comment">#1: a269eb14c20c00bce5277f1ab7d185a0b4ff7081</span></span><br><span class="line"><span class="comment"># (ps:这里是需要数据源，也就是我们要移除的8007节点id)</span></span><br><span class="line">Source node <span class="comment">#2: done</span></span><br><span class="line"><span class="comment"># (ps:这里直接输入done 开始生成迁移计划)</span></span><br><span class="line"></span><br><span class="line">Ready to move 600 slots.</span><br><span class="line">  Source nodes:</span><br><span class="line">    M: a269eb14c20c00bce5277f1ab7d185a0b4ff7081 192.168.31.80:8007</span><br><span class="line">       slots:[0-198],[5461-5661],[10923-11121] (599 slots) master</span><br><span class="line">  Destination node:</span><br><span class="line">    M: 1e0e204666cc8eab8c138913df4dd23135b38a05 192.168.31.16:8001</span><br><span class="line">       slots:[199-5460] (5262 slots) master</span><br><span class="line">       1 additional replica(s)</span><br><span class="line">  Resharding plan:</span><br><span class="line">    Moving slot 0 from a269eb14c20c00bce5277f1ab7d185a0b4ff7081</span><br><span class="line">    Moving slot 1 from a269eb14c20c00bce5277f1ab7d185a0b4ff7081</span><br><span class="line">………………</span><br><span class="line">    Moving slot 11121 from a269eb14c20c00bce5277f1ab7d185a0b4ff7081</span><br><span class="line">    Do you want to proceed with the proposed reshard plan (yes/no)? yes</span><br><span class="line">    <span class="comment"># (ps:这里输入yes开始迁移)</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>致此，我们已经成功把8007主节点的数据迁移到8001上去了，我们可以看一下集群状态：</p>
+<p><img src="/archives/c709d40a/image-20210924174054621.png" alt="集群节点状态"></p>
+<blockquote>
+<p>从上图可以看出8007下面已经没有任何hash槽了，证明数据迁移成功！</p>
+</blockquote>
+<p>最后直接使用<code>del-node</code>命令删除8007主节点即可</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/home/redis/build/bin/redis-cli --cluster del-node 192.168.31.80:8007 a269eb14c20c00bce5277f1ab7d185a0b4ff7081</span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/c709d40a/image-20210924174816518.png" alt="删除8007主节点"></p>
+<p>在查看集群状态，还原到了原来的状态：</p>
+<p><img src="/archives/c709d40a/image-20210924174859543.png" alt="集群状态"></p>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://www.lihuibin.top/archives/c709d40a/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Redis/" rel="tag">Redis</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+<div class="gitalk" id="gitalk-container"></div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.css">
+
+
+<script src="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+
+
+<script src="https://cdn.jsdelivr.net/npm/blueimp-md5@2.10.0/js/md5.min.js"></script>
+
+<script type="text/javascript">
+  var gitalk = new Gitalk({
+    clientID: 'e247716e4bc0bde03887',
+    clientSecret: '9c3304bbd2652553a5d9b31b843c82ee9e80f434',
+    repo: 'blog.comments',
+    owner: 'li-huibin',
+    admin: ['li-huibin'],
+    // id: location.pathname,      // Ensure uniqueness and length less than 50
+    id: md5(location.pathname),
+    distractionFreeMode: false,  // Facebook-like distraction free mode
+    pagerDirection: 'last'
+  })
+
+  gitalk.render('gitalk-container')
+</script>
+
+   
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2021
+        <i class="ri-heart-fill heart_icon"></i> Li HuiBin
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>访问人数:<span id="busuanzi_value_site_uv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>浏览次数:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+        <li>
+          <a href="https://beian.miit.gov.cn/" target="_black" rel="nofollow">晋ICP备2021014677号</a>
+        </li>
+        
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://v1.cnzz.com/z_stat.php?id=1280277223&amp;web_id=1280277223'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>
+      <div class="float_btns">
+        <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+      </div>
+    </main>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/ayer-side.svg" alt="不忘初心"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/friends">友链</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于我</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+      <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+        <i class="ri-rss-line"></i>
+      </a>
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/img/alipay.jpg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/img/wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css">
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+ 
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+ 
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>
