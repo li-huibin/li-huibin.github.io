@@ -95,7 +95,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">517</span>
+            <span class="post-count">713</span>
         </span>
     </span>
 
@@ -104,7 +104,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-book-open-line"></i>
             <span class="post-meta-item-text"> 阅读时长≈</span>
-            <span class="post-count">1 分钟</span>
+            <span class="post-count">2 分钟</span>
         </span>
     </span>
 </div>
@@ -147,7 +147,22 @@
 <li><code>压缩列表（ziplist）：</code>为了节约内存而开发的顺序性数据结构，可以包含多个节点，每一个节点可以保存一个字节数组或整数值。</li>
 </ul>
 </blockquote>
- 
+<h2 id="Redis支持哪些数据类型？"><a href="#Redis支持哪些数据类型？" class="headerlink" title="Redis支持哪些数据类型？"></a>Redis支持哪些数据类型？</h2><p>五种常用数据类型：<code>String</code>、<code>Hash</code>、<code>Set</code>、<code>List</code>、<code>SortedSet</code>。三种特殊的数据类型：<code>Bitmap</code>、<code>HyperLogLog</code>、<code>GeoSpatial</code>，其中Bitmap、HyperLogLog的底层都是String数据类型，Geospatial底层是Sorted Set数据类型。</p>
+<ul>
+<li>字符串对象String：int整数、embstr编码的简单动态字符串、raw简单动态字符串</li>
+<li>列表对象list：ziplist、linkedlist</li>
+<li>哈希对象hash：hashtable、ziplist</li>
+<li>集合对象set：hashtable、intset</li>
+<li>有序集合对象zset：ziplist、skiplist</li>
+</ul>
+<h2 id="Redis常用的5种数据结构和应用场景？"><a href="#Redis常用的5种数据结构和应用场景？" class="headerlink" title="Redis常用的5种数据结构和应用场景？"></a>Redis常用的5种数据结构和应用场景？</h2><ul>
+<li>String：缓存、计数器、分布式锁等</li>
+<li>List：链表、队列、微博关注人时间轴列表等</li>
+<li>Hash：用户信息、Hash表等</li>
+<li>Set：去重、赞、踩、共同好友等</li>
+<li>Zset：访问量排行榜、点击量排行榜等</li>
+</ul>
+<h2 id="为什么采用的单线程？"><a href="#为什么采用的单线程？" class="headerlink" title="为什么采用的单线程？"></a>为什么采用的单线程？</h2> 
       <!-- reward -->
       
     </div>
