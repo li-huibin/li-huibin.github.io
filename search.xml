@@ -565,6 +565,51 @@
 </ul>
 <h2 id="Redis如何做扩容？"><a href="#Redis如何做扩容？" class="headerlink" title="Redis如何做扩容？"></a>Redis如何做扩容？</h2><p>为了避免数据迁移失败，通常使用<code>一致性哈希</code>实现动态扩容缩容，有效减少需要迁移的key数量。</p>
 <p>但是Cluster模式，采用固定Slot槽位方式（16384个），对每个key计算CRC16值，然后对16384取模，然后根据slot值找到目标机器，扩容时，我们只需要迁移一部分的slot到新节点即可。</p>
+<h2 id="Redis的集群原理？"><a href="#Redis的集群原理？" class="headerlink" title="Redis的集群原理？"></a>Redis的集群原理？</h2><p>一个redis集群由多个node节点组成，而多个node节点之间通过<code>cluster meet</code>命令来进行连接，组成一个集群。</p>
+<p>数据存储通过分片的形式，整个集群分成<code>16384</code>个slot，每个节点负责一部分槽位。整个槽位的信息会同步到所有节点中。</p>
+<p>key与slot的映射关系：</p>
+<ul>
+<li>键值对key，进行<code>CRC16</code>计算，计算出一个16 bit 的值</li>
+<li>将16 bit 的值对16384取模，得到0~16384的数字表示key对应的哈希槽</li>
+</ul>
+<h2 id="Redis如何做到高可用的？"><a href="#Redis如何做到高可用的？" class="headerlink" title="Redis如何做到高可用的？"></a>Redis如何做到高可用的？</h2><p>哨兵机制。具有自动故障转移、集群监控、消息通知等功能。</p>
+<p>哨兵可以同时监控所有的主、从服务器，当某个master下线时，自动提升对应的slave为master，然后由新的master对外提供服务。</p>
+<h2 id="什么时Redis事务？"><a href="#什么时Redis事务？" class="headerlink" title="什么时Redis事务？"></a>什么时Redis事务？</h2><p>Redis事务是一组命令的集合，将多个命令打包，然后把这些命令按顺序添加到队列中，并且顺序执行这些命令。</p>
+<p>Redis事务中没有像Mysql关系型数据库中事务隔离级别的概念，不能保证原子性操作，也没有像Mysql那样执行事务失败会进行事务回滚操作。</p>
+<h2 id="Redis事务执行流程？"><a href="#Redis事务执行流程？" class="headerlink" title="Redis事务执行流程？"></a>Redis事务执行流程？</h2><p>通过<code>MULTI</code>、<code>EXEC</code>、<code>WATCH</code>等命令来实现事务机制，事务执行过程将一系列多个命令按照顺序一次性执行，在执行期间，事务不会被中断，也不会执行客户端的其他请求，直到所有命令执行完毕。</p>
+<p>具体过程：</p>
+<ul>
+<li>服务端收到客户端请求，事务以<code>MULTI</code>开始</li>
+<li>如果正处于事务状态时，则会把后续命令放入队列同时返回给客户端<code>QUEUED</code>，反之直接执行这个命令</li>
+<li>当收到客户端的<code>EXEC</code>命令时，才会将队列里的命令取出、顺序执行、执行完将当前事务状态改为非事务状态</li>
+<li>如果收到<code>DISCARD</code>命令，放弃执行队列中的命令，可以理解为Mysql中的回滚操作，并且将当前的事务状态改为非事务状态</li>
+</ul>
+<blockquote>
+<p>WATCH监视某个key，该命令只能在MULTI命令之前执行。如果监视的key被其他客户端修改，EXEC将会放弃执行队列中的所有命令。UNWATCH取消监视之前通过WATCH命令监视的key。通过执行EXEC、DISCARD两个命令之前监视的key也会被取消监视。</p>
+</blockquote>
+<h2 id="Redis与Guava、Caffeine-有什么区别？"><a href="#Redis与Guava、Caffeine-有什么区别？" class="headerlink" title="Redis与Guava、Caffeine 有什么区别？"></a>Redis与Guava、Caffeine 有什么区别？</h2><p>缓存分为本地缓存和分布式缓存。</p>
+<p>1、Caffeine、Guava，属于本地缓存，特点：</p>
+<ul>
+<li>直接访问内存，速度快，受内存限制，无法进行大数据存储。</li>
+<li>无网络通讯开销，性能更高。</li>
+<li>只支持本地应用进程访问，同步更新所有节点的本地缓存数据成本较高。</li>
+<li>应用进程重启，数据会丢失。</li>
+</ul>
+<p>所以，本地缓存适合存储一些不易改变或者低频改变的高热点数据。</p>
+<p>2、Redis属于分布式缓存，特点：</p>
+<ul>
+<li>集群模式，支持大数据量存储</li>
+<li>数据集中存储，保证数据的一致性</li>
+<li>数据跨网络传输，性能低于本地缓存。但同一个机房，两台服务器之间请求跑一个来回也就500微秒，比起其优势，这点损耗完全可以忽略，这也是分布式缓存受欢迎的原因。</li>
+<li>支持副本机制，有效保证高可用性</li>
+</ul>
+<h2 id="如何实现一个分布式锁？"><a href="#如何实现一个分布式锁？" class="headerlink" title="如何实现一个分布式锁？"></a>如何实现一个分布式锁？</h2><ol>
+<li>数据库表，性能比较差</li>
+<li>使用Lua脚本(包括 Setnx + expire 两条指令)</li>
+<li>set的扩展命令(set key value [ex] [px] [NX|XX])</li>
+<li>Redlock框架</li>
+<li>Zookeeper Curator框架提供了现成的分布式锁。</li>
+</ol>
 ]]></content>
       <categories>
         <category>面试宝典</category>
@@ -1264,6 +1309,25 @@
       </tags>
   </entry>
   <entry>
+    <title>vmare_workstation16许可证秘钥</title>
+    <url>/archives/59b9c4e6/</url>
+    <content><![CDATA[<p><code>vmare workstation16 player</code>虚拟机许可秘钥</p>
+<blockquote>
+<p>ZF3R0-FHED2-M80TY-8QYGC-NPKYF<br>YF390-0HF8P-M81RQ-2DXQE-M2UT6<br>ZF71R-DMX85-08DQY-8YMNC-PPHV8</p>
+</blockquote>
+<p>如果上面三个已经失效可以使用下面这个秘钥</p>
+<blockquote>
+<p>FA1M0-89YE3-081TQ-AFNX9-NKUC0</p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>软件破解</category>
+      </categories>
+      <tags>
+        <tag>软件破解</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>redis主从架构搭建</title>
     <url>/archives/ba77e58/</url>
     <content><![CDATA[<h2 id="一、环境准备"><a href="#一、环境准备" class="headerlink" title="一、环境准备"></a>一、环境准备</h2><blockquote>
@@ -1336,25 +1400,6 @@
       </categories>
       <tags>
         <tag>Redis</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>vmare_workstation16许可证秘钥</title>
-    <url>/archives/59b9c4e6/</url>
-    <content><![CDATA[<p><code>vmare workstation16 player</code>虚拟机许可秘钥</p>
-<blockquote>
-<p>ZF3R0-FHED2-M80TY-8QYGC-NPKYF<br>YF390-0HF8P-M81RQ-2DXQE-M2UT6<br>ZF71R-DMX85-08DQY-8YMNC-PPHV8</p>
-</blockquote>
-<p>如果上面三个已经失效可以使用下面这个秘钥</p>
-<blockquote>
-<p>FA1M0-89YE3-081TQ-AFNX9-NKUC0</p>
-</blockquote>
-]]></content>
-      <categories>
-        <category>软件破解</category>
-      </categories>
-      <tags>
-        <tag>软件破解</tag>
       </tags>
   </entry>
   <entry>
