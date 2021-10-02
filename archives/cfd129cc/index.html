@@ -301,7 +301,7 @@
 <h2 id="如何实现一个分布式锁？"><a href="#如何实现一个分布式锁？" class="headerlink" title="如何实现一个分布式锁？"></a>如何实现一个分布式锁？</h2><ol>
 <li>数据库表，性能比较差</li>
 <li>使用Lua脚本(包括 Setnx + expire 两条指令)</li>
-<li>set的扩展命令(set key value [ex] [px] [NX|XX])</li>
+<li>set的扩展命令(set key value [ex][px] [NX|XX])</li>
 <li>Redlock框架</li>
 <li>Zookeeper Curator框架提供了现成的分布式锁。</li>
 </ol>

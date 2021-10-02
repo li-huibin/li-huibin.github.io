@@ -118,6 +118,67 @@
       </tags>
   </entry>
   <entry>
+    <title>Redis缓存失效和缓存雪崩以及热点缓存key重建优化</title>
+    <url>/archives/134045b4/</url>
+    <content><![CDATA[<h2 id="缓存失效-击穿"><a href="#缓存失效-击穿" class="headerlink" title="缓存失效(击穿)"></a>缓存失效(击穿)</h2><p>缓存失效也称缓存击穿，是由于大批量缓存在同一时间失效可能导致大量请求同时穿透缓存直达数据库，可能造成数据库瞬间压力过大甚至挂掉，对于这种情况我们在批量增加缓存时最好将这一批数据的缓存过期时间设置为一个时间段内的不同时间。</p>
+<p>示例伪代码：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function">String <span class="title">get</span><span class="params">(String key)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 从缓存中获取数据</span></span><br><span class="line">    String cacheValue = cache.get(key);</span><br><span class="line">    <span class="comment">// 缓存为空</span></span><br><span class="line">    <span class="keyword">if</span> (StringUtils.isBlank(cacheValue)) &#123;</span><br><span class="line">        <span class="comment">// 从存储中获取</span></span><br><span class="line">        String storageValue = storage.get(key);</span><br><span class="line">        cache.set(key, storageValue);</span><br><span class="line">        <span class="comment">//设置一个过期时间(300到600之间的一个随机数)</span></span><br><span class="line">        <span class="keyword">int</span> expireTime = <span class="keyword">new</span> Random().nextInt(<span class="number">300</span>)  + <span class="number">300</span>;</span><br><span class="line">        <span class="keyword">if</span> (storageValue == <span class="keyword">null</span>) &#123;</span><br><span class="line">            cache.expire(key, expireTime);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> storageValue;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// 缓存非空</span></span><br><span class="line">        <span class="keyword">return</span> cacheValue;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="缓存雪崩"><a href="#缓存雪崩" class="headerlink" title="缓存雪崩"></a>缓存雪崩</h2><p>缓存雪崩指的是缓存层支撑不住或者宕机后，流量会全部打向存储层。<br>由于缓存层承载着大量请求，有效的保护了存储层，但是如果缓存层由于某些原因不能提供服务（比如超大并发过来，缓存层支撑不住，或者由于缓存设计不好，类似大量请求访问<code>bigkey</code>，导致缓存能支撑的并发急剧下降），于是大量请求都会打到存储层，存储层的调用量会暴增，造成存储层也会级联宕机的情况。</p>
+<p>预防和解决缓存雪崩问题，可以从以下三个方面着手解决：</p>
+<ol>
+<li><p>保证缓存层服务高可用性，比如使用Redis Sentinel或Redis Cluster。</p>
+</li>
+<li><p>依赖隔离组件为后端限流熔断并降级。比如使用阿里开源流控组件Sentinel或Hystrix限流降级组件</p>
+<blockquote>
+<p>比如服务降级，我们可以针对不同的数据采用不同的处理方式，当业务应用访问的是非核心数据（例如电商商品属性，用户信息等）时，暂时停止从缓存中查询这些数据，而是返回预定义的默认降级信息、空值或是错误提示信息；当业务应用访问的是核心数据（例如电商商品库存）时，仍然允许查询缓存，如果缓存缺失，也可以继续通过数据库读取。</p>
+</blockquote>
+</li>
+<li><p>提前演练。在项目上线前，演练缓存层宕机后，应用以及后端的负载情况以及可能出现的问题，在此基础上做一些预案设定。</p>
+</li>
+</ol>
+<h2 id="热点缓存key重建优化"><a href="#热点缓存key重建优化" class="headerlink" title="热点缓存key重建优化"></a>热点缓存key重建优化</h2><p>在使用“缓存+过期时间”的策略时，既可以加速数据读写，又可以保证数据定期更新，这种模式基本上可以满足绝大部分需求，但是相应的也会出现两个问题，可能对应用造成致命bug：</p>
+<ul>
+<li>当前key是一个热点key（例如一个热门的新闻），并发量非常大。</li>
+<li>重建缓存不能在短时间内完成，可能是一个复杂的计算，例如复杂的SQL、多次I/O，多个依赖等。</li>
+</ul>
+<p>在缓存失效的瞬间，有大量线程来重建缓存，造成后端负载加大，甚至可能会让应用崩溃。要解决这个问题主要就是避免大量线程同时重建缓存。</p>
+<p>我们可以利用互斥锁来解决，此方法只允许一个线程重建缓存，其他线程等待重建缓存的线程执行完，重新从缓存获取数据即可。</p>
+<p>示例伪代码：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function">String <span class="title">get</span><span class="params">(String key)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 从Redis中获取数据</span></span><br><span class="line">    String value = redis.get(key);</span><br><span class="line">    <span class="comment">// 如果value为空， 则开始重构缓存</span></span><br><span class="line">    <span class="keyword">if</span> (value == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="comment">// 只允许一个线程重建缓存， 使用nx， 并设置过期时间ex</span></span><br><span class="line">        String mutexKey = <span class="string">&quot;mutext:key:&quot;</span> + key;</span><br><span class="line">        <span class="keyword">if</span> (redis.set(mutexKey, <span class="string">&quot;1&quot;</span>, <span class="string">&quot;ex 180&quot;</span>, <span class="string">&quot;nx&quot;</span>)) &#123;</span><br><span class="line">             <span class="comment">// 从数据源获取数据</span></span><br><span class="line">            value = db.get(key);</span><br><span class="line">            <span class="comment">// 回写Redis， 并设置过期时间</span></span><br><span class="line">            redis.setex(key, timeout, value);</span><br><span class="line">            <span class="comment">// 删除key_mutex</span></span><br><span class="line">            redis.delete(mutexKey);</span><br><span class="line">        &#125;<span class="comment">// 其他线程休息50毫秒后重试</span></span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            Thread.sleep(<span class="number">50</span>);</span><br><span class="line">            get(key);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> value;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="缓存与数据库库双写不一致"><a href="#缓存与数据库库双写不一致" class="headerlink" title="缓存与数据库库双写不一致"></a>缓存与数据库库双写不一致</h2><p>在大并发下，同时操作数据库与缓存会存在数据不一致性问题</p>
+<ol>
+<li><p>双写不一致情况</p>
+<p><img src="/archives/134045b4/image-20210930134748777.png" alt="缓存&amp;数据库双写不一致"></p>
+</li>
+<li><p>读写并发不一致</p>
+<p><img src="/archives/134045b4/image-20210930134845540.png" alt="读写并发不一致"></p>
+</li>
+</ol>
+<p><strong>解决方案：</strong></p>
+<ol>
+<li><p>对于并发几率很小的数据（如个人维度的订单数据、用户数据等），这种几乎不用考虑这个问题，很少会发生缓存不一致，可以给缓存数据加上过期时间，每隔一段时间触发读的主动更新即可。</p>
+</li>
+<li><p>就算并发很高，如果业务上能容忍短时间的缓存数据不一致（如商品名称，商品分类菜单等），缓存加上过期时间依然可以解决大部分业务对于缓存的要求。</p>
+</li>
+<li><p>如果不能容忍缓存不一致，可以通过加<strong>读写锁</strong>保证并发读写或写写的时候按顺序排好队，<strong>读读的时候相当于无锁</strong>。</p>
+</li>
+<li><p>也可以用阿里开源的canal通过监控数据库的binlog日志及时的去修改缓存，但是引入了新的中间件，增加了系统的复杂度。</p>
+<p><img src="/archives/134045b4/image-20210930141046670.png" alt="双写不一致解决方案"></p>
+</li>
+</ol>
+<p><strong>总结：</strong></p>
+<p>以上针对的都是<strong>读多写少</strong>的情况加入缓存提高性能，如果是<strong>写多读多</strong>的情况又不能容忍缓存数据不一致，那就没有必要加缓存了，可以直接操作数据库。放入缓存的数据应该是对实时性、一致性要求不是很高的数据。切记不要为了用缓存，同时又要保证绝对的一致性做大量的过度设计和控制，增加系统的复杂性！</p>
+]]></content>
+      <categories>
+        <category>Redis</category>
+      </categories>
+      <tags>
+        <tag>Redis</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Redis持久化</title>
     <url>/archives/119ed1dc/</url>
     <content><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>Redis目前提供了三种持久化的方式：</p>
@@ -311,67 +372,6 @@
 <li>每次<code>copy</code>备份的时候，把太旧的备份给删掉</li>
 <li>每天晚上将当前机器上的备份复制一份到其他机器上，以防止机器损坏</li>
 </ol>
-]]></content>
-      <categories>
-        <category>Redis</category>
-      </categories>
-      <tags>
-        <tag>Redis</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Redis缓存失效和缓存雪崩以及热点缓存key重建优化</title>
-    <url>/archives/134045b4/</url>
-    <content><![CDATA[<h2 id="缓存失效-击穿"><a href="#缓存失效-击穿" class="headerlink" title="缓存失效(击穿)"></a>缓存失效(击穿)</h2><p>缓存失效也称缓存击穿，是由于大批量缓存在同一时间失效可能导致大量请求同时穿透缓存直达数据库，可能造成数据库瞬间压力过大甚至挂掉，对于这种情况我们在批量增加缓存时最好将这一批数据的缓存过期时间设置为一个时间段内的不同时间。</p>
-<p>示例伪代码：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function">String <span class="title">get</span><span class="params">(String key)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 从缓存中获取数据</span></span><br><span class="line">    String cacheValue = cache.get(key);</span><br><span class="line">    <span class="comment">// 缓存为空</span></span><br><span class="line">    <span class="keyword">if</span> (StringUtils.isBlank(cacheValue)) &#123;</span><br><span class="line">        <span class="comment">// 从存储中获取</span></span><br><span class="line">        String storageValue = storage.get(key);</span><br><span class="line">        cache.set(key, storageValue);</span><br><span class="line">        <span class="comment">//设置一个过期时间(300到600之间的一个随机数)</span></span><br><span class="line">        <span class="keyword">int</span> expireTime = <span class="keyword">new</span> Random().nextInt(<span class="number">300</span>)  + <span class="number">300</span>;</span><br><span class="line">        <span class="keyword">if</span> (storageValue == <span class="keyword">null</span>) &#123;</span><br><span class="line">            cache.expire(key, expireTime);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> storageValue;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// 缓存非空</span></span><br><span class="line">        <span class="keyword">return</span> cacheValue;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="缓存雪崩"><a href="#缓存雪崩" class="headerlink" title="缓存雪崩"></a>缓存雪崩</h2><p>缓存雪崩指的是缓存层支撑不住或者宕机后，流量会全部打向存储层。<br>由于缓存层承载着大量请求，有效的保护了存储层，但是如果缓存层由于某些原因不能提供服务（比如超大并发过来，缓存层支撑不住，或者由于缓存设计不好，类似大量请求访问<code>bigkey</code>，导致缓存能支撑的并发急剧下降），于是大量请求都会打到存储层，存储层的调用量会暴增，造成存储层也会级联宕机的情况。</p>
-<p>预防和解决缓存雪崩问题，可以从以下三个方面着手解决：</p>
-<ol>
-<li><p>保证缓存层服务高可用性，比如使用Redis Sentinel或Redis Cluster。</p>
-</li>
-<li><p>依赖隔离组件为后端限流熔断并降级。比如使用阿里开源流控组件Sentinel或Hystrix限流降级组件</p>
-<blockquote>
-<p>比如服务降级，我们可以针对不同的数据采用不同的处理方式，当业务应用访问的是非核心数据（例如电商商品属性，用户信息等）时，暂时停止从缓存中查询这些数据，而是返回预定义的默认降级信息、空值或是错误提示信息；当业务应用访问的是核心数据（例如电商商品库存）时，仍然允许查询缓存，如果缓存缺失，也可以继续通过数据库读取。</p>
-</blockquote>
-</li>
-<li><p>提前演练。在项目上线前，演练缓存层宕机后，应用以及后端的负载情况以及可能出现的问题，在此基础上做一些预案设定。</p>
-</li>
-</ol>
-<h2 id="热点缓存key重建优化"><a href="#热点缓存key重建优化" class="headerlink" title="热点缓存key重建优化"></a>热点缓存key重建优化</h2><p>在使用“缓存+过期时间”的策略时，既可以加速数据读写，又可以保证数据定期更新，这种模式基本上可以满足绝大部分需求，但是相应的也会出现两个问题，可能对应用造成致命bug：</p>
-<ul>
-<li>当前key是一个热点key（例如一个热门的新闻），并发量非常大。</li>
-<li>重建缓存不能在短时间内完成，可能是一个复杂的计算，例如复杂的SQL、多次I/O，多个依赖等。</li>
-</ul>
-<p>在缓存失效的瞬间，有大量线程来重建缓存，造成后端负载加大，甚至可能会让应用崩溃。要解决这个问题主要就是避免大量线程同时重建缓存。</p>
-<p>我们可以利用互斥锁来解决，此方法只允许一个线程重建缓存，其他线程等待重建缓存的线程执行完，重新从缓存获取数据即可。</p>
-<p>示例伪代码：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function">String <span class="title">get</span><span class="params">(String key)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 从Redis中获取数据</span></span><br><span class="line">    String value = redis.get(key);</span><br><span class="line">    <span class="comment">// 如果value为空， 则开始重构缓存</span></span><br><span class="line">    <span class="keyword">if</span> (value == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="comment">// 只允许一个线程重建缓存， 使用nx， 并设置过期时间ex</span></span><br><span class="line">        String mutexKey = <span class="string">&quot;mutext:key:&quot;</span> + key;</span><br><span class="line">        <span class="keyword">if</span> (redis.set(mutexKey, <span class="string">&quot;1&quot;</span>, <span class="string">&quot;ex 180&quot;</span>, <span class="string">&quot;nx&quot;</span>)) &#123;</span><br><span class="line">             <span class="comment">// 从数据源获取数据</span></span><br><span class="line">            value = db.get(key);</span><br><span class="line">            <span class="comment">// 回写Redis， 并设置过期时间</span></span><br><span class="line">            redis.setex(key, timeout, value);</span><br><span class="line">            <span class="comment">// 删除key_mutex</span></span><br><span class="line">            redis.delete(mutexKey);</span><br><span class="line">        &#125;<span class="comment">// 其他线程休息50毫秒后重试</span></span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            Thread.sleep(<span class="number">50</span>);</span><br><span class="line">            get(key);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> value;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="缓存与数据库库双写不一致"><a href="#缓存与数据库库双写不一致" class="headerlink" title="缓存与数据库库双写不一致"></a>缓存与数据库库双写不一致</h2><p>在大并发下，同时操作数据库与缓存会存在数据不一致性问题</p>
-<ol>
-<li><p>双写不一致情况</p>
-<p><img src="/archives/134045b4/image-20210930134748777.png" alt="缓存&amp;数据库双写不一致"></p>
-</li>
-<li><p>读写并发不一致</p>
-<p><img src="/archives/134045b4/image-20210930134845540.png" alt="读写并发不一致"></p>
-</li>
-</ol>
-<p><strong>解决方案：</strong></p>
-<ol>
-<li><p>对于并发几率很小的数据（如个人维度的订单数据、用户数据等），这种几乎不用考虑这个问题，很少会发生缓存不一致，可以给缓存数据加上过期时间，每隔一段时间触发读的主动更新即可。</p>
-</li>
-<li><p>就算并发很高，如果业务上能容忍短时间的缓存数据不一致（如商品名称，商品分类菜单等），缓存加上过期时间依然可以解决大部分业务对于缓存的要求。</p>
-</li>
-<li><p>如果不能容忍缓存不一致，可以通过加<strong>读写锁</strong>保证并发读写或写写的时候按顺序排好队，<strong>读读的时候相当于无锁</strong>。</p>
-</li>
-<li><p>也可以用阿里开源的canal通过监控数据库的binlog日志及时的去修改缓存，但是引入了新的中间件，增加了系统的复杂度。</p>
-<p><img src="/archives/134045b4/image-20210930141046670.png" alt="双写不一致解决方案"></p>
-</li>
-</ol>
-<p><strong>总结：</strong></p>
-<p>以上针对的都是<strong>读多写少</strong>的情况加入缓存提高性能，如果是<strong>写多读多</strong>的情况又不能容忍缓存数据不一致，那就没有必要加缓存了，可以直接操作数据库。放入缓存的数据应该是对实时性、一致性要求不是很高的数据。切记不要为了用缓存，同时又要保证绝对的一致性做大量的过度设计和控制，增加系统的复杂性！</p>
 ]]></content>
       <categories>
         <category>Redis</category>
@@ -606,7 +606,7 @@
 <h2 id="如何实现一个分布式锁？"><a href="#如何实现一个分布式锁？" class="headerlink" title="如何实现一个分布式锁？"></a>如何实现一个分布式锁？</h2><ol>
 <li>数据库表，性能比较差</li>
 <li>使用Lua脚本(包括 Setnx + expire 两条指令)</li>
-<li>set的扩展命令(set key value [ex] [px] [NX|XX])</li>
+<li>set的扩展命令(set key value [ex][px] [NX|XX])</li>
 <li>Redlock框架</li>
 <li>Zookeeper Curator框架提供了现成的分布式锁。</li>
 </ol>
@@ -1309,25 +1309,6 @@
       </tags>
   </entry>
   <entry>
-    <title>vmare_workstation16许可证秘钥</title>
-    <url>/archives/59b9c4e6/</url>
-    <content><![CDATA[<p><code>vmare workstation16 player</code>虚拟机许可秘钥</p>
-<blockquote>
-<p>ZF3R0-FHED2-M80TY-8QYGC-NPKYF<br>YF390-0HF8P-M81RQ-2DXQE-M2UT6<br>ZF71R-DMX85-08DQY-8YMNC-PPHV8</p>
-</blockquote>
-<p>如果上面三个已经失效可以使用下面这个秘钥</p>
-<blockquote>
-<p>FA1M0-89YE3-081TQ-AFNX9-NKUC0</p>
-</blockquote>
-]]></content>
-      <categories>
-        <category>软件破解</category>
-      </categories>
-      <tags>
-        <tag>软件破解</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>redis主从架构搭建</title>
     <url>/archives/ba77e58/</url>
     <content><![CDATA[<h2 id="一、环境准备"><a href="#一、环境准备" class="headerlink" title="一、环境准备"></a>一、环境准备</h2><blockquote>
@@ -1400,6 +1381,25 @@
       </categories>
       <tags>
         <tag>Redis</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>vmare_workstation16许可证秘钥</title>
+    <url>/archives/59b9c4e6/</url>
+    <content><![CDATA[<p><code>vmare workstation16 player</code>虚拟机许可秘钥</p>
+<blockquote>
+<p>ZF3R0-FHED2-M80TY-8QYGC-NPKYF<br>YF390-0HF8P-M81RQ-2DXQE-M2UT6<br>ZF71R-DMX85-08DQY-8YMNC-PPHV8</p>
+</blockquote>
+<p>如果上面三个已经失效可以使用下面这个秘钥</p>
+<blockquote>
+<p>FA1M0-89YE3-081TQ-AFNX9-NKUC0</p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>软件破解</category>
+      </categories>
+      <tags>
+        <tag>软件破解</tag>
       </tags>
   </entry>
   <entry>
