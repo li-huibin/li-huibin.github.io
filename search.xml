@@ -498,6 +498,73 @@
 </li>
 <li>只追加文件AOF。以日志的形式记录每个写操作（非读操作）。当不同的节点同步数据时，读取日志文件中的内容将写指令从前到后执行一次，既可以完成数据的恢复。</li>
 </ol>
+<h2 id="Redis常用场景"><a href="#Redis常用场景" class="headerlink" title="Redis常用场景"></a>Redis常用场景</h2><ol>
+<li>缓存</li>
+<li>分布式锁，利用Redis的setnx</li>
+<li>分布式session</li>
+<li>计数器，通过incr命令</li>
+<li>排行榜，Redis的有序集合</li>
+<li>其他</li>
+</ol>
+<h2 id="Redis缓存要注意的七大经典问题？"><a href="#Redis缓存要注意的七大经典问题？" class="headerlink" title="Redis缓存要注意的七大经典问题？"></a>Redis缓存要注意的七大经典问题？</h2><p>列举了亿级系统，高访问量情况下Redis缓存可能遇到哪些问题？以及对应的解决方案。</p>
+<ol>
+<li>缓存集中失效</li>
+<li>缓存穿透</li>
+<li>缓存雪崩</li>
+<li>缓存热点</li>
+<li>缓存大key</li>
+<li>缓存数据一直性</li>
+<li>数据并发竞争预热</li>
+</ol>
+<p>每个问题的详细解决方案可以参考<a href="/archives/f435d36e/">Redis缓冲穿透</a>、<a href="/archives/134045b4/">Redis缓存失效和缓存雪崩以及热点缓存key重建优化</a>、<a href="https://mp.weixin.qq.com/s?__biz=Mzg2NzYyNjQzNg==&mid=2247484947&idx=1&sn=5a70f88fba83b435b8144bf1ddd3cc9f&scene=21#wechat_redirect">亿级系统的Redis缓存如何设计？？</a></p>
+<h2 id="Redis集群方案有哪几种？"><a href="#Redis集群方案有哪几种？" class="headerlink" title="Redis集群方案有哪几种？"></a>Redis集群方案有哪几种？</h2><ul>
+<li>主从复制模式</li>
+<li>Sentinel（哨兵）模式</li>
+<li>Redis Cluster模式</li>
+</ul>
+<h2 id="Redis主从数据同步（主从复制）的过程？"><a href="#Redis主从数据同步（主从复制）的过程？" class="headerlink" title="Redis主从数据同步（主从复制）的过程？"></a>Redis主从数据同步（主从复制）的过程？</h2><ol>
+<li>slave启动后，会向master发送sync同步命令</li>
+<li>master收到sync之后，执行bgsave保存快照，生成RDB全量文件</li>
+<li>如果在生成RDB全量快照的过程中，有写命令请求，则将写命令请求记录到临时缓存中</li>
+<li>bgsave执行完毕之后，将RDB全量文件发送到slave节点</li>
+<li>slave清除缓存中的数据，并将RDB中的二进制数据加载到缓存中，</li>
+<li>master发送临时缓存区中写命令给slave，slave接收到写命令并依次顺序执行写命令，将数据加载到缓存中，完成数据初始化</li>
+<li>此后，master会和slave保持长连接，master每次执行一个写命令都会发送给slave，保持master与slave之间数据的一致性</li>
+</ol>
+<h2 id="主从复制的优缺点？"><a href="#主从复制的优缺点？" class="headerlink" title="主从复制的优缺点？"></a>主从复制的优缺点？</h2><h3 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h3><ul>
+<li>master能自动将数据同步到slave，可以进行读写分离，分担master的读压力</li>
+<li>master、slave之间的同步是以非阻塞的方式进行的，同步期间，客户端仍然可以提交查询或更新请求</li>
+</ul>
+<h3 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h3><ul>
+<li>不具备自动容错与恢复功能，master节点宕机后，需要手动指定新的master</li>
+<li>master宕机，如果宕机前数据没有同步完，则切换IP后会存在数据不一致的问题</li>
+<li>难以支持在线扩容，Redis容量受限与单机配置</li>
+</ul>
+<h2 id="Sentinel（哨兵）模式的优缺点？"><a href="#Sentinel（哨兵）模式的优缺点？" class="headerlink" title="Sentinel（哨兵）模式的优缺点？"></a>Sentinel（哨兵）模式的优缺点？</h2><p>哨兵模式基于主从复制模式，增加了<strong>哨兵来监控</strong>与<strong>自动处理故障</strong></p>
+<h3 id="优点-1"><a href="#优点-1" class="headerlink" title="优点"></a>优点</h3><ul>
+<li>哨兵模式基于主从复制模式，所以主从模式有的优点，哨兵模式也有</li>
+<li>master节点挂掉之后可以自动进行切换，系统可用性更高</li>
+</ul>
+<h3 id="缺点-1"><a href="#缺点-1" class="headerlink" title="缺点"></a>缺点</h3><ul>
+<li>Redis的容量受限于单机配置</li>
+<li>需要额外的资源来启动Sentinel进程</li>
+</ul>
+<h2 id="Redis-Cluster模式的优缺点？"><a href="#Redis-Cluster模式的优缺点？" class="headerlink" title="Redis Cluster模式的优缺点？"></a>Redis Cluster模式的优缺点？</h2><p>实现了Redis的分布式存储，即每台节点都存储不同的内容，来解决在线扩容的问题。</p>
+<h3 id="优点-2"><a href="#优点-2" class="headerlink" title="优点"></a>优点</h3><ul>
+<li>无中心架构，数据按照slot分布在多个节点</li>
+<li>集群中的每个节点都是平等的，每个节点都保存各自的数据和整个集群的状态。每个节点都和其他所有节点连接，而且这些连接保持活跃，这样就保证了我们只需要连接集群中的任意一个节点，就可以获取到其他节点的数据。</li>
+<li>可在线扩容到1000多个节点，节点可以动态添加或删除</li>
+<li>能够实现自动故障转移，节点之间通过<code>gossip协议</code>交换状态信息，用投票机制完成slave到master的角色转换</li>
+</ul>
+<h3 id="缺点-2"><a href="#缺点-2" class="headerlink" title="缺点"></a>缺点</h3><ul>
+<li>数据通过异步复制，不保证数据的强一致性</li>
+<li>slave充当“冷备”，不对外提供读、写服务，只作为故障转移使用</li>
+<li>批量操作限制，目前只支持具有相同slot值的key执行批量操作，对mset、mget、sunion等操作支持不友好</li>
+<li>key事务操作支持有限，只支持多key在同一个节点的事务操作，多个key分布在不同的节点是无法使用事务功能</li>
+<li>不支持多数据库空间，一台Redis可以支持16个db，集群模式下只能使用一个，即<code>db 0</code>。Redis Cluster模式不建议使用pipeline和multi-keys操作，减少max redirect产生的场景</li>
+</ul>
+<h2 id="Redis如何做扩容？"><a href="#Redis如何做扩容？" class="headerlink" title="Redis如何做扩容？"></a>Redis如何做扩容？</h2><p>为了避免数据迁移失败，通常使用<code>一致性哈希</code>实现动态扩容缩容，有效减少需要迁移的key数量。</p>
+<p>但是Cluster模式，采用固定Slot槽位方式（16384个），对每个key计算CRC16值，然后对16384取模，然后根据slot值找到目标机器，扩容时，我们只需要迁移一部分的slot到新节点即可。</p>
 ]]></content>
       <categories>
         <category>面试宝典</category>
