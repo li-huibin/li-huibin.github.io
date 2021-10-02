@@ -95,7 +95,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">432</span>
+            <span class="post-count">517</span>
         </span>
     </span>
 
@@ -139,10 +139,12 @@
 </blockquote>
 <h2 id="Redis底层的基础数据结构有哪些？"><a href="#Redis底层的基础数据结构有哪些？" class="headerlink" title="Redis底层的基础数据结构有哪些？"></a>Redis底层的基础数据结构有哪些？</h2><blockquote>
 <ul>
-<li>字符串：没有采用C语言的传统字符串，而是自己实现的一个简单动态字符串SDS的抽象类，并保存了长度信息。</li>
-<li>链表（linkedlist）：双向无环链表结构，每个链表的结点由一个listNode结构来表示，每个节点都有前置和后置节点的指针。</li>
-<li>字典（hashtable）：保存键值对的抽象数据结构，底层使用hash表，每个字典带有两个hash表，供平时使用和rehash时使用。</li>
-<li>跳跃表（skiplist）：跳跃表是有序集合的底层实现之一。redis跳跃表由zskiplist和zskiplistNode组成，zskiplist用于保存跳跃表信息（表头、表尾节点、长度等），zskiplistNode用于表示条约节点，每个跳跃表的层高都是1~32的随机数，在同一个跳跃表中，多个节点可以包含相同的分值，但是每个节点的成员对象都必须是唯一的，节点按照分值大小排序，如果分值相同，则按照成员对象的大小排序。</li>
+<li><code>字符串：</code>没有采用C语言的传统字符串，而是自己实现的一个简单动态字符串SDS的抽象类，并保存了长度信息。</li>
+<li><code>链表（linkedlist）：</code>双向无环链表结构，每个链表的结点由一个listNode结构来表示，每个节点都有前置和后置节点的指针。</li>
+<li><code>字典（hashtable）：</code>保存键值对的抽象数据结构，底层使用hash表，每个字典带有两个hash表，供平时使用和rehash时使用。</li>
+<li><code>跳跃表（skiplist）：</code>跳跃表是有序集合的底层实现之一。redis跳跃表由zskiplist和zskiplistNode组成，zskiplist用于保存跳跃表信息（表头、表尾节点、长度等），zskiplistNode用于表示条约节点，每个跳跃表的层高都是1~32的随机数，在同一个跳跃表中，多个节点可以包含相同的分值，但是每个节点的成员对象都必须是唯一的，节点按照分值大小排序，如果分值相同，则按照成员对象的大小排序。</li>
+<li><code>整数集合（intset）：</code>用于保存整数值的集合抽象数据结构，不会出现重复元素，底层实现为数组。</li>
+<li><code>压缩列表（ziplist）：</code>为了节约内存而开发的顺序性数据结构，可以包含多个节点，每一个节点可以保存一个字节数组或整数值。</li>
 </ul>
 </blockquote>
  
