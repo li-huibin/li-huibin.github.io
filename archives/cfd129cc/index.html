@@ -119,8 +119,7 @@
   
     <div class="article-entry" itemprop="articleBody">
        
-  <h2 id="Redis有哪些特性？"><a href="#Redis有哪些特性？" class="headerlink" title="Redis有哪些特性？"></a>Redis有哪些特性？</h2><blockquote>
-<ul>
+  <h2 id="Redis有哪些特性？"><a href="#Redis有哪些特性？" class="headerlink" title="Redis有哪些特性？"></a>Redis有哪些特性？</h2><ul>
 <li>性能高，读的速度是100000次/s，写的速度是80000次/s</li>
 <li>数据持久化，支持RDB、AOF</li>
 <li>支持事务。通过<code>MULTI</code>和<code>EXEC</code>指令包起来</li>
@@ -128,17 +127,13 @@
 <li>主从复制</li>
 <li>其他特性：发布/订阅、通知、key过期等</li>
 </ul>
-</blockquote>
-<h2 id="Redis为什么这么快？"><a href="#Redis为什么这么快？" class="headerlink" title="Redis为什么这么快？"></a>Redis为什么这么快？</h2><blockquote>
-<ul>
+<h2 id="Redis为什么这么快？"><a href="#Redis为什么这么快？" class="headerlink" title="Redis为什么这么快？"></a>Redis为什么这么快？</h2><ul>
 <li>完全基于内存，没有磁盘IO的开销，异步持久化除外</li>
 <li>单线程，避免多线程切换造成的性能损耗</li>
 <li>非阻塞的IO多路复用机制</li>
 <li>底层的数据存储结构优化、使用原生的数据结构提升性能</li>
 </ul>
-</blockquote>
-<h2 id="Redis底层的基础数据结构有哪些？"><a href="#Redis底层的基础数据结构有哪些？" class="headerlink" title="Redis底层的基础数据结构有哪些？"></a>Redis底层的基础数据结构有哪些？</h2><blockquote>
-<ul>
+<h2 id="Redis底层的基础数据结构有哪些？"><a href="#Redis底层的基础数据结构有哪些？" class="headerlink" title="Redis底层的基础数据结构有哪些？"></a>Redis底层的基础数据结构有哪些？</h2><ul>
 <li><code>字符串：</code>没有采用C语言的传统字符串，而是自己实现的一个简单动态字符串SDS的抽象类，并保存了长度信息。</li>
 <li><code>链表（linkedlist）：</code>双向无环链表结构，每个链表的结点由一个listNode结构来表示，每个节点都有前置和后置节点的指针。</li>
 <li><code>字典（hashtable）：</code>保存键值对的抽象数据结构，底层使用hash表，每个字典带有两个hash表，供平时使用和rehash时使用。</li>
@@ -146,7 +141,6 @@
 <li><code>整数集合（intset）：</code>用于保存整数值的集合抽象数据结构，不会出现重复元素，底层实现为数组。</li>
 <li><code>压缩列表（ziplist）：</code>为了节约内存而开发的顺序性数据结构，可以包含多个节点，每一个节点可以保存一个字节数组或整数值。</li>
 </ul>
-</blockquote>
 <h2 id="Redis支持哪些数据类型？"><a href="#Redis支持哪些数据类型？" class="headerlink" title="Redis支持哪些数据类型？"></a>Redis支持哪些数据类型？</h2><p>五种常用数据类型：<code>String</code>、<code>Hash</code>、<code>Set</code>、<code>List</code>、<code>SortedSet</code>。三种特殊的数据类型：<code>Bitmap</code>、<code>HyperLogLog</code>、<code>GeoSpatial</code>，其中Bitmap、HyperLogLog的底层都是String数据类型，Geospatial底层是Sorted Set数据类型。</p>
 <ul>
 <li>字符串对象String：int整数、embstr编码的简单动态字符串、raw简单动态字符串</li>
