@@ -467,7 +467,38 @@
 <li>Set：去重、赞、踩、共同好友等</li>
 <li>Zset：访问量排行榜、点击量排行榜等</li>
 </ul>
-<h2 id="为什么采用的单线程？"><a href="#为什么采用的单线程？" class="headerlink" title="为什么采用的单线程？"></a>为什么采用的单线程？</h2>]]></content>
+<h2 id="为什么采用的单线程？"><a href="#为什么采用的单线程？" class="headerlink" title="为什么采用的单线程？"></a>为什么采用的单线程？</h2><p>官方回复，CPU不会成为Redis的制约瓶颈，Redis主要受制于内存、网络限制。例如，在一个普通的Linux系统上，使用pipelining可以每秒传递100万个请求，所以如果您的应用程序主要使用O(N)或O(logN)命令，则几乎不会使用太多的CPU，属于IO密集型系统。</p>
+<h2 id="Redis-6-0-之后又改用多线程呢？"><a href="#Redis-6-0-之后又改用多线程呢？" class="headerlink" title="Redis 6.0 之后又改用多线程呢？"></a>Redis 6.0 之后又改用多线程呢？</h2><p>Redis的多线程主要是用来处理数据的读写、协议解析。执行命令还是采用单线程顺序执行。</p>
+<p>主要是因为redis的性能瓶颈在于网络IO而非CPU，使用多线程进行一些周边预处理，提升IO的读写效率，从而提升了整体的吞吐量。antirez在RedisConf 2019分享时提到，Redis 6 引入的多线程IO对性能提升至少在一倍以上。</p>
+<h2 id="过期Key的删除策略有哪些？"><a href="#过期Key的删除策略有哪些？" class="headerlink" title="过期Key的删除策略有哪些？"></a>过期Key的删除策略有哪些？</h2><p>有三种过期删除策略。惰性删除、定期删除、定时删除</p>
+<ul>
+<li>惰性删除：使用key时才进行检测，如果已经过期，则删除。缺点：过期key如果一直没有被访问到，一直无法删除，一直占用内存，造成空间浪费。</li>
+<li>定期删除：每隔一段时间做一次检查，删除过期的key，每次只是随机去一些key去检查</li>
+<li>定时删除：为每个key设置过期时间，同时创建一个定时器。一旦到期，立即执行删除。缺点：如果过期键比较多时，占用CPU比较多，对服务的性能影响很大。</li>
+</ul>
+<h2 id="如果Redis的内存空间不足，淘汰机制？"><a href="#如果Redis的内存空间不足，淘汰机制？" class="headerlink" title="如果Redis的内存空间不足，淘汰机制？"></a>如果Redis的内存空间不足，淘汰机制？</h2><ul>
+<li>volatile-lru：从已设置的过期时间的key中，移除最近最少使用的key进行淘汰</li>
+<li>allkeys-lru：当内存不足以容纳新写入的数据时，再键空间中，移除最近最少使用的key（这个是最常用的）</li>
+<li>volatile-ttl：从已设置过期时间的key中，移除即将要过期的key</li>
+<li>volatile-random：从已设置过期时间的key中，随机选择key淘汰</li>
+<li>allkeys-random：从key中随机选择key进行淘汰</li>
+<li>no-eviction：禁止淘汰数据，当内存达到阈值的时候，新写入操作报错</li>
+<li>volatile-lfu：从已设置过期时间的数据集（server.db[i].expires）中挑选最不经常使用的数据淘汰（LFU(Least Frequently Used)算法，也就是最频繁被访问的数据将来最可能被访问到）</li>
+<li>allkeys-lfu：当内存不足以容纳新写入的数据时，在键空间中，移除最不经常使用的key</li>
+</ul>
+<h2 id="Redis突然挂了怎么解决？"><a href="#Redis突然挂了怎么解决？" class="headerlink" title="Redis突然挂了怎么解决？"></a>Redis突然挂了怎么解决？</h2><ol>
+<li>从系统可用性角度思考，Redis Cluster引入主备机制，当主节点挂了后，自动切换到备用节点，继续提供服务。</li>
+<li>Client端引入本地缓存，通过开关切换，避免Redis突然挂掉，高并发流量把数据库打垮。</li>
+</ol>
+<h2 id="Redis持久化有哪些方式？"><a href="#Redis持久化有哪些方式？" class="headerlink" title="Redis持久化有哪些方式？"></a>Redis持久化有哪些方式？</h2><ol>
+<li>快照RDB。将某个时间点上的数据库状态保存到<code>RDB文件</code>中，RDB文件是一个压缩的二进制文件，保存在磁盘上。当Redis崩溃时，可用于恢复数据。通过<code>SAVE</code>或<code>BGSAVE</code>来来生成RDB文件。<ul>
+<li>SAVE：会阻塞redis进程，直到RDB文件创建完成，在进程阻塞期间，redis不能处理任何命令请求。</li>
+<li>BGSAVE：会fork出一个子进程，然后由子进程负责生成RDB文件，父进程还可以继续处理命令请求，不会阻塞进程。</li>
+</ul>
+</li>
+<li>只追加文件AOF。以日志的形式记录每个写操作（非读操作）。当不同的节点同步数据时，读取日志文件中的内容将写指令从前到后执行一次，既可以完成数据的恢复。</li>
+</ol>
+]]></content>
       <categories>
         <category>面试宝典</category>
       </categories>
