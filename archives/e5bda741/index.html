@@ -95,7 +95,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">1.3k</span>
+            <span class="post-count">2k</span>
         </span>
     </span>
 
@@ -104,7 +104,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-book-open-line"></i>
             <span class="post-meta-item-text"> 阅读时长≈</span>
-            <span class="post-count">4 分钟</span>
+            <span class="post-count">7 分钟</span>
         </span>
     </span>
 </div>
@@ -219,6 +219,66 @@
 <p><img src="/archives/e5bda741/image-20211003172301741.png" alt="带版本号修改"></p>
 <p>如果在执行上面set命令前，有人修改了数据，zookeeper回递增版本号，这个时候如果再用以前的版本号修改，将会导致失败，报错如下：</p>
 <p><img src="/archives/e5bda741/image-20211003172210262.png" alt="带版本号修改报错"></p>
+<p>创建节点，这里要注意，zookeeper是以节点组织数据的，没有相对路径这么一说，所以，所有的节点一定是以<code>/</code>开头的。</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">create /test-node/test-sub-node</span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/e5bda741/image-20211003192152896.png" alt="创建子节点"></p>
+<p>查看子节点的信息，比如根节点下面所有的子节点，加一个大写R可以查看递归子节点列表</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ls /</span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/e5bda741/image-20211003192322656.png" alt="查看根节点所有子节点"></p>
+<p>查看<code>/test-node</code>下面所有的子节点</p>
+<p><img src="/archives/e5bda741/image-20211003192436348.png" alt="查看节点"></p>
+<p>创建临时节点</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">create -e /ephemeral data</span><br></pre></td></tr></table></figure>
+
+<p>create 后跟一个<code>-e</code>创建临时节点，临时节点不能创建子节点</p>
+<p><img src="/archives/e5bda741/image-20211003193204396.png" alt="创建临时节点"></p>
+<p>创建序号节点，加参数<code>-s</code></p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">create /seq-parent data <span class="comment"># 创建父目录，单纯为了分类，非必须</span></span><br><span class="line">create /seq-parent/ data <span class="comment"># 创建顺序节点。顺序节点将再seq-parent目录下面，顺序递增</span></span><br></pre></td></tr></table></figure>
+
+<p>为了容纳子节点，先创建父目录<code>/seq-parent</code></p>
+<p><img src="/archives/e5bda741/image-20211003193523659.png" alt="创建父目录"></p>
+<p>也可以再序号节点前面带一个前缀</p>
+<p><img src="/archives/e5bda741/image-20211003193757408.png" alt="序号节点前加前缀"></p>
+<p>创建临时顺序节点，其他增删改查和其他节点无异</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">create -s -e /ephemeral-node/前缀-</span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/e5bda741/image-20211003194346735.png" alt="image-20211003194346735"></p>
+<p>创建容器节点</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">create -c /container</span><br></pre></td></tr></table></figure>
+
+<p>容器节点主要用来容纳子节点，如果没有给其创建子节点，容器节点表现和持久化节点一样，如果给容器创建了子节点，后续有把子节点清空，容器节点也会被zookeeper删除。</p>
+<ol start="2">
+<li><p>事件监听机制</p>
+<p>针对节点的监听：一旦事件触发，对应的注册立刻被删除，所以事件监听是一次性的</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">get -w /path <span class="comment"># 注册监听的同时获取数据</span></span><br><span class="line"><span class="built_in">stat</span> -w /path <span class="comment"># 对节点进行监听，且获取元数据信息</span></span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/e5bda741/image-20211003195407810.png" alt="监听节点"></p>
+</li>
+</ol>
+<p>针对目录的监听，如下图，目录的变化，会触发事件，且一旦触发，对应的监听也会被移除，后续对节点的创建没有触发监听事件</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ls -w /path</span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/e5bda741/image-20211003195740404.png" alt="监听目录"></p>
+<p>针对递归子目录的监听</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ls -R -w /path <span class="comment"># -R区分大小写，一定要大写</span></span><br></pre></td></tr></table></figure>
+
+<p>如下对<code>/test</code>节点进行递归监听，但是每个目录下的目录监听也是一次性的，如第一次在<code>/test</code>目录下创建节点时，触发监听事件，第二次则没有，同样，因为是递归的目录监听，所以在<code>/test/sub</code>下进行节点创建时，触发事件，但是再次创建<code>/test/sub/subsub</code>节点时，没有触发事件。</p>
+<p><img src="/archives/e5bda741/image-20211003201435610.png" alt="递归子目录监听"></p>
+<blockquote>
+<p>Zookeeper事件类型：</p>
+<ul>
+<li>None：连接建立事件</li>
+<li>NodeCreated：节点创建</li>
+<li>NodeDeleted：节点删除</li>
+<li>NodeDataChanged：节点数据变化</li>
+<li>NodeChildrenChanged：子节点列表变化</li>
+<li>DataWatchRemoved：节点监听被移除</li>
+<li>ChildWatchRemoved：子节点监听被移除</li>
+</ul>
+</blockquote>
+<h1 id="3、Zookeeper的ACL权限控制-Access-Control-List"><a href="#3、Zookeeper的ACL权限控制-Access-Control-List" class="headerlink" title="3、Zookeeper的ACL权限控制(Access Control List)"></a>3、Zookeeper的ACL权限控制(Access Control List)</h1><p>Zookeeper的ACL权限控制，可以控制节点的读写操作，保证数据的安全性，Zookeeper的ACL权限设置分为3部分组成，分别是：**权限模式(Scheme)<strong>、</strong>授权对象(ID)<strong>、</strong>权限信息(Permission)**。最终组成一条例如”scheme:id:permission”</p>
  
       <!-- reward -->
       
