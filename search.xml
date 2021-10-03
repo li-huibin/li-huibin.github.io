@@ -118,6 +118,67 @@
       </tags>
   </entry>
   <entry>
+    <title>Redis缓存失效和缓存雪崩以及热点缓存key重建优化</title>
+    <url>/archives/134045b4/</url>
+    <content><![CDATA[<h2 id="缓存失效-击穿"><a href="#缓存失效-击穿" class="headerlink" title="缓存失效(击穿)"></a>缓存失效(击穿)</h2><p>缓存失效也称缓存击穿，是由于大批量缓存在同一时间失效可能导致大量请求同时穿透缓存直达数据库，可能造成数据库瞬间压力过大甚至挂掉，对于这种情况我们在批量增加缓存时最好将这一批数据的缓存过期时间设置为一个时间段内的不同时间。</p>
+<p>示例伪代码：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function">String <span class="title">get</span><span class="params">(String key)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 从缓存中获取数据</span></span><br><span class="line">    String cacheValue = cache.get(key);</span><br><span class="line">    <span class="comment">// 缓存为空</span></span><br><span class="line">    <span class="keyword">if</span> (StringUtils.isBlank(cacheValue)) &#123;</span><br><span class="line">        <span class="comment">// 从存储中获取</span></span><br><span class="line">        String storageValue = storage.get(key);</span><br><span class="line">        cache.set(key, storageValue);</span><br><span class="line">        <span class="comment">//设置一个过期时间(300到600之间的一个随机数)</span></span><br><span class="line">        <span class="keyword">int</span> expireTime = <span class="keyword">new</span> Random().nextInt(<span class="number">300</span>)  + <span class="number">300</span>;</span><br><span class="line">        <span class="keyword">if</span> (storageValue == <span class="keyword">null</span>) &#123;</span><br><span class="line">            cache.expire(key, expireTime);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> storageValue;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// 缓存非空</span></span><br><span class="line">        <span class="keyword">return</span> cacheValue;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="缓存雪崩"><a href="#缓存雪崩" class="headerlink" title="缓存雪崩"></a>缓存雪崩</h2><p>缓存雪崩指的是缓存层支撑不住或者宕机后，流量会全部打向存储层。<br>由于缓存层承载着大量请求，有效的保护了存储层，但是如果缓存层由于某些原因不能提供服务（比如超大并发过来，缓存层支撑不住，或者由于缓存设计不好，类似大量请求访问<code>bigkey</code>，导致缓存能支撑的并发急剧下降），于是大量请求都会打到存储层，存储层的调用量会暴增，造成存储层也会级联宕机的情况。</p>
+<p>预防和解决缓存雪崩问题，可以从以下三个方面着手解决：</p>
+<ol>
+<li><p>保证缓存层服务高可用性，比如使用Redis Sentinel或Redis Cluster。</p>
+</li>
+<li><p>依赖隔离组件为后端限流熔断并降级。比如使用阿里开源流控组件Sentinel或Hystrix限流降级组件</p>
+<blockquote>
+<p>比如服务降级，我们可以针对不同的数据采用不同的处理方式，当业务应用访问的是非核心数据（例如电商商品属性，用户信息等）时，暂时停止从缓存中查询这些数据，而是返回预定义的默认降级信息、空值或是错误提示信息；当业务应用访问的是核心数据（例如电商商品库存）时，仍然允许查询缓存，如果缓存缺失，也可以继续通过数据库读取。</p>
+</blockquote>
+</li>
+<li><p>提前演练。在项目上线前，演练缓存层宕机后，应用以及后端的负载情况以及可能出现的问题，在此基础上做一些预案设定。</p>
+</li>
+</ol>
+<h2 id="热点缓存key重建优化"><a href="#热点缓存key重建优化" class="headerlink" title="热点缓存key重建优化"></a>热点缓存key重建优化</h2><p>在使用“缓存+过期时间”的策略时，既可以加速数据读写，又可以保证数据定期更新，这种模式基本上可以满足绝大部分需求，但是相应的也会出现两个问题，可能对应用造成致命bug：</p>
+<ul>
+<li>当前key是一个热点key（例如一个热门的新闻），并发量非常大。</li>
+<li>重建缓存不能在短时间内完成，可能是一个复杂的计算，例如复杂的SQL、多次I/O，多个依赖等。</li>
+</ul>
+<p>在缓存失效的瞬间，有大量线程来重建缓存，造成后端负载加大，甚至可能会让应用崩溃。要解决这个问题主要就是避免大量线程同时重建缓存。</p>
+<p>我们可以利用互斥锁来解决，此方法只允许一个线程重建缓存，其他线程等待重建缓存的线程执行完，重新从缓存获取数据即可。</p>
+<p>示例伪代码：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function">String <span class="title">get</span><span class="params">(String key)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 从Redis中获取数据</span></span><br><span class="line">    String value = redis.get(key);</span><br><span class="line">    <span class="comment">// 如果value为空， 则开始重构缓存</span></span><br><span class="line">    <span class="keyword">if</span> (value == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="comment">// 只允许一个线程重建缓存， 使用nx， 并设置过期时间ex</span></span><br><span class="line">        String mutexKey = <span class="string">&quot;mutext:key:&quot;</span> + key;</span><br><span class="line">        <span class="keyword">if</span> (redis.set(mutexKey, <span class="string">&quot;1&quot;</span>, <span class="string">&quot;ex 180&quot;</span>, <span class="string">&quot;nx&quot;</span>)) &#123;</span><br><span class="line">             <span class="comment">// 从数据源获取数据</span></span><br><span class="line">            value = db.get(key);</span><br><span class="line">            <span class="comment">// 回写Redis， 并设置过期时间</span></span><br><span class="line">            redis.setex(key, timeout, value);</span><br><span class="line">            <span class="comment">// 删除key_mutex</span></span><br><span class="line">            redis.delete(mutexKey);</span><br><span class="line">        &#125;<span class="comment">// 其他线程休息50毫秒后重试</span></span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            Thread.sleep(<span class="number">50</span>);</span><br><span class="line">            get(key);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> value;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="缓存与数据库库双写不一致"><a href="#缓存与数据库库双写不一致" class="headerlink" title="缓存与数据库库双写不一致"></a>缓存与数据库库双写不一致</h2><p>在大并发下，同时操作数据库与缓存会存在数据不一致性问题</p>
+<ol>
+<li><p>双写不一致情况</p>
+<p><img src="/archives/134045b4/image-20210930134748777.png" alt="缓存&amp;数据库双写不一致"></p>
+</li>
+<li><p>读写并发不一致</p>
+<p><img src="/archives/134045b4/image-20210930134845540.png" alt="读写并发不一致"></p>
+</li>
+</ol>
+<p><strong>解决方案：</strong></p>
+<ol>
+<li><p>对于并发几率很小的数据（如个人维度的订单数据、用户数据等），这种几乎不用考虑这个问题，很少会发生缓存不一致，可以给缓存数据加上过期时间，每隔一段时间触发读的主动更新即可。</p>
+</li>
+<li><p>就算并发很高，如果业务上能容忍短时间的缓存数据不一致（如商品名称，商品分类菜单等），缓存加上过期时间依然可以解决大部分业务对于缓存的要求。</p>
+</li>
+<li><p>如果不能容忍缓存不一致，可以通过加<strong>读写锁</strong>保证并发读写或写写的时候按顺序排好队，<strong>读读的时候相当于无锁</strong>。</p>
+</li>
+<li><p>也可以用阿里开源的canal通过监控数据库的binlog日志及时的去修改缓存，但是引入了新的中间件，增加了系统的复杂度。</p>
+<p><img src="/archives/134045b4/image-20210930141046670.png" alt="双写不一致解决方案"></p>
+</li>
+</ol>
+<p><strong>总结：</strong></p>
+<p>以上针对的都是<strong>读多写少</strong>的情况加入缓存提高性能，如果是<strong>写多读多</strong>的情况又不能容忍缓存数据不一致，那就没有必要加缓存了，可以直接操作数据库。放入缓存的数据应该是对实时性、一致性要求不是很高的数据。切记不要为了用缓存，同时又要保证绝对的一致性做大量的过度设计和控制，增加系统的复杂性！</p>
+]]></content>
+      <categories>
+        <category>Redis</category>
+      </categories>
+      <tags>
+        <tag>Redis</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Redis持久化</title>
     <url>/archives/119ed1dc/</url>
     <content><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>Redis目前提供了三种持久化的方式：</p>
@@ -311,67 +372,6 @@
 <li>每次<code>copy</code>备份的时候，把太旧的备份给删掉</li>
 <li>每天晚上将当前机器上的备份复制一份到其他机器上，以防止机器损坏</li>
 </ol>
-]]></content>
-      <categories>
-        <category>Redis</category>
-      </categories>
-      <tags>
-        <tag>Redis</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Redis缓存失效和缓存雪崩以及热点缓存key重建优化</title>
-    <url>/archives/134045b4/</url>
-    <content><![CDATA[<h2 id="缓存失效-击穿"><a href="#缓存失效-击穿" class="headerlink" title="缓存失效(击穿)"></a>缓存失效(击穿)</h2><p>缓存失效也称缓存击穿，是由于大批量缓存在同一时间失效可能导致大量请求同时穿透缓存直达数据库，可能造成数据库瞬间压力过大甚至挂掉，对于这种情况我们在批量增加缓存时最好将这一批数据的缓存过期时间设置为一个时间段内的不同时间。</p>
-<p>示例伪代码：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function">String <span class="title">get</span><span class="params">(String key)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 从缓存中获取数据</span></span><br><span class="line">    String cacheValue = cache.get(key);</span><br><span class="line">    <span class="comment">// 缓存为空</span></span><br><span class="line">    <span class="keyword">if</span> (StringUtils.isBlank(cacheValue)) &#123;</span><br><span class="line">        <span class="comment">// 从存储中获取</span></span><br><span class="line">        String storageValue = storage.get(key);</span><br><span class="line">        cache.set(key, storageValue);</span><br><span class="line">        <span class="comment">//设置一个过期时间(300到600之间的一个随机数)</span></span><br><span class="line">        <span class="keyword">int</span> expireTime = <span class="keyword">new</span> Random().nextInt(<span class="number">300</span>)  + <span class="number">300</span>;</span><br><span class="line">        <span class="keyword">if</span> (storageValue == <span class="keyword">null</span>) &#123;</span><br><span class="line">            cache.expire(key, expireTime);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> storageValue;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// 缓存非空</span></span><br><span class="line">        <span class="keyword">return</span> cacheValue;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="缓存雪崩"><a href="#缓存雪崩" class="headerlink" title="缓存雪崩"></a>缓存雪崩</h2><p>缓存雪崩指的是缓存层支撑不住或者宕机后，流量会全部打向存储层。<br>由于缓存层承载着大量请求，有效的保护了存储层，但是如果缓存层由于某些原因不能提供服务（比如超大并发过来，缓存层支撑不住，或者由于缓存设计不好，类似大量请求访问<code>bigkey</code>，导致缓存能支撑的并发急剧下降），于是大量请求都会打到存储层，存储层的调用量会暴增，造成存储层也会级联宕机的情况。</p>
-<p>预防和解决缓存雪崩问题，可以从以下三个方面着手解决：</p>
-<ol>
-<li><p>保证缓存层服务高可用性，比如使用Redis Sentinel或Redis Cluster。</p>
-</li>
-<li><p>依赖隔离组件为后端限流熔断并降级。比如使用阿里开源流控组件Sentinel或Hystrix限流降级组件</p>
-<blockquote>
-<p>比如服务降级，我们可以针对不同的数据采用不同的处理方式，当业务应用访问的是非核心数据（例如电商商品属性，用户信息等）时，暂时停止从缓存中查询这些数据，而是返回预定义的默认降级信息、空值或是错误提示信息；当业务应用访问的是核心数据（例如电商商品库存）时，仍然允许查询缓存，如果缓存缺失，也可以继续通过数据库读取。</p>
-</blockquote>
-</li>
-<li><p>提前演练。在项目上线前，演练缓存层宕机后，应用以及后端的负载情况以及可能出现的问题，在此基础上做一些预案设定。</p>
-</li>
-</ol>
-<h2 id="热点缓存key重建优化"><a href="#热点缓存key重建优化" class="headerlink" title="热点缓存key重建优化"></a>热点缓存key重建优化</h2><p>在使用“缓存+过期时间”的策略时，既可以加速数据读写，又可以保证数据定期更新，这种模式基本上可以满足绝大部分需求，但是相应的也会出现两个问题，可能对应用造成致命bug：</p>
-<ul>
-<li>当前key是一个热点key（例如一个热门的新闻），并发量非常大。</li>
-<li>重建缓存不能在短时间内完成，可能是一个复杂的计算，例如复杂的SQL、多次I/O，多个依赖等。</li>
-</ul>
-<p>在缓存失效的瞬间，有大量线程来重建缓存，造成后端负载加大，甚至可能会让应用崩溃。要解决这个问题主要就是避免大量线程同时重建缓存。</p>
-<p>我们可以利用互斥锁来解决，此方法只允许一个线程重建缓存，其他线程等待重建缓存的线程执行完，重新从缓存获取数据即可。</p>
-<p>示例伪代码：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function">String <span class="title">get</span><span class="params">(String key)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 从Redis中获取数据</span></span><br><span class="line">    String value = redis.get(key);</span><br><span class="line">    <span class="comment">// 如果value为空， 则开始重构缓存</span></span><br><span class="line">    <span class="keyword">if</span> (value == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="comment">// 只允许一个线程重建缓存， 使用nx， 并设置过期时间ex</span></span><br><span class="line">        String mutexKey = <span class="string">&quot;mutext:key:&quot;</span> + key;</span><br><span class="line">        <span class="keyword">if</span> (redis.set(mutexKey, <span class="string">&quot;1&quot;</span>, <span class="string">&quot;ex 180&quot;</span>, <span class="string">&quot;nx&quot;</span>)) &#123;</span><br><span class="line">             <span class="comment">// 从数据源获取数据</span></span><br><span class="line">            value = db.get(key);</span><br><span class="line">            <span class="comment">// 回写Redis， 并设置过期时间</span></span><br><span class="line">            redis.setex(key, timeout, value);</span><br><span class="line">            <span class="comment">// 删除key_mutex</span></span><br><span class="line">            redis.delete(mutexKey);</span><br><span class="line">        &#125;<span class="comment">// 其他线程休息50毫秒后重试</span></span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            Thread.sleep(<span class="number">50</span>);</span><br><span class="line">            get(key);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> value;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="缓存与数据库库双写不一致"><a href="#缓存与数据库库双写不一致" class="headerlink" title="缓存与数据库库双写不一致"></a>缓存与数据库库双写不一致</h2><p>在大并发下，同时操作数据库与缓存会存在数据不一致性问题</p>
-<ol>
-<li><p>双写不一致情况</p>
-<p><img src="/archives/134045b4/image-20210930134748777.png" alt="缓存&amp;数据库双写不一致"></p>
-</li>
-<li><p>读写并发不一致</p>
-<p><img src="/archives/134045b4/image-20210930134845540.png" alt="读写并发不一致"></p>
-</li>
-</ol>
-<p><strong>解决方案：</strong></p>
-<ol>
-<li><p>对于并发几率很小的数据（如个人维度的订单数据、用户数据等），这种几乎不用考虑这个问题，很少会发生缓存不一致，可以给缓存数据加上过期时间，每隔一段时间触发读的主动更新即可。</p>
-</li>
-<li><p>就算并发很高，如果业务上能容忍短时间的缓存数据不一致（如商品名称，商品分类菜单等），缓存加上过期时间依然可以解决大部分业务对于缓存的要求。</p>
-</li>
-<li><p>如果不能容忍缓存不一致，可以通过加<strong>读写锁</strong>保证并发读写或写写的时候按顺序排好队，<strong>读读的时候相当于无锁</strong>。</p>
-</li>
-<li><p>也可以用阿里开源的canal通过监控数据库的binlog日志及时的去修改缓存，但是引入了新的中间件，增加了系统的复杂度。</p>
-<p><img src="/archives/134045b4/image-20210930141046670.png" alt="双写不一致解决方案"></p>
-</li>
-</ol>
-<p><strong>总结：</strong></p>
-<p>以上针对的都是<strong>读多写少</strong>的情况加入缓存提高性能，如果是<strong>写多读多</strong>的情况又不能容忍缓存数据不一致，那就没有必要加缓存了，可以直接操作数据库。放入缓存的数据应该是对实时性、一致性要求不是很高的数据。切记不要为了用缓存，同时又要保证绝对的一致性做大量的过度设计和控制，增加系统的复杂性！</p>
 ]]></content>
       <categories>
         <category>Redis</category>
@@ -613,85 +613,6 @@
       </tags>
   </entry>
   <entry>
-    <title>Redis集群原理分析</title>
-    <url>/archives/c0af2eb/</url>
-    <content><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>Redis Cluster将所有数据划分为16384个slots(槽位)，每个节点负责其中一部分槽位。槽位的信息存储于每个节点中；当Redis Cluster的客户端连接集群时，它也会得到一份槽位配置信息并将其缓存在客户端本地。这样当客户端要查找某个key时，可以直接定位到目标节点。同时也会带来一个问题”槽位信息在客户端和服务器不一致的情况，这就需要纠正机制来实现槽位信息的纠正”。</p>
-<h3 id="槽位定位算法"><a href="#槽位定位算法" class="headerlink" title="槽位定位算法"></a>槽位定位算法</h3><p>Cluster默认会对key使用CRC16算法进行hash得到一个整数值，然后用这个整数值对16384进行取模得到具体的槽位。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">HASH_SLOT = CRC16(key) mod 16384</span><br></pre></td></tr></table></figure>
-
-<h3 id="跳转重定位"><a href="#跳转重定位" class="headerlink" title="跳转重定位"></a>跳转重定位</h3><p>当客户端向一个错误的节点发出了指令，该节点会发现指令的key所在的槽位不是自己管理的，这时它会像客户端发送一个特殊的跳转指令携带目标操作的节点地址，告诉客户端去连接这个指定的节点去获取数据。客户端收到指令之后跳转到正确的节点上去操作，还会同步更新纠正本地的槽位映射表缓存，后续所有key将使用新的槽位映射表。</p>
-<p><img src="/archives/c0af2eb/image-20210922092847540.png" alt="跳转重定向"></p>
-<h3 id="Redis集群节点间的通信机制"><a href="#Redis集群节点间的通信机制" class="headerlink" title="Redis集群节点间的通信机制"></a>Redis集群节点间的通信机制</h3><p>Redis Cluster节点间采用gossip协议进行通信，来<strong>维护集群的元数据(集群节点信息、主从角色、节点数量、各节点共享的数据等)</strong> 。</p>
-<p>维护集群元数据的方式有两种：</p>
-<ol>
-<li>集中式</li>
-<li>gossip</li>
-</ol>
-<h4 id="集中式"><a href="#集中式" class="headerlink" title="集中式"></a>集中式</h4><p>优点：在于元数据的更新和读取时效性非常好，一旦元数据出现变更就会立即同步到集中式存储中，其他节点读取的时候就会立即感知到数据的变化；</p>
-<p>缺点：在于所有的元数据的更新压力全部会集中在一个地方，可能导致元数据的存储压力。很多中间件会借助zookeeper集中式存储元数据。</p>
-<h4 id="gossip协议"><a href="#gossip协议" class="headerlink" title="gossip协议"></a>gossip协议</h4><p><img src="/archives/c0af2eb/gossip%E5%8D%8F%E8%AE%AE%E9%80%9A%E4%BF%A1.gif" alt="gossip协议通信"></p>
-<p>gossip协议包含多种信息，包括<code>ping</code>、<code>pong</code>、<code>meet</code>、<code>fail</code>等。</p>
-<blockquote>
-<p><code>meet</code>：某个节点发送<code>meet</code>给新加入的节点，让新节点加入集群中，然后新节点就会开始和其他节点开始通信；</p>
-<p><code>ping</code>：每个节点都会频繁的给其他节点发送<code>ping</code>，其中包含自己的状态还有自己维护的集群元数据，互相通过<code>ping</code>交换元数据(类似感知到集群节点增加和删除，hash slot信息等)；</p>
-<p><code>pong</code>：对<code>ping</code>和<code>meet</code>信息的返回，包含自己的状态和其他信息，也可以用于广播和更新；</p>
-<p><code>fail</code>：某个节点判断另一个节点<code>fail</code>之后，就会发送<code>fail</code>给其他节点，通知其他节点，指定节点宕机了；</p>
-</blockquote>
-<p><strong>优点：</strong> 在于元数据的更新比较分散，不是集中在一个地方，更新请求会陆陆续续打到所有节点上去更新，有一定的延时，降低了压力；</p>
-<p><strong>缺点：</strong> 在于数据更新有一定的延时，可能导致集群的一些操作会有些滞后；</p>
-<h4 id="gossip协议通信端口"><a href="#gossip协议通信端口" class="headerlink" title="gossip协议通信端口"></a>gossip协议通信端口</h4><p>每个节点都有一个专门用于节点之间gossip通信的端口，就是自己提供服务的端口号+10000，比如：节点端口是7001，那么用于节点通信的端口就是17001。</p>
-<p>每个节点每隔一段时间都会往另外几个节点发送<code>ping</code>消息，同时其他几个接收到<code>ping</code>消息之后返回<code>pong</code>消息。</p>
-<h3 id="网络抖动问题"><a href="#网络抖动问题" class="headerlink" title="网络抖动问题"></a>网络抖动问题</h3><p>在正常生产环境中，经常会出现突然部分连接不可访问，过一会之后又恢复正常。对于这样的问题Redis集群模式也提供了解决方案；可以配置选项<code>cluster-node-timeout</code>，表示当某个节点持续timeout的时间失联时，才可以认定该节点出现故障，需要进行主从机器换。如果没有这个选项，网络抖动导致主从频繁切换，数据重复复制。</p>
-<h3 id="Redis集群选举原理"><a href="#Redis集群选举原理" class="headerlink" title="Redis集群选举原理"></a>Redis集群选举原理</h3><p>当slave发现自己的master变为fail状态时，便会尝试进行<code>Failover</code>，让其成为新的master。由于挂掉了master可能会有多个slave，从而存在多个slave竞争成为master节点的过程，过程如下：</p>
-<ol>
-<li><p>slave发现自己的master变为FAIL；</p>
-</li>
-<li><p>将自己记录的集群<code>currentEpoch</code>加1，并广播<code>FAILOVER_AUTH_RERQUEST</code>信息；</p>
-</li>
-<li><p>其他节点接收到该信息，只有master响应，判断请求者的合法性，并发送<code>FAILOVER_AUTH_ACK</code>，对每一个<code>epoch</code>只发送一次<code>ack</code>；</p>
-</li>
-<li><p>尝试<code>failover</code>的slave收集master返回的<code>FAILOVER_AUTH_ACK</code>；</p>
-</li>
-<li><p>slave收到<strong>超过半数master的ack</strong>后变成新的master</p>
-<blockquote>
-<p>这里解释了集群为什么至少需要三个主节点，如果只有两个，当其中一个挂了，只剩下一个主节点是不能选举成功的。</p>
-</blockquote>
-</li>
-<li><p>slave广播<code>pong</code>消息通知其他集群节点</p>
-</li>
-</ol>
-<p>从节点并不是在主节点已进入<code>FAIL</code>状态就马上尝试发起选举，而是有一定的延时，这个延时确保我们等待<code>FAIL</code>状态在集群中传播，slave如果立即尝试选举，其他masters或许没有意识到<code>FAIL</code>状态，可能会拒绝投票。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">延时计算公式：`DELAY = 500ms + random(0~500ms) + SLAVE_RANK * 1000ms`</span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<p><code>SLAVE_RANK</code>表示此slave已经从master复制数据的总量的rank。Rank越小表示已经复制的数据越新。这种方式下，持有最新数据的slave将会首先发起选举。</p>
-</blockquote>
-<h3 id="集群脑裂数据丢失问题"><a href="#集群脑裂数据丢失问题" class="headerlink" title="集群脑裂数据丢失问题"></a>集群脑裂数据丢失问题</h3><p>redis集群没有过半机制会有脑裂问题，网络分区导致脑裂后多个主节点对外提供写服务，一旦网络分区恢复，会将其中一个主节点变为从节点，这时会有大量数据丢失。</p>
-<p>规避方法可以在redis配置里加上参数(这种方法不可能百分之百避免数据丢失，参考集群leader选举机制)：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">min-replicas-to-write 1 # 写数据成功最少同步的slave数量，这个数量可以模仿大于半数机制配置，比如集群总共三个节点可以配置1，加上leader就是2，超过了半数</span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<p><strong>注意：</strong></p>
-<p>这个配置在一定程度上影响集群的可用性，比如slave要是少于1个，这个集群就算leader正常也不能提供服务了，需要具体场景权衡选择。</p>
-</blockquote>
-<h3 id="集群是否完整才能对外提供服务？"><a href="#集群是否完整才能对外提供服务？" class="headerlink" title="集群是否完整才能对外提供服务？"></a>集群是否完整才能对外提供服务？</h3><p>当<code>redis.conf</code>的配置<code>cluster-require-full-coverage</code>为no时，表示负责一个插槽的主库下线且没有相应的从库进行故障恢复时，集群任然可用，如果为yes则集群不可用。</p>
-<h3 id="Redis集群为什么至少需要三个master节点，且推荐节点数为奇数？"><a href="#Redis集群为什么至少需要三个master节点，且推荐节点数为奇数？" class="headerlink" title="Redis集群为什么至少需要三个master节点，且推荐节点数为奇数？"></a>Redis集群为什么至少需要三个master节点，且推荐节点数为奇数？</h3><p>因为新master的选举需要大于半数的集群master同意才能选举成功，如果只有两个master节点，当其中一个挂了，是达不到选举新master的条件的。  </p>
-<p>奇数个master节点可以在满足选举该条件的基础上节省一个节点，比如三个master节点和四个master节点的集群相比，大家如果都挂了一个master节点都能选举新master节点，如果都挂了两个master节点都没有办法选举新master节点了，所以奇数的master节点更多的是从<strong>节省机器资源角度出发</strong>的。</p>
-<h3 id="Redis集群对批量操作指令的支持"><a href="#Redis集群对批量操作指令的支持" class="headerlink" title="Redis集群对批量操作指令的支持"></a>Redis集群对批量操作指令的支持</h3><p>对于类似<code>mset</code>，这样的多个key的原生批量操作指令，redis集群只支持所有key落在同一slot的情况，如果有多个key一定要使用<code>mset</code>命令在redis集群上操作，则可以在可以的前面加上<code>&#123;XXX&#125;</code>，这样参数数据分片hash计算的只会是大括号中的值，这样能确保不同的key能落在同一slot中，示例如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mset &#123;user1&#125;:1:name zhangsan &#123;user1&#125;:1:age 20</span><br></pre></td></tr></table></figure>
-
-<p>假如name和age计算的hash slot值不一样，但是这条命令在集群下执行，redis只会用大括号里的<code>user1</code>做hash slot计算，所以算出来的slot值肯定相同，最后能落在同一slot。</p>
-<h3 id="哨兵leader选举流程"><a href="#哨兵leader选举流程" class="headerlink" title="哨兵leader选举流程"></a>哨兵leader选举流程</h3><p>当一个master服务器被某个sentinel视为下线状态后，该sentinel会与其他sentinel协商选出sentinel的leader进行故障转移工作。每个发现master服务器下线的sentinel都可以要求其他sentinel选举自己为sentinel的leader，选举是先到先得。同时每一个sentinel每次选举都会自增配置选举周期，每个选举周期只会选择一个sentinel的leader。如果所有<strong>超过一半</strong>的sentinel选举某个sentinel作为leader。之后该sentinel进行故障转移操作，从存活的slave中选举出新的master，这个选举过程和集群的master选举很类似。</p>
-<p>哨兵集群只有一个哨兵节点，redis的主从也能正常运行以及选举master，如果master挂了，那唯一的那个哨兵节点就是哨兵leader了，可以正常选举新的master。不过为了高可用一般都推荐至少部署三个哨兵节点。为什么推荐奇数个哨兵节点，原理和集群奇数个master节点类似。</p>
-]]></content>
-      <categories>
-        <category>Redis</category>
-      </categories>
-      <tags>
-        <tag>Redis</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Redis键值设计规范与性能优化</title>
     <url>/archives/c0eb8ebf/</url>
     <content><![CDATA[<h2 id="一、键值设计"><a href="#一、键值设计" class="headerlink" title="一、键值设计"></a>一、键值设计</h2><h3 id="1、key名设计"><a href="#1、key名设计" class="headerlink" title="1、key名设计"></a>1、key名设计</h3><p>(1) 【建议】：可读性和可管理性<br>以业务名（或数据库名）为前缀（防止key冲突），用冒号分隔，比如业务表:表名:id</p>
@@ -899,6 +820,85 @@
 <h2 id="LFU算法"><a href="#LFU算法" class="headerlink" title="LFU算法"></a>LFU算法</h2><p>LFU（Least Frequently Used 最不经常使用）：淘汰最近一段时间被访问次数最少的数据，以<strong>次数</strong>作为参考。</p>
 <p>当存在热点数据时，LRU的效率很好，但偶发性的、周期性的批量操作会导致LRU命中急剧下降，缓存污染情况比较严重。这时使用LFU可能更好。</p>
 <p>根据自身业务类型，配置好maxmemory-policy（默认是noeviction），推荐使用volatile-lru。如果不设置最大内存，当Redis内存超出物理内存限制时，内存的数据会开始和磁盘产生频繁的交换（swap），会让Redis的性能急剧下降。当Redis运行在主从模式时，只有主节点才会执行过期删除策略，然后把删除操作“del key”同步到从节点删除数据。</p>
+]]></content>
+      <categories>
+        <category>Redis</category>
+      </categories>
+      <tags>
+        <tag>Redis</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Redis集群原理分析</title>
+    <url>/archives/c0af2eb/</url>
+    <content><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>Redis Cluster将所有数据划分为16384个slots(槽位)，每个节点负责其中一部分槽位。槽位的信息存储于每个节点中；当Redis Cluster的客户端连接集群时，它也会得到一份槽位配置信息并将其缓存在客户端本地。这样当客户端要查找某个key时，可以直接定位到目标节点。同时也会带来一个问题”槽位信息在客户端和服务器不一致的情况，这就需要纠正机制来实现槽位信息的纠正”。</p>
+<h3 id="槽位定位算法"><a href="#槽位定位算法" class="headerlink" title="槽位定位算法"></a>槽位定位算法</h3><p>Cluster默认会对key使用CRC16算法进行hash得到一个整数值，然后用这个整数值对16384进行取模得到具体的槽位。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">HASH_SLOT = CRC16(key) mod 16384</span><br></pre></td></tr></table></figure>
+
+<h3 id="跳转重定位"><a href="#跳转重定位" class="headerlink" title="跳转重定位"></a>跳转重定位</h3><p>当客户端向一个错误的节点发出了指令，该节点会发现指令的key所在的槽位不是自己管理的，这时它会像客户端发送一个特殊的跳转指令携带目标操作的节点地址，告诉客户端去连接这个指定的节点去获取数据。客户端收到指令之后跳转到正确的节点上去操作，还会同步更新纠正本地的槽位映射表缓存，后续所有key将使用新的槽位映射表。</p>
+<p><img src="/archives/c0af2eb/image-20210922092847540.png" alt="跳转重定向"></p>
+<h3 id="Redis集群节点间的通信机制"><a href="#Redis集群节点间的通信机制" class="headerlink" title="Redis集群节点间的通信机制"></a>Redis集群节点间的通信机制</h3><p>Redis Cluster节点间采用gossip协议进行通信，来<strong>维护集群的元数据(集群节点信息、主从角色、节点数量、各节点共享的数据等)</strong> 。</p>
+<p>维护集群元数据的方式有两种：</p>
+<ol>
+<li>集中式</li>
+<li>gossip</li>
+</ol>
+<h4 id="集中式"><a href="#集中式" class="headerlink" title="集中式"></a>集中式</h4><p>优点：在于元数据的更新和读取时效性非常好，一旦元数据出现变更就会立即同步到集中式存储中，其他节点读取的时候就会立即感知到数据的变化；</p>
+<p>缺点：在于所有的元数据的更新压力全部会集中在一个地方，可能导致元数据的存储压力。很多中间件会借助zookeeper集中式存储元数据。</p>
+<h4 id="gossip协议"><a href="#gossip协议" class="headerlink" title="gossip协议"></a>gossip协议</h4><p><img src="/archives/c0af2eb/gossip%E5%8D%8F%E8%AE%AE%E9%80%9A%E4%BF%A1.gif" alt="gossip协议通信"></p>
+<p>gossip协议包含多种信息，包括<code>ping</code>、<code>pong</code>、<code>meet</code>、<code>fail</code>等。</p>
+<blockquote>
+<p><code>meet</code>：某个节点发送<code>meet</code>给新加入的节点，让新节点加入集群中，然后新节点就会开始和其他节点开始通信；</p>
+<p><code>ping</code>：每个节点都会频繁的给其他节点发送<code>ping</code>，其中包含自己的状态还有自己维护的集群元数据，互相通过<code>ping</code>交换元数据(类似感知到集群节点增加和删除，hash slot信息等)；</p>
+<p><code>pong</code>：对<code>ping</code>和<code>meet</code>信息的返回，包含自己的状态和其他信息，也可以用于广播和更新；</p>
+<p><code>fail</code>：某个节点判断另一个节点<code>fail</code>之后，就会发送<code>fail</code>给其他节点，通知其他节点，指定节点宕机了；</p>
+</blockquote>
+<p><strong>优点：</strong> 在于元数据的更新比较分散，不是集中在一个地方，更新请求会陆陆续续打到所有节点上去更新，有一定的延时，降低了压力；</p>
+<p><strong>缺点：</strong> 在于数据更新有一定的延时，可能导致集群的一些操作会有些滞后；</p>
+<h4 id="gossip协议通信端口"><a href="#gossip协议通信端口" class="headerlink" title="gossip协议通信端口"></a>gossip协议通信端口</h4><p>每个节点都有一个专门用于节点之间gossip通信的端口，就是自己提供服务的端口号+10000，比如：节点端口是7001，那么用于节点通信的端口就是17001。</p>
+<p>每个节点每隔一段时间都会往另外几个节点发送<code>ping</code>消息，同时其他几个接收到<code>ping</code>消息之后返回<code>pong</code>消息。</p>
+<h3 id="网络抖动问题"><a href="#网络抖动问题" class="headerlink" title="网络抖动问题"></a>网络抖动问题</h3><p>在正常生产环境中，经常会出现突然部分连接不可访问，过一会之后又恢复正常。对于这样的问题Redis集群模式也提供了解决方案；可以配置选项<code>cluster-node-timeout</code>，表示当某个节点持续timeout的时间失联时，才可以认定该节点出现故障，需要进行主从机器换。如果没有这个选项，网络抖动导致主从频繁切换，数据重复复制。</p>
+<h3 id="Redis集群选举原理"><a href="#Redis集群选举原理" class="headerlink" title="Redis集群选举原理"></a>Redis集群选举原理</h3><p>当slave发现自己的master变为fail状态时，便会尝试进行<code>Failover</code>，让其成为新的master。由于挂掉了master可能会有多个slave，从而存在多个slave竞争成为master节点的过程，过程如下：</p>
+<ol>
+<li><p>slave发现自己的master变为FAIL；</p>
+</li>
+<li><p>将自己记录的集群<code>currentEpoch</code>加1，并广播<code>FAILOVER_AUTH_RERQUEST</code>信息；</p>
+</li>
+<li><p>其他节点接收到该信息，只有master响应，判断请求者的合法性，并发送<code>FAILOVER_AUTH_ACK</code>，对每一个<code>epoch</code>只发送一次<code>ack</code>；</p>
+</li>
+<li><p>尝试<code>failover</code>的slave收集master返回的<code>FAILOVER_AUTH_ACK</code>；</p>
+</li>
+<li><p>slave收到<strong>超过半数master的ack</strong>后变成新的master</p>
+<blockquote>
+<p>这里解释了集群为什么至少需要三个主节点，如果只有两个，当其中一个挂了，只剩下一个主节点是不能选举成功的。</p>
+</blockquote>
+</li>
+<li><p>slave广播<code>pong</code>消息通知其他集群节点</p>
+</li>
+</ol>
+<p>从节点并不是在主节点已进入<code>FAIL</code>状态就马上尝试发起选举，而是有一定的延时，这个延时确保我们等待<code>FAIL</code>状态在集群中传播，slave如果立即尝试选举，其他masters或许没有意识到<code>FAIL</code>状态，可能会拒绝投票。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">延时计算公式：`DELAY = 500ms + random(0~500ms) + SLAVE_RANK * 1000ms`</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><code>SLAVE_RANK</code>表示此slave已经从master复制数据的总量的rank。Rank越小表示已经复制的数据越新。这种方式下，持有最新数据的slave将会首先发起选举。</p>
+</blockquote>
+<h3 id="集群脑裂数据丢失问题"><a href="#集群脑裂数据丢失问题" class="headerlink" title="集群脑裂数据丢失问题"></a>集群脑裂数据丢失问题</h3><p>redis集群没有过半机制会有脑裂问题，网络分区导致脑裂后多个主节点对外提供写服务，一旦网络分区恢复，会将其中一个主节点变为从节点，这时会有大量数据丢失。</p>
+<p>规避方法可以在redis配置里加上参数(这种方法不可能百分之百避免数据丢失，参考集群leader选举机制)：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">min-replicas-to-write 1 # 写数据成功最少同步的slave数量，这个数量可以模仿大于半数机制配置，比如集群总共三个节点可以配置1，加上leader就是2，超过了半数</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>注意：</strong></p>
+<p>这个配置在一定程度上影响集群的可用性，比如slave要是少于1个，这个集群就算leader正常也不能提供服务了，需要具体场景权衡选择。</p>
+</blockquote>
+<h3 id="集群是否完整才能对外提供服务？"><a href="#集群是否完整才能对外提供服务？" class="headerlink" title="集群是否完整才能对外提供服务？"></a>集群是否完整才能对外提供服务？</h3><p>当<code>redis.conf</code>的配置<code>cluster-require-full-coverage</code>为no时，表示负责一个插槽的主库下线且没有相应的从库进行故障恢复时，集群任然可用，如果为yes则集群不可用。</p>
+<h3 id="Redis集群为什么至少需要三个master节点，且推荐节点数为奇数？"><a href="#Redis集群为什么至少需要三个master节点，且推荐节点数为奇数？" class="headerlink" title="Redis集群为什么至少需要三个master节点，且推荐节点数为奇数？"></a>Redis集群为什么至少需要三个master节点，且推荐节点数为奇数？</h3><p>因为新master的选举需要大于半数的集群master同意才能选举成功，如果只有两个master节点，当其中一个挂了，是达不到选举新master的条件的。  </p>
+<p>奇数个master节点可以在满足选举该条件的基础上节省一个节点，比如三个master节点和四个master节点的集群相比，大家如果都挂了一个master节点都能选举新master节点，如果都挂了两个master节点都没有办法选举新master节点了，所以奇数的master节点更多的是从<strong>节省机器资源角度出发</strong>的。</p>
+<h3 id="Redis集群对批量操作指令的支持"><a href="#Redis集群对批量操作指令的支持" class="headerlink" title="Redis集群对批量操作指令的支持"></a>Redis集群对批量操作指令的支持</h3><p>对于类似<code>mset</code>，这样的多个key的原生批量操作指令，redis集群只支持所有key落在同一slot的情况，如果有多个key一定要使用<code>mset</code>命令在redis集群上操作，则可以在可以的前面加上<code>&#123;XXX&#125;</code>，这样参数数据分片hash计算的只会是大括号中的值，这样能确保不同的key能落在同一slot中，示例如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mset &#123;user1&#125;:1:name zhangsan &#123;user1&#125;:1:age 20</span><br></pre></td></tr></table></figure>
+
+<p>假如name和age计算的hash slot值不一样，但是这条命令在集群下执行，redis只会用大括号里的<code>user1</code>做hash slot计算，所以算出来的slot值肯定相同，最后能落在同一slot。</p>
+<h3 id="哨兵leader选举流程"><a href="#哨兵leader选举流程" class="headerlink" title="哨兵leader选举流程"></a>哨兵leader选举流程</h3><p>当一个master服务器被某个sentinel视为下线状态后，该sentinel会与其他sentinel协商选出sentinel的leader进行故障转移工作。每个发现master服务器下线的sentinel都可以要求其他sentinel选举自己为sentinel的leader，选举是先到先得。同时每一个sentinel每次选举都会自增配置选举周期，每个选举周期只会选择一个sentinel的leader。如果所有<strong>超过一半</strong>的sentinel选举某个sentinel作为leader。之后该sentinel进行故障转移操作，从存活的slave中选举出新的master，这个选举过程和集群的master选举很类似。</p>
+<p>哨兵集群只有一个哨兵节点，redis的主从也能正常运行以及选举master，如果master挂了，那唯一的那个哨兵节点就是哨兵leader了，可以正常选举新的master。不过为了高可用一般都推荐至少部署三个哨兵节点。为什么推荐奇数个哨兵节点，原理和集群奇数个master节点类似。</p>
 ]]></content>
       <categories>
         <category>Redis</category>
@@ -1132,200 +1132,6 @@
       </tags>
   </entry>
   <entry>
-    <title>Zookeeper实战</title>
-    <url>/archives/e5bda741/</url>
-    <content><![CDATA[<h1 id="1、什么是Zookeeper"><a href="#1、什么是Zookeeper" class="headerlink" title="1、什么是Zookeeper"></a>1、什么是Zookeeper</h1><p>在Zookeeper官方文档中给出的接释是，它是一个分布式协调框架，是Apache Hadoop的一个子项目，它主要是用来解决分布式应用中经常遇到的一些数据管理问题，如统一命名服务、状态同步服务、集群管理、分布式应用配置项的管理等。</p>
-<p><img src="/archives/e5bda741/clipboard.png" alt="Zookeeper"></p>
-<p>Zookeeper主要由两个核心概念：文件系统数据结构 + 监听通知机制</p>
-<h2 id="1-1-文件系统数据结构"><a href="#1-1-文件系统数据结构" class="headerlink" title="1.1 文件系统数据结构"></a>1.1 文件系统数据结构</h2><p>Zookeeper维护一个类似文件系统的数据结构：</p>
-<p><img src="/archives/e5bda741/image-20211003175038043.png" alt="zookeeper文件系统的数据结构"></p>
-<p>每个子目录都被称作为<strong>znode（目录节点）</strong>，和文件系统类似，我们能够自由的增加、删除znode，在一个znode下增加、删除子znode。</p>
-<p>有四种类型的znode：</p>
-<ol>
-<li><p>PERSISTENT-持久化目录节点</p>
-<p>客户端与zookeeper断开连接后，该节点依旧存在，只要不手动删除该节点，他将永远存在</p>
-</li>
-<li><p>PERSISTENT_SEQUENTIAL-持久化顺序编号目录节点</p>
-<p>客户端与zookeeper断开连接后，该节点依旧存在，只是Zookeeper给该节点名称进行顺序编号</p>
-</li>
-<li><p>EPHEMERAL-临时目录节点</p>
-<p>客户端与zookeeper断开连接后，该节点被删除</p>
-</li>
-<li><p>EPHEMERAL_SEQUENTIAL-临时顺序编号目录节点</p>
-<p>客户端与zookeeper断开连接后，该节点被删除，只是Zookeeper给该节点名称进行顺序编号</p>
-</li>
-<li><p>Container节点</p>
-<p>3.5.3版本新增，如果Container节点下面没有子节点，则Container节点在未来会被Zookeeper自动清除，定时任务默认60秒检查一次</p>
-</li>
-<li><p>TTL节点（默认禁用，只能通过系统配置<em>zookeeper.extendedTypesEnabled=true</em>开启，不稳定）</p>
-</li>
-</ol>
-<p><img src="/archives/e5bda741/image-20211003175418041.png" alt="zookeeper节点构成"></p>
-<h2 id="1-2-监听通知机制"><a href="#1-2-监听通知机制" class="headerlink" title="1.2 监听通知机制"></a>1.2 监听通知机制</h2><p>客户端监听他关心的任意节点，或者目录节点以及递归子目录节点</p>
-<ol>
-<li>如果注册的是对某个节点的监听，则当这个节点被删除，或者被修改时，对应的客户端将被通知</li>
-<li>如果注册的是对某个目录的监听，则这个目录有子节点被创建，或者有子节点被删除，对应的客户端将被通知</li>
-<li>如果注册的是对某个目录的递归子节点进行监听，则当目录下面任意子节点有目录结构的变化（有子节点被创建，或者被删除）或者根节点有数据变化时，对应的客户端将通知</li>
-</ol>
-<p><strong>注意：所有的通知都是一次性的，无论是对节点还是对目录进行的监听，一旦触发，对应的监听即被删除。递归子节点，监听是对所有子节点的，所以每个子节点下面的事件同样只会被触发一次</strong></p>
-<h2 id="1-3-Zookeeper经典应用场景"><a href="#1-3-Zookeeper经典应用场景" class="headerlink" title="1.3 Zookeeper经典应用场景"></a>1.3 Zookeeper经典应用场景</h2><ol>
-<li>分布式配置中心</li>
-<li>分布式注册中心</li>
-<li>分布式锁</li>
-<li>分布式队列</li>
-<li>集群选举</li>
-<li>分布式屏障</li>
-<li>分布订阅</li>
-</ol>
-<h1 id="2、Zookeeper安装及使用"><a href="#2、Zookeeper安装及使用" class="headerlink" title="2、Zookeeper安装及使用"></a>2、Zookeeper安装及使用</h1><h2 id="2-1-zookeeper安装"><a href="#2-1-zookeeper安装" class="headerlink" title="2.1 zookeeper安装"></a>2.1 zookeeper安装</h2><h4 id="Step1-配置Java环境，检查环境"><a href="#Step1-配置Java环境，检查环境" class="headerlink" title="Step1: 配置Java环境，检查环境"></a>Step1: 配置Java环境，检查环境</h4><figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">java -version</span><br></pre></td></tr></table></figure>
-
-<h4 id="Step2-下载解压zookeeper"><a href="#Step2-下载解压zookeeper" class="headerlink" title="Step2: 下载解压zookeeper"></a>Step2: 下载解压zookeeper</h4><figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">weget https://archive.apache.org/dist/zookeeper/zookeeper-3.5.9/apache-zookeeper-3.5.9-bin.tar.gz</span><br><span class="line">tar -zxvf apache-zookeeper-3.5.9-bin.tar.gz</span><br><span class="line"><span class="built_in">cd</span> apache-zookeeper-3.5.9-bin</span><br></pre></td></tr></table></figure>
-
-<h4 id="Step3-重命名配置文件-zoo-sample-cfg"><a href="#Step3-重命名配置文件-zoo-sample-cfg" class="headerlink" title="Step3: 重命名配置文件 zoo_sample.cfg"></a>Step3: 重命名配置文件 zoo_sample.cfg</h4><figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">cp zoo_sample.cfg zoo.cfg</span><br></pre></td></tr></table></figure>
-
-<h4 id="Step4-启动zookeeper"><a href="#Step4-启动zookeeper" class="headerlink" title="Step4: 启动zookeeper"></a>Step4: 启动zookeeper</h4><figure class="highlight sh"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 可以通过bin/skServer.sh 来查看都支持哪些参数</span></span><br><span class="line">bin/zkServer.sh start conf/zoo.cfg</span><br></pre></td></tr></table></figure>
-
-<h4 id="Step5-检查是否启动成功"><a href="#Step5-检查是否启动成功" class="headerlink" title="Step5: 检查是否启动成功"></a>Step5: 检查是否启动成功</h4><figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">ps -ef | grep java</span><br></pre></td></tr></table></figure>
-
-<h4 id="Step6-连接服务器"><a href="#Step6-连接服务器" class="headerlink" title="Step6: 连接服务器"></a>Step6: 连接服务器</h4><figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">bin/zkCli.sh</span><br></pre></td></tr></table></figure>
-
-<h2 id="2-2-zookeeper使用"><a href="#2-2-zookeeper使用" class="headerlink" title="2.2 zookeeper使用"></a>2.2 zookeeper使用</h2><ol>
-<li><p>创建zookeeper节点命令</p>
-<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">create [-s] [-e] [-c] [-t ttl] path [data] [acl]</span><br></pre></td></tr></table></figure>
-
-<p>中括号为可选项，没有则默认创建持久化节点</p>
-<p>-s：顺序节点</p>
-<p>-e：临时节点</p>
-<p>-c：容器节点</p>
-<p>-t：可以给节点添加过期时间，默认禁用，需要通过系统参数启用</p>
-<p>(<em>-Dzookeeper.extendedTypesEnabled=true, znode.container.checkIntervalMs:(Java system property only)<strong>New in 3.5.1:</strong> The time interval in milliseconds for each check of candidate container and ttl nodes. Default is “60000”</em>)</p>
-<p>创建节点：</p>
-<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">create /test-note some-data</span><br></pre></td></tr></table></figure>
-
-<p>如上，没有加任何可选参数，创建的就是一个持久化节点<br><img src="/archives/e5bda741/image-20211003164434593.png" alt="创建节点"></p>
-<p>查看节点：</p>
-<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">get /test-node</span><br></pre></td></tr></table></figure>
-
-<p><img src="/archives/e5bda741/image-20211003165018195.png" alt="查看节点"></p>
-<p>查看节点状态信息：</p>
-<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line"><span class="built_in">stat</span> /test-node</span><br></pre></td></tr></table></figure>
-<p><img src="/archives/e5bda741/image-20211003165814988.png" alt="查看节点状态"></p>
-</li>
-</ol>
-<ul>
-<li>cZxid：创建znode的事务ID（Zxid的值）</li>
-<li>mZxid：最后修改znode的事务ID</li>
-<li>pZxid：最后添加或删除子节点的事务ID（子节点列表发生变化才会发生改变）</li>
-<li>ctime：znode创建时间</li>
-<li>mtime：znode最近修改时间</li>
-<li>dataVersion：znode的当前数据版本</li>
-<li>cversion：znode的子节点结果集版本（一个节点的子节点增加、删除都回影响这个版本）</li>
-<li>aclVersion：表示对此znode的acl版本</li>
-<li>ephemeralOwner：znode是临时znode时，表示znode所有者的sessionID。如果znode不是临时znode，则该字段设置为零</li>
-<li>dataLength：znode数据字段的长度</li>
-<li>numChildren：znode的子znode的数量。</li>
-</ul>
-<p>查看节点状态信息同时查看数据</p>
-<p><img src="/archives/e5bda741/image-20211003171357202.png" alt="查看节点状态信息"></p>
-<p>根据状态数据中的版本号有并发修改数据实现客观锁功能</p>
-<p>比如：客户端首先获取版本信息，<code>get -s /node-test</code></p>
-<p><img src="/archives/e5bda741/image-20211003171802123.png" alt="节点版本信息"></p>
-<p><code>/test-node</code>当前的数据版本是1，这时客户端用set命令修改数据的时候可以把版本号带上</p>
-<p><img src="/archives/e5bda741/image-20211003172301741.png" alt="带版本号修改"></p>
-<p>如果在执行上面set命令前，有人修改了数据，zookeeper回递增版本号，这个时候如果再用以前的版本号修改，将会导致失败，报错如下：</p>
-<p><img src="/archives/e5bda741/image-20211003172210262.png" alt="带版本号修改报错"></p>
-<p>创建节点，这里要注意，zookeeper是以节点组织数据的，没有相对路径这么一说，所以，所有的节点一定是以<code>/</code>开头的。</p>
-<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">create /test-node/test-sub-node</span><br></pre></td></tr></table></figure>
-
-<p><img src="/archives/e5bda741/image-20211003192152896.png" alt="创建子节点"></p>
-<p>查看子节点的信息，比如根节点下面所有的子节点，加一个大写R可以查看递归子节点列表</p>
-<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">ls /</span><br></pre></td></tr></table></figure>
-
-<p><img src="/archives/e5bda741/image-20211003192322656.png" alt="查看根节点所有子节点"></p>
-<p>查看<code>/test-node</code>下面所有的子节点</p>
-<p><img src="/archives/e5bda741/image-20211003192436348.png" alt="查看节点"></p>
-<p>创建临时节点</p>
-<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">create -e /ephemeral data</span><br></pre></td></tr></table></figure>
-
-<p>create 后跟一个<code>-e</code>创建临时节点，临时节点不能创建子节点</p>
-<p><img src="/archives/e5bda741/image-20211003193204396.png" alt="创建临时节点"></p>
-<p>创建序号节点，加参数<code>-s</code></p>
-<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">create /seq-parent data <span class="comment"># 创建父目录，单纯为了分类，非必须</span></span><br><span class="line">create /seq-parent/ data <span class="comment"># 创建顺序节点。顺序节点将再seq-parent目录下面，顺序递增</span></span><br></pre></td></tr></table></figure>
-
-<p>为了容纳子节点，先创建父目录<code>/seq-parent</code></p>
-<p><img src="/archives/e5bda741/image-20211003193523659.png" alt="创建父目录"></p>
-<p>也可以再序号节点前面带一个前缀</p>
-<p><img src="/archives/e5bda741/image-20211003193757408.png" alt="序号节点前加前缀"></p>
-<p>创建临时顺序节点，其他增删改查和其他节点无异</p>
-<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">create -s -e /ephemeral-node/前缀-</span><br></pre></td></tr></table></figure>
-
-<p><img src="/archives/e5bda741/image-20211003194346735.png" alt="image-20211003194346735"></p>
-<p>创建容器节点</p>
-<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">create -c /container</span><br></pre></td></tr></table></figure>
-
-<p>容器节点主要用来容纳子节点，如果没有给其创建子节点，容器节点表现和持久化节点一样，如果给容器创建了子节点，后续有把子节点清空，容器节点也会被zookeeper删除。</p>
-<ol start="2">
-<li><p>事件监听机制</p>
-<p>针对节点的监听：一旦事件触发，对应的注册立刻被删除，所以事件监听是一次性的</p>
-<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">get -w /path <span class="comment"># 注册监听的同时获取数据</span></span><br><span class="line"><span class="built_in">stat</span> -w /path <span class="comment"># 对节点进行监听，且获取元数据信息</span></span><br></pre></td></tr></table></figure>
-
-<p><img src="/archives/e5bda741/image-20211003195407810.png" alt="监听节点"></p>
-</li>
-</ol>
-<p>针对目录的监听，如下图，目录的变化，会触发事件，且一旦触发，对应的监听也会被移除，后续对节点的创建没有触发监听事件</p>
-<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">ls -w /path</span><br></pre></td></tr></table></figure>
-
-<p><img src="/archives/e5bda741/image-20211003195740404.png" alt="监听目录"></p>
-<p>针对递归子目录的监听</p>
-<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">ls -R -w /path <span class="comment"># -R区分大小写，一定要大写</span></span><br></pre></td></tr></table></figure>
-
-<p>如下对<code>/test</code>节点进行递归监听，但是每个目录下的目录监听也是一次性的，如第一次在<code>/test</code>目录下创建节点时，触发监听事件，第二次则没有，同样，因为是递归的目录监听，所以在<code>/test/sub</code>下进行节点创建时，触发事件，但是再次创建<code>/test/sub/subsub</code>节点时，没有触发事件。</p>
-<p><img src="/archives/e5bda741/image-20211003201435610.png" alt="递归子目录监听"></p>
-<blockquote>
-<p>Zookeeper事件类型：</p>
-<ul>
-<li>None：连接建立事件</li>
-<li>NodeCreated：节点创建</li>
-<li>NodeDeleted：节点删除</li>
-<li>NodeDataChanged：节点数据变化</li>
-<li>NodeChildrenChanged：子节点列表变化</li>
-<li>DataWatchRemoved：节点监听被移除</li>
-<li>ChildWatchRemoved：子节点监听被移除</li>
-</ul>
-</blockquote>
-<h1 id="3、Zookeeper的ACL权限控制-Access-Control-List"><a href="#3、Zookeeper的ACL权限控制-Access-Control-List" class="headerlink" title="3、Zookeeper的ACL权限控制(Access Control List)"></a>3、Zookeeper的ACL权限控制(Access Control List)</h1><p>Zookeeper的ACL权限控制，可以控制节点的读写操作，保证数据的安全性，Zookeeper的ACL权限设置分为3部分组成，分别是：**权限模式(Scheme)<strong>、</strong>授权对象(ID)<strong>、</strong>权限信息(Permission)**。最终组成一条例如”scheme:id:permission”</p>
-]]></content>
-      <categories>
-        <category>zookeeper</category>
-      </categories>
-      <tags>
-        <tag>zookeeper</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>hexo静态页面图片不显示问题</title>
-    <url>/archives/e4419141/</url>
-    <content><![CDATA[<p>hexo静态页面图片不显示一般有几个原因：</p>
-<p>1、<code>_config.yml</code>中没有设置<code>post_asset_folder: true</code>；这个设置默认是false</p>
-<p>2、没有安装插件 asset-image</p>
-<p>如果在运行工程之前上面两个步骤都没有操作过，则首先需要在<code>_config.yml</code>中设置<code>post_asset_folder:true</code> 。然后在cmd中运行</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npm install https://github.com/CodeFalling/hexo-asset-image --save</span><br></pre></td></tr></table></figure>
-
-<p>由于国内网络环境，可能需要多下载几次才可以下载成功，要耐心等待。或者有条件的可以翻墙下载。</p>
-<p>以上操作完毕之后重新发布工程</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean &amp;&amp; hexo generate &amp;&amp; hexo deploy</span><br></pre></td></tr></table></figure>
-
-<p>页面效果如下：</p>
-<p><img src="/archives/e4419141/image-20210728134047043.png"></p>
-]]></content>
-      <categories>
-        <category>解决方案</category>
-      </categories>
-      <tags>
-        <tag>问题解决</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>hexo+github搭建博客详细教程</title>
     <url>/archives/8eb04e19/</url>
     <content><![CDATA[<p>经历了两天的折腾，终于搭建好了个人博客。由于第一次搭建个人博客，所以在搭建过程中也遇到了很多的问题。现在特意整理一下整个搭建过程以及中间遇到的问题。</p>
@@ -1390,6 +1196,29 @@
       </categories>
       <tags>
         <tag>环境搭建</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>hexo静态页面图片不显示问题</title>
+    <url>/archives/e4419141/</url>
+    <content><![CDATA[<p>hexo静态页面图片不显示一般有几个原因：</p>
+<p>1、<code>_config.yml</code>中没有设置<code>post_asset_folder: true</code>；这个设置默认是false</p>
+<p>2、没有安装插件 asset-image</p>
+<p>如果在运行工程之前上面两个步骤都没有操作过，则首先需要在<code>_config.yml</code>中设置<code>post_asset_folder:true</code> 。然后在cmd中运行</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npm install https://github.com/CodeFalling/hexo-asset-image --save</span><br></pre></td></tr></table></figure>
+
+<p>由于国内网络环境，可能需要多下载几次才可以下载成功，要耐心等待。或者有条件的可以翻墙下载。</p>
+<p>以上操作完毕之后重新发布工程</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean &amp;&amp; hexo generate &amp;&amp; hexo deploy</span><br></pre></td></tr></table></figure>
+
+<p>页面效果如下：</p>
+<p><img src="/archives/e4419141/image-20210728134047043.png"></p>
+]]></content>
+      <categories>
+        <category>解决方案</category>
+      </categories>
+      <tags>
+        <tag>问题解决</tag>
       </tags>
   </entry>
   <entry>
@@ -1751,6 +1580,260 @@
       </categories>
       <tags>
         <tag>Spring源码</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Zookeeper实战</title>
+    <url>/archives/e5bda741/</url>
+    <content><![CDATA[<h1 id="1、什么是Zookeeper"><a href="#1、什么是Zookeeper" class="headerlink" title="1、什么是Zookeeper"></a>1、什么是Zookeeper</h1><p>在Zookeeper官方文档中给出的接释是，它是一个分布式协调框架，是Apache Hadoop的一个子项目，它主要是用来解决分布式应用中经常遇到的一些数据管理问题，如统一命名服务、状态同步服务、集群管理、分布式应用配置项的管理等。</p>
+<p><img src="/archives/e5bda741/clipboard.png" alt="Zookeeper"></p>
+<p>Zookeeper主要由两个核心概念：文件系统数据结构 + 监听通知机制</p>
+<h2 id="1-1-文件系统数据结构"><a href="#1-1-文件系统数据结构" class="headerlink" title="1.1 文件系统数据结构"></a>1.1 文件系统数据结构</h2><p>Zookeeper维护一个类似文件系统的数据结构：</p>
+<p><img src="/archives/e5bda741/image-20211003175038043.png" alt="zookeeper文件系统的数据结构"></p>
+<p>每个子目录都被称作为<strong>znode（目录节点）</strong>，和文件系统类似，我们能够自由的增加、删除znode，在一个znode下增加、删除子znode。</p>
+<p>有四种类型的znode：</p>
+<ol>
+<li><p>PERSISTENT-持久化目录节点</p>
+<p>客户端与zookeeper断开连接后，该节点依旧存在，只要不手动删除该节点，他将永远存在</p>
+</li>
+<li><p>PERSISTENT_SEQUENTIAL-持久化顺序编号目录节点</p>
+<p>客户端与zookeeper断开连接后，该节点依旧存在，只是Zookeeper给该节点名称进行顺序编号</p>
+</li>
+<li><p>EPHEMERAL-临时目录节点</p>
+<p>客户端与zookeeper断开连接后，该节点被删除</p>
+</li>
+<li><p>EPHEMERAL_SEQUENTIAL-临时顺序编号目录节点</p>
+<p>客户端与zookeeper断开连接后，该节点被删除，只是Zookeeper给该节点名称进行顺序编号</p>
+</li>
+<li><p>Container节点</p>
+<p>3.5.3版本新增，如果Container节点下面没有子节点，则Container节点在未来会被Zookeeper自动清除，定时任务默认60秒检查一次</p>
+</li>
+<li><p>TTL节点（默认禁用，只能通过系统配置<em>zookeeper.extendedTypesEnabled=true</em>开启，不稳定）</p>
+</li>
+</ol>
+<p><img src="/archives/e5bda741/image-20211003175418041.png" alt="zookeeper节点构成"></p>
+<h2 id="1-2-监听通知机制"><a href="#1-2-监听通知机制" class="headerlink" title="1.2 监听通知机制"></a>1.2 监听通知机制</h2><p>客户端监听他关心的任意节点，或者目录节点以及递归子目录节点</p>
+<ol>
+<li>如果注册的是对某个节点的监听，则当这个节点被删除，或者被修改时，对应的客户端将被通知</li>
+<li>如果注册的是对某个目录的监听，则这个目录有子节点被创建，或者有子节点被删除，对应的客户端将被通知</li>
+<li>如果注册的是对某个目录的递归子节点进行监听，则当目录下面任意子节点有目录结构的变化（有子节点被创建，或者被删除）或者根节点有数据变化时，对应的客户端将通知</li>
+</ol>
+<p><strong>注意：所有的通知都是一次性的，无论是对节点还是对目录进行的监听，一旦触发，对应的监听即被删除。递归子节点，监听是对所有子节点的，所以每个子节点下面的事件同样只会被触发一次</strong></p>
+<h2 id="1-3-Zookeeper经典应用场景"><a href="#1-3-Zookeeper经典应用场景" class="headerlink" title="1.3 Zookeeper经典应用场景"></a>1.3 Zookeeper经典应用场景</h2><ol>
+<li>分布式配置中心</li>
+<li>分布式注册中心</li>
+<li>分布式锁</li>
+<li>分布式队列</li>
+<li>集群选举</li>
+<li>分布式屏障</li>
+<li>分布订阅</li>
+</ol>
+<h1 id="2、Zookeeper安装及使用"><a href="#2、Zookeeper安装及使用" class="headerlink" title="2、Zookeeper安装及使用"></a>2、Zookeeper安装及使用</h1><h2 id="2-1-zookeeper安装"><a href="#2-1-zookeeper安装" class="headerlink" title="2.1 zookeeper安装"></a>2.1 zookeeper安装</h2><h4 id="Step1-配置Java环境，检查环境"><a href="#Step1-配置Java环境，检查环境" class="headerlink" title="Step1: 配置Java环境，检查环境"></a>Step1: 配置Java环境，检查环境</h4><figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">java -version</span><br></pre></td></tr></table></figure>
+
+<h4 id="Step2-下载解压zookeeper"><a href="#Step2-下载解压zookeeper" class="headerlink" title="Step2: 下载解压zookeeper"></a>Step2: 下载解压zookeeper</h4><figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">weget https://archive.apache.org/dist/zookeeper/zookeeper-3.5.9/apache-zookeeper-3.5.9-bin.tar.gz</span><br><span class="line">tar -zxvf apache-zookeeper-3.5.9-bin.tar.gz</span><br><span class="line"><span class="built_in">cd</span> apache-zookeeper-3.5.9-bin</span><br></pre></td></tr></table></figure>
+
+<h4 id="Step3-重命名配置文件-zoo-sample-cfg"><a href="#Step3-重命名配置文件-zoo-sample-cfg" class="headerlink" title="Step3: 重命名配置文件 zoo_sample.cfg"></a>Step3: 重命名配置文件 zoo_sample.cfg</h4><figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">cp zoo_sample.cfg zoo.cfg</span><br></pre></td></tr></table></figure>
+
+<h4 id="Step4-启动zookeeper"><a href="#Step4-启动zookeeper" class="headerlink" title="Step4: 启动zookeeper"></a>Step4: 启动zookeeper</h4><figure class="highlight sh"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 可以通过bin/skServer.sh 来查看都支持哪些参数</span></span><br><span class="line">bin/zkServer.sh start conf/zoo.cfg</span><br></pre></td></tr></table></figure>
+
+<h4 id="Step5-检查是否启动成功"><a href="#Step5-检查是否启动成功" class="headerlink" title="Step5: 检查是否启动成功"></a>Step5: 检查是否启动成功</h4><figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">ps -ef | grep java</span><br></pre></td></tr></table></figure>
+
+<h4 id="Step6-连接服务器"><a href="#Step6-连接服务器" class="headerlink" title="Step6: 连接服务器"></a>Step6: 连接服务器</h4><figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">bin/zkCli.sh</span><br></pre></td></tr></table></figure>
+
+<h2 id="2-2-zookeeper使用"><a href="#2-2-zookeeper使用" class="headerlink" title="2.2 zookeeper使用"></a>2.2 zookeeper使用</h2><ol>
+<li><p>创建zookeeper节点命令</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">create [-s] [-e] [-c] [-t ttl] path [data] [acl]</span><br></pre></td></tr></table></figure>
+
+<p>中括号为可选项，没有则默认创建持久化节点</p>
+<p>-s：顺序节点</p>
+<p>-e：临时节点</p>
+<p>-c：容器节点</p>
+<p>-t：可以给节点添加过期时间，默认禁用，需要通过系统参数启用</p>
+<p>(<em>-Dzookeeper.extendedTypesEnabled=true, znode.container.checkIntervalMs:(Java system property only)<strong>New in 3.5.1:</strong> The time interval in milliseconds for each check of candidate container and ttl nodes. Default is “60000”</em>)</p>
+<p>创建节点：</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">create /test-note some-data</span><br></pre></td></tr></table></figure>
+
+<p>如上，没有加任何可选参数，创建的就是一个持久化节点<br><img src="/archives/e5bda741/image-20211003164434593.png" alt="创建节点"></p>
+<p>查看节点：</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">get /test-node</span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/e5bda741/image-20211003165018195.png" alt="查看节点"></p>
+<p>查看节点状态信息：</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line"><span class="built_in">stat</span> /test-node</span><br></pre></td></tr></table></figure>
+<p><img src="/archives/e5bda741/image-20211003165814988.png" alt="查看节点状态"></p>
+</li>
+</ol>
+<ul>
+<li>cZxid：创建znode的事务ID（Zxid的值）</li>
+<li>mZxid：最后修改znode的事务ID</li>
+<li>pZxid：最后添加或删除子节点的事务ID（子节点列表发生变化才会发生改变）</li>
+<li>ctime：znode创建时间</li>
+<li>mtime：znode最近修改时间</li>
+<li>dataVersion：znode的当前数据版本</li>
+<li>cversion：znode的子节点结果集版本（一个节点的子节点增加、删除都回影响这个版本）</li>
+<li>aclVersion：表示对此znode的acl版本</li>
+<li>ephemeralOwner：znode是临时znode时，表示znode所有者的sessionID。如果znode不是临时znode，则该字段设置为零</li>
+<li>dataLength：znode数据字段的长度</li>
+<li>numChildren：znode的子znode的数量。</li>
+</ul>
+<p>查看节点状态信息同时查看数据</p>
+<p><img src="/archives/e5bda741/image-20211003171357202.png" alt="查看节点状态信息"></p>
+<p>根据状态数据中的版本号有并发修改数据实现客观锁功能</p>
+<p>比如：客户端首先获取版本信息，<code>get -s /node-test</code></p>
+<p><img src="/archives/e5bda741/image-20211003171802123.png" alt="节点版本信息"></p>
+<p><code>/test-node</code>当前的数据版本是1，这时客户端用set命令修改数据的时候可以把版本号带上</p>
+<p><img src="/archives/e5bda741/image-20211003172301741.png" alt="带版本号修改"></p>
+<p>如果在执行上面set命令前，有人修改了数据，zookeeper回递增版本号，这个时候如果再用以前的版本号修改，将会导致失败，报错如下：</p>
+<p><img src="/archives/e5bda741/image-20211003172210262.png" alt="带版本号修改报错"></p>
+<p>创建节点，这里要注意，zookeeper是以节点组织数据的，没有相对路径这么一说，所以，所有的节点一定是以<code>/</code>开头的。</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">create /test-node/test-sub-node</span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/e5bda741/image-20211003192152896.png" alt="创建子节点"></p>
+<p>查看子节点的信息，比如根节点下面所有的子节点，加一个大写R可以查看递归子节点列表</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">ls /</span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/e5bda741/image-20211003192322656.png" alt="查看根节点所有子节点"></p>
+<p>查看<code>/test-node</code>下面所有的子节点</p>
+<p><img src="/archives/e5bda741/image-20211003192436348.png" alt="查看节点"></p>
+<p>创建临时节点</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">create -e /ephemeral data</span><br></pre></td></tr></table></figure>
+
+<p>create 后跟一个<code>-e</code>创建临时节点，临时节点不能创建子节点</p>
+<p><img src="/archives/e5bda741/image-20211003193204396.png" alt="创建临时节点"></p>
+<p>创建序号节点，加参数<code>-s</code></p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">create /seq-parent data <span class="comment"># 创建父目录，单纯为了分类，非必须</span></span><br><span class="line">create /seq-parent/ data <span class="comment"># 创建顺序节点。顺序节点将再seq-parent目录下面，顺序递增</span></span><br></pre></td></tr></table></figure>
+
+<p>为了容纳子节点，先创建父目录<code>/seq-parent</code></p>
+<p><img src="/archives/e5bda741/image-20211003193523659.png" alt="创建父目录"></p>
+<p>也可以再序号节点前面带一个前缀</p>
+<p><img src="/archives/e5bda741/image-20211003193757408.png" alt="序号节点前加前缀"></p>
+<p>创建临时顺序节点，其他增删改查和其他节点无异</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">create -s -e /ephemeral-node/前缀-</span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/e5bda741/image-20211003194346735.png" alt="image-20211003194346735"></p>
+<p>创建容器节点</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">create -c /container</span><br></pre></td></tr></table></figure>
+
+<p>容器节点主要用来容纳子节点，如果没有给其创建子节点，容器节点表现和持久化节点一样，如果给容器创建了子节点，后续有把子节点清空，容器节点也会被zookeeper删除。</p>
+<ol start="2">
+<li><p>事件监听机制</p>
+<p>针对节点的监听：一旦事件触发，对应的注册立刻被删除，所以事件监听是一次性的</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">get -w /path <span class="comment"># 注册监听的同时获取数据</span></span><br><span class="line"><span class="built_in">stat</span> -w /path <span class="comment"># 对节点进行监听，且获取元数据信息</span></span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/e5bda741/image-20211003195407810.png" alt="监听节点"></p>
+</li>
+</ol>
+<p>针对目录的监听，如下图，目录的变化，会触发事件，且一旦触发，对应的监听也会被移除，后续对节点的创建没有触发监听事件</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">ls -w /path</span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/e5bda741/image-20211003195740404.png" alt="监听目录"></p>
+<p>针对递归子目录的监听</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">ls -R -w /path <span class="comment"># -R区分大小写，一定要大写</span></span><br></pre></td></tr></table></figure>
+
+<p>如下对<code>/test</code>节点进行递归监听，但是每个目录下的目录监听也是一次性的，如第一次在<code>/test</code>目录下创建节点时，触发监听事件，第二次则没有，同样，因为是递归的目录监听，所以在<code>/test/sub</code>下进行节点创建时，触发事件，但是再次创建<code>/test/sub/subsub</code>节点时，没有触发事件。</p>
+<p><img src="/archives/e5bda741/image-20211003201435610.png" alt="递归子目录监听"></p>
+<blockquote>
+<p>Zookeeper事件类型：</p>
+<ul>
+<li>None：连接建立事件</li>
+<li>NodeCreated：节点创建</li>
+<li>NodeDeleted：节点删除</li>
+<li>NodeDataChanged：节点数据变化</li>
+<li>NodeChildrenChanged：子节点列表变化</li>
+<li>DataWatchRemoved：节点监听被移除</li>
+<li>ChildWatchRemoved：子节点监听被移除</li>
+</ul>
+</blockquote>
+<h1 id="3、Zookeeper的ACL权限控制-Access-Control-List"><a href="#3、Zookeeper的ACL权限控制-Access-Control-List" class="headerlink" title="3、Zookeeper的ACL权限控制(Access Control List)"></a>3、Zookeeper的ACL权限控制(Access Control List)</h1><p>Zookeeper的ACL权限控制，可以控制节点的读写操作，保证数据的安全性，Zookeeper的ACL权限设置分为3部分组成，分别是：**权限模式(Scheme)<strong>、</strong>授权对象(ID)<strong>、</strong>权限信息(Permission)**。最终组成一条例如”scheme:id:permission”格式的ACL请求信息，下面我们具体看一下这三个部分代表什么意思：</p>
+<p><strong>Scheme(权限模式)：</strong> 用来设置Zookeeper服务器进行权限验证的方式。Zookeeper的权限校验方式大体分为两种类型：</p>
+<p>一种是<strong>范围验证</strong>。所谓的范围验证就是说Zookeeper可以针对一个IP或者一段IP地址授予某种权限。比如我们可以让一个IP地址为“IP：192.168.31.104”的机器对服务器上的某个节点具有写入的权限，或者也可以通过“IP：192.168.31.1/24”给一段IP地址的机器赋予权限。</p>
+<p>另一种是模式就是<strong>口令验证</strong>，也可以理解为用户名密码的方式。在Zookeeper中这种验证方式是Digest认证，而Digest这种认证方式首先在客户端传送“username:password”这种形式的权限表示符后，Zookeeper服务端会对密码部分使用SHA-1和BASWE64算法进行加密，以保证安全性。</p>
+<p>还有一种<strong>Super权限模式</strong>，Super可以认为是一个特殊的Digest认证。具有Super权限的客户端可以对Zookeeper上任意数据节点进行任意的操作。</p>
+<p><strong>授权对象(ID)：</strong></p>
+<p>授权就是说我们要把权限赋予谁，而对应于4种不同的权限模式来说，如果我们选择采用IP方式，使用授权对象可以是一个IP或者IP地址段；而如果使用Digest或Super方式，则对应于一个用户名。如果是World模式，是授权系统中的所有用户。</p>
+<p><strong>权限信息(Permission)：</strong></p>
+<p>权限就是指我们可以在数据节点上执行的操作类型，如下所示：在Zookeeper中已经定义好的权限有5种：</p>
+<blockquote>
+<p>数据节点（c：create）创建权限，授予权限的对象可以在数据节点下==创建子节点==</p>
+<p>数据节点（w：write）更新权限，授予权限的对象可更新该数据节点</p>
+<p>数据节点（r：read）读取权限，授予权限的对象可以读取该节点的内容以及子节点的列表信息</p>
+<p>数据节点（d：delete）删除权限，授予权限的对象可以删除该数据节点的==子节点==</p>
+<p>数据节点（a：admin）管理者权限，授予权限的对象可以对该数据节点进行ACL权限设置</p>
+</blockquote>
+<p><strong>命令：</strong></p>
+<p><code>getAcl</code>: 获取某个节点的ACL权限信息</p>
+<p><code>setAcl</code>：设置某个节点的ACL权限信息</p>
+<p><code>addauth</code>：输入认证授权信息，相当于注册用户信息，注册时输入明文密码，zk将以密文的形式存储</p>
+<p>可以通过系统参数<code>zookeeper.skipACL = yes</code>进行设置，默认时<code>no</code>，可以设置为<code>true</code>，则配置过的ACL将不再进行权限检测</p>
+<p><strong>生成授权ID的两种方式：</strong></p>
+<ul>
+<li><p>代码生成ID</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Test</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">generateSuperDigest</span><span class="params">()</span> <span class="keyword">throws</span> NoSuchAlgorithmException </span>&#123;</span><br><span class="line">    String sId = DigestAuthenticationProvider.generateDigest(<span class="string">&quot;gj:test&quot;</span>);</span><br><span class="line">    System.out.println(sId);<span class="comment">//  gj:X/NSthOB0fD/OT6iilJ55WJVado=</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li><p>通过命令生成</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line"><span class="built_in">echo</span> -n &lt;user&gt;:&lt;password&gt; | openssl dgst -binary -sha1 | openssl base64</span><br></pre></td></tr></table></figure></li>
+</ul>
+<p><strong>设置ACL的两种方式：</strong></p>
+<ul>
+<li><p>节点创建的同时设置ACL</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">create [-s][-e][-c] path [data][acl]</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>create /zk-node datatest digest:gj:X/NSthOB0fD/OT6iilJ55WJVado=:cdrwa</p>
+</blockquote>
+</li>
+<li><p>使用setAcl设置</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">setAcl /zk-node digest:gj:X/NSthOB0fD/OT6iilJ55WJVado=:cdrwa</span><br></pre></td></tr></table></figure></li>
+</ul>
+<p>添加权限信息后，不能直接访问，在访问前需要添加授权信息</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">addauth digest gj:<span class="built_in">test</span></span><br><span class="line">get /zk-node</span><br><span class="line">datatest</span><br></pre></td></tr></table></figure>
+
+<p>另一种授权模式：auth明文授权</p>
+<p>使用前需要先<code>addauth digest username:password</code>注册用户信息，后续可以直接用明文授权。例如：</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">addauth digest u100:p100</span><br><span class="line">create /node-1 node1data auth:u100:p100:cdwra <span class="comment"># 这时u100用户授权信息会被zk保存，可以认为当前的授权用户为u100</span></span><br><span class="line">get /node-1</span><br><span class="line">node1data</span><br></pre></td></tr></table></figure>
+
+<p>IP授权模式：</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">setAcl /node-ip ip:192.168.31.127:cdwra</span><br><span class="line">create /node-ip data ip:192.168.31.127:cdwra</span><br></pre></td></tr></table></figure>
+
+<p>多个指定IP可以通过都好分隔开来，例如</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">setAcl /node-ip ip:IP1:rw,ip:IP2:a</span><br></pre></td></tr></table></figure>
+
+<p><strong>Super超级管理员模式：</strong></p>
+<p>这是一种特殊的Digest模式，在Super模式下超级管理员用户可以对Zookeeper上的节点进行任何的操作。需要在启动是通过JVM参数开启：</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line"><span class="comment"># DigestAuthenticationProvider中定义</span></span><br><span class="line">-Dzookeeper.DigestAuthenticationProvider.superDigest=super:&lt;base64encoded(SHA1(password))</span><br></pre></td></tr></table></figure>
+
+<h1 id="4、Zookeeper内存数据的持久化"><a href="#4、Zookeeper内存数据的持久化" class="headerlink" title="4、Zookeeper内存数据的持久化"></a>4、Zookeeper内存数据的持久化</h1><p>Zookeeper数据的组织形式为一个类似文件系统的数据结构，而这些数据都是存储在内存中的，所以我们可以认为，Zookeeper是一个基于内存的小型数据库</p>
+<p><strong>内存中的数据：</strong></p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">DataTree</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> ConcurrentHashMap&lt;String, DataNode&gt; nodes =</span><br><span class="line">        <span class="keyword">new</span> ConcurrentHashMap&lt;String, DataNode&gt;();</span><br><span class="line">        </span><br><span class="line">        </span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> WatchManager dataWatches = <span class="keyword">new</span> WatchManager();</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> WatchManager childWatches = <span class="keyword">new</span> WatchManager();</span><br><span class="line">    </span><br></pre></td></tr></table></figure>
+
+<p>DataNode是Zookeeper存储节点数据的最小单位</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">DataNode</span> <span class="keyword">implements</span> <span class="title">Record</span> </span>&#123;</span><br><span class="line">    <span class="keyword">byte</span> data[];</span><br><span class="line">    Long acl;</span><br><span class="line">    <span class="keyword">public</span> StatPersisted stat;</span><br><span class="line">    <span class="keyword">private</span> Set&lt;String&gt; children = <span class="keyword">null</span>;</span><br></pre></td></tr></table></figure>
+
+<h1 id="5、事务日志"><a href="#5、事务日志" class="headerlink" title="5、事务日志"></a>5、事务日志</h1><p>针对每一次客户端的事务操作，Zookeeper都会将他们记录到事务日志中，当然，Zookeeper也会将数据变更应用到内存数据库中。我们可以在zookeeper的主配置文件zoo.cfg中配置内存中的数据持久化目录，也就是事务日志的存储路径dataLogDir。如果没有配置dataLogDir(非必填)，事务日志将默认存储到dataDir(必填项)目录。</p>
+<p>zookeeper提供了格式化工具(org.apache.zookeeper.server.LogFormatter)可以进行查看事务日志数据</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">java -classpath .:slf4j-api-1.7.25.jar:zookeeper-3.5.9.jar:zookeeper-jute-3.5.9.jar org.apache.zookeeper.server.LogFormatter /usr/<span class="built_in">local</span>/zookeeper/apache-zookeeper-3.5.9-bin/data/verssion-2/log.1</span><br></pre></td></tr></table></figure>
+
+<p>如下是我本地的日志文件格式化效果</p>
+<p><img src="/archives/e5bda741/image-20211003214213823.png" alt="日志文件格式化效果"></p>
+<p>从左到右分别记录了操作时间，客户端会话ID，CXID，ZXID，操作类型，节点路径，节点数据(用#+ascii码表示)，节点版本。</p>
+<p>Zookeeper进行事务日志文件操作的时候会频繁进行磁盘IO操作，事务日志的不断追加写操作会触发底层磁盘IO为文件开辟新的磁盘块，即磁盘Seek。因此，为了提升磁盘IO的效率，Zookeeper在创建事务日志文件的时候就进行文件空间的预分配——即在创建文件的时候，就向操作系统申请一块大一点的磁盘块。这个预分配的磁盘大小可以通过系统参数<code>zookeeper.preAllocSize</code>进行配置。</p>
+<p>事务日志文件名为：log.&lt;当时最大事务ID&gt;，因为日志文件是顺序写入的，所以这个最大事务ID也将是整个事务日志文件中，最小的事务ID，日志满了即进行下一次事务日志文件的创建</p>
+<h1 id="6、数据快照"><a href="#6、数据快照" class="headerlink" title="6、数据快照"></a>6、数据快照</h1><p>数据快照用于记录Zookeeper服务器上某一时刻的全量数据，并将其写入到指定的磁盘文件中。</p>
+<p>可以通过配置<code>snapCount</code>来设置每间隔事务请求个数，生成快照，数据存储在dataDir指定的目录中</p>
+<p>可以通过一下方式进行查看快照数据（为了避免集群中所有机器在同一时间进行快照，实际的快照生存成时间为事务数达到[snapCount/2 + 随机数(随机数范围为1~snapCount/2)]个数时开始快照）</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">java -classpath .:slf4j-api-1.7.25.jar:zookeeper-3.5.8.jar:zookeeper-jute-3.5.8.jar org.apache.zookeeper.server.SnapshotFormatter /usr/<span class="built_in">local</span>/zookeeper/apache-zookeeper-3.5.8-bin/data-dir/version-2/snapshot.0</span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/e5bda741/image-20211003215744332.png" alt="查看快照信息"></p>
+<p>快照事务日志文件名为：snapshot.&lt;当时最大事务ID&gt;，日志满了即进行下一次事务日志文件的创建。</p>
+<p><strong>有了事务日志，为什么还是要快照数据呢？</strong></p>
+<blockquote>
+<p>因为快照数据主要是为了快速恢复，事务日志文件是每次事务请求都会进行追加的操作，而快照数据是达到某种设定条件下某一刻内存的全量数据。所以快照数据是反应当时内存中数据的状态。事务日志是更加全面的数据，所以恢复数据的时候，可以先恢复快照数据，再通过增量恢复事务日志中的数据即可。</p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>zookeeper</category>
+      </categories>
+      <tags>
+        <tag>zookeeper</tag>
       </tags>
   </entry>
   <entry>
