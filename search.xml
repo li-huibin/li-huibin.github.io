@@ -48,6 +48,27 @@
       </tags>
   </entry>
   <entry>
+    <title>Redis主从工作原理</title>
+    <url>/archives/1b578af4/</url>
+    <content><![CDATA[<h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>接前面讲到的<a href="/archives/ba77e58/">《redis主从架构搭建》</a>，来讲一下Redis主从架构的工作原理到底是怎么运作的</p>
+<h2 id="Redis工作原理"><a href="#Redis工作原理" class="headerlink" title="Redis工作原理"></a>Redis工作原理</h2><p>在上个博客中我们搭建了Redis主从架构；在过程中我们为master主节点配置了三个slave从节点。在这三个slave从节点启动的时候，不管是否第一次连接上master主节点，他们都会发送改一个<code>PSYNC</code>命令给master请求同步数据。</p>
+<p>master主节点接收到<code>PSYNC</code>命令后，会在后台进行数据持久化，通过<code>bgsave</code>生成最新的快照文件；在持久化期间，master主节点还会继续接受客户端的请求，并且他会把这些可能修改数据的请求命令缓存在一块内存中。当持久化进行完毕之后，master会把这份rdb文件数据集发送给slave从节点，slave从节点会把接收到的数据进行持久化生成rdb，然后再加载到内存中。然后master主节点再将之前缓存在内存中的命令发送给slave从节点，从节点根据这些请求指令重放数据到redis中。</p>
+<p>当master主节点和slave从节点之间的连接由于一些原因断开时，slave从节点能够自动重连master主节点，如果master收到了多个slave从节点并发连接的请求时，他会进行一次持久化，而不是一个一个连接一次，然后把这份持久化的数据发送给多个并发连接的slave从节点。以上整个流程可以用下图来表示</p>
+<p><img src="/archives/1b578af4/image-20210914160847756.png" alt="主从复制(全量复制)流程图"></p>
+<h3 id="主从部分数据复制"><a href="#主从部分数据复制" class="headerlink" title="主从部分数据复制"></a>主从部分数据复制</h3><p>当master和slave断开重连后，一般都会对整份数据进行复制。但是从<code>redis2.8</code>版本开始，redis改用可以支持部分数据复制的命令<code>PSYNC</code>去master同步数据，slave与master能够在网络连接断开重连后只进行部分数据复制(<strong>端点续传</strong>)。</p>
+<p>master会在其内存中创建一个复制数据用的缓存队列，缓存最近一段时间的数据，master和他所有的slave都维护了复制的数据下标offset和master的进程id，因此，当网络连接断开后，slave会请求master继续进行未完成的复制，从所记录的数据下标开始，如果master进程id变化了，或者从节点数据下标offset太旧，已经不再master的缓存队里中，那么将会进行一次全量数据的复制</p>
+<p><img src="/archives/1b578af4/image-20210914161725948.png" alt="主从复制(部分复制，端点续传)流程图"></p>
+<p>如果有很多从节点，为了缓解<strong>主从复制风暴</strong>(多个从节点同时复制主节点数据导致主节点压力过大)，可以做如下结构调整，让部分从节点与从节点(与主节点同步)同步数据</p>
+<p><img src="/archives/1b578af4/image-20210914162422875.png" alt="主从复制风暴架构解决方案"></p>
+]]></content>
+      <categories>
+        <category>Redis</category>
+      </categories>
+      <tags>
+        <tag>Redis</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Redis哨兵架构搭建</title>
     <url>/archives/8bd0f0fd/</url>
     <content><![CDATA[<h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>安装Redis教程这里就不说了，我们在之前搭建的<a href="/archives/ba77e58/">《Redis主从架构搭建》</a>基础上来进行Redis哨兵架构的搭建。</p>
@@ -88,27 +109,6 @@
 <p>sentinel集群都启动完毕后，会将哨兵集群的元数据信息写入所有sentinel的配置文件里去(追加在文件的最下面)，我们查看下如下配置文件sentinel-26379.conf，如下所示：</p>
 <p><img src="/archives/8bd0f0fd/image-20210914181849488.png" alt="image-20210914181849488"></p>
 <p>表示已经识别出了redis的主从 了         </p>
-]]></content>
-      <categories>
-        <category>Redis</category>
-      </categories>
-      <tags>
-        <tag>Redis</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Redis主从工作原理</title>
-    <url>/archives/1b578af4/</url>
-    <content><![CDATA[<h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>接前面讲到的<a href="/archives/ba77e58/">《redis主从架构搭建》</a>，来讲一下Redis主从架构的工作原理到底是怎么运作的</p>
-<h2 id="Redis工作原理"><a href="#Redis工作原理" class="headerlink" title="Redis工作原理"></a>Redis工作原理</h2><p>在上个博客中我们搭建了Redis主从架构；在过程中我们为master主节点配置了三个slave从节点。在这三个slave从节点启动的时候，不管是否第一次连接上master主节点，他们都会发送改一个<code>PSYNC</code>命令给master请求同步数据。</p>
-<p>master主节点接收到<code>PSYNC</code>命令后，会在后台进行数据持久化，通过<code>bgsave</code>生成最新的快照文件；在持久化期间，master主节点还会继续接受客户端的请求，并且他会把这些可能修改数据的请求命令缓存在一块内存中。当持久化进行完毕之后，master会把这份rdb文件数据集发送给slave从节点，slave从节点会把接收到的数据进行持久化生成rdb，然后再加载到内存中。然后master主节点再将之前缓存在内存中的命令发送给slave从节点，从节点根据这些请求指令重放数据到redis中。</p>
-<p>当master主节点和slave从节点之间的连接由于一些原因断开时，slave从节点能够自动重连master主节点，如果master收到了多个slave从节点并发连接的请求时，他会进行一次持久化，而不是一个一个连接一次，然后把这份持久化的数据发送给多个并发连接的slave从节点。以上整个流程可以用下图来表示</p>
-<p><img src="/archives/1b578af4/image-20210914160847756.png" alt="主从复制(全量复制)流程图"></p>
-<h3 id="主从部分数据复制"><a href="#主从部分数据复制" class="headerlink" title="主从部分数据复制"></a>主从部分数据复制</h3><p>当master和slave断开重连后，一般都会对整份数据进行复制。但是从<code>redis2.8</code>版本开始，redis改用可以支持部分数据复制的命令<code>PSYNC</code>去master同步数据，slave与master能够在网络连接断开重连后只进行部分数据复制(<strong>端点续传</strong>)。</p>
-<p>master会在其内存中创建一个复制数据用的缓存队列，缓存最近一段时间的数据，master和他所有的slave都维护了复制的数据下标offset和master的进程id，因此，当网络连接断开后，slave会请求master继续进行未完成的复制，从所记录的数据下标开始，如果master进程id变化了，或者从节点数据下标offset太旧，已经不再master的缓存队里中，那么将会进行一次全量数据的复制</p>
-<p><img src="/archives/1b578af4/image-20210914161725948.png" alt="主从复制(部分复制，端点续传)流程图"></p>
-<p>如果有很多从节点，为了缓解<strong>主从复制风暴</strong>(多个从节点同时复制主节点数据导致主节点压力过大)，可以做如下结构调整，让部分从节点与从节点(与主节点同步)同步数据</p>
-<p><img src="/archives/1b578af4/image-20210914162422875.png" alt="主从复制风暴架构解决方案"></p>
 ]]></content>
       <categories>
         <category>Redis</category>
@@ -1080,58 +1080,6 @@
       </tags>
   </entry>
   <entry>
-    <title>Spring-IOC原理(一)</title>
-    <url>/archives/81aeb1f/</url>
-    <content><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在Spring中最重要的就属<code>IOC</code>了，不论是在面试中，还是在一些中间件与Spring的继承中，都离不开<code>IOC</code>，下面就来瞧瞧<code>IOC</code>是个什么东西，他是怎么一个加载流程，先大致粗略的了解一下！</p>
-<h2 id="一、下载Spring源码"><a href="#一、下载Spring源码" class="headerlink" title="一、下载Spring源码"></a>一、<a href="https://gitee.com/li-huibin/spring-framework-5.2.16.-release">下载Spring源码</a></h2><h2 id="二、编译Spring源码"><a href="#二、编译Spring源码" class="headerlink" title="二、编译Spring源码"></a>二、编译Spring源码</h2><p>在编译的时候有些包是需要从外网下载的，有条件的可以科学上网，这样可以加快编译速度。如果不管怎么编译都是报错，或者下载包总是失败，可以留言我，我可以提供一点有限的帮助。</p>
-<h2 id="三、创建demo模块"><a href="#三、创建demo模块" class="headerlink" title="三、创建demo模块"></a>三、创建demo模块</h2><p><img src="/archives/81aeb1f/image-20210813193225670.png" alt="创建demo模块"></p>
-<blockquote>
-<p><strong>注意：</strong> 一定要选择<code>Gradle</code>，别选错了，因为从<code>Spring5</code>开始，使用的是<code>Gradle</code>来构建整个项目的</p>
-</blockquote>
-<p><img src="/archives/81aeb1f/image-20210813193542786.png" alt="创建demo模块-2"></p>
-<p>这里因为我已经事先创建过了模块，所以上面会有一个报错。然后点<code>Finish</code>完成创建。</p>
-<p>创建完毕之后，在初始化模块的目录结构，我的目录结构是如下结构：</p>
-<p><img src="/archives/81aeb1f/image-20210813193846621.png" alt="demo模块目录结构"></p>
-<p>这里我创建了三个类<code>ApplicationMain</code>启动类、<code>TestIOC</code>接口、实现<code>TestIOC</code>接口的<code>TestIOCImpl</code>实现类。</p>
-<p><code>TestIOC.java</code>代码：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lhb.service;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Program</span>: spring</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Description</span>:</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Author</span>: LHB</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Version</span>: v0.0.1</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Time</span>: 2021-07-26 14:52</span></span><br><span class="line"><span class="comment"> **/</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">TestIOC</span> </span>&#123;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">helloIOC</span><span class="params">(String say)</span></span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<p><code>TestIOCImpl.java</code>代码：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lhb.service.impl;</span><br><span class="line"><span class="keyword">import</span> com.lhb.service.TestIOC;</span><br><span class="line"><span class="keyword">import</span> org.springframework.stereotype.Service;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Program</span>: spring</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Description</span>:</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Author</span>: LHB</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Version</span>: v0.0.1</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Time</span>: 2021-07-26 14:53</span></span><br><span class="line"><span class="comment"> **/</span></span><br><span class="line"><span class="meta">@Service</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestIOCImpl</span> <span class="keyword">implements</span> <span class="title">TestIOC</span> </span>&#123;</span><br><span class="line">	<span class="meta">@Override</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">helloIOC</span><span class="params">(String say)</span> </span>&#123;</span><br><span class="line">		System.out.println(<span class="string">&quot;====&gt; &quot;</span> + say);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p><code>ApplicationMain.java</code>启动类代码：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lhb;</span><br><span class="line"><span class="keyword">import</span> com.lhb.service.impl.TestIOCImpl;</span><br><span class="line"><span class="keyword">import</span> org.springframework.context.annotation.AnnotationConfigApplicationContext;</span><br><span class="line"><span class="keyword">import</span> org.springframework.context.annotation.ComponentScan;</span><br><span class="line"><span class="keyword">import</span> org.springframework.context.annotation.Configuration;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Program</span>: spring</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Description</span>:</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Author</span>: LHB</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Version</span>: v0.0.1 mode</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Time</span>: 2021-07-26 14:56</span></span><br><span class="line"><span class="comment"> **/</span></span><br><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="meta">@ComponentScan(&quot;com.lhb&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ApplicationMain</span> </span>&#123;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">		AnnotationConfigApplicationContext applicationContext = <span class="keyword">new</span> AnnotationConfigApplicationContext(ApplicationMain.class);</span><br><span class="line">		TestIOCImpl bean = applicationContext.getBean(TestIOCImpl.class);</span><br><span class="line">		bean.helloIOC(<span class="string">&quot;hello spring ioc&quot;</span>);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="四、IOC主流程分析"><a href="#四、IOC主流程分析" class="headerlink" title="四、IOC主流程分析"></a>四、<code>IOC</code>主流程分析</h2><p>首先，肯定是要从整个程序的入口开始分析的，下面就从<code>ApplicationMain</code>中的<code>main</code>方法开始。从上图中我们可以看到在<code>ApplicationMain</code>类中的<code>main</code>方法中手动创建了一个<code>AnnotationConfigApplicationContext</code></p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">AnnotationConfigApplicationContext applicationContext = <span class="keyword">new</span> AnnotationConfigApplicationContext(ApplicationMain.class);</span><br></pre></td></tr></table></figure>
-
-<p>嗯？？what.<code>AnnotationConfigApplicationContext</code>是一个什么东西。。为什么要创建这个东西；那么就带着这个疑问点到他的源码里看一看。<code>Ctrl</code>+鼠标左键走起。</p>
-<p><img src="/archives/81aeb1f/image-20210813200002798.png" alt="AnnotationConfigApplicationContext.java"></p>
-<p>这两个名叫<code>Juergen Hoeller和Chris Beams</code>的作者给写了一大片注释，大概意思就是<code>AnnotationConfigApplicationContext</code>是整个引用的上下文，可以用他来获取容器中的Bean，和注册Bean等；<code>AnnotationConfigApplicationContext</code>实现会这继承了Spring框架中大部分的基础能力，一切Spring的动作，都是从这个类开始进行的，并且整个过程也都是这个类来进行接管的；所以它也是比较强大；总之大部分容器中的和Bean的操作都可以通过<code>AnnotationConfigApplicationContext</code>来操作。</p>
-<p><img src="/archives/81aeb1f/image-20210813201436746.png" alt="AnnotationConfigApplicationContext关系图"></p>
-<p>从上面的<code>AnnotationConfigApplicatioinContext</code>类关系图中可以看出，这个类其实比较复杂的。好了这个类先聊到这里，接下来我们看到<code>AnnotationConfigApplicationContext</code>的构造方法</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Create a new AnnotationConfigApplicationContext, deriving bean definitions</span></span><br><span class="line"><span class="comment"> * from the given component classes and automatically refreshing the context.</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> componentClasses one or more component classes &amp;mdash; for example,</span></span><br><span class="line"><span class="comment"> * &#123;<span class="doctag">@link</span> Configuration <span class="doctag">@Configuration</span>&#125; classes</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">AnnotationConfigApplicationContext</span><span class="params">(Class&lt;?&gt;... componentClasses)</span> </span>&#123;</span><br><span class="line">	<span class="comment">/** 这里会实例化BeanDefinitionReader和BeanDefinitionScanner，并注册一些框架初始化必要的Bean</span></span><br><span class="line"><span class="comment">	 * 调用无参构造函数，会先调用父类GenericApplicationContext的构造函数，父类构造函数中就是初始化</span></span><br><span class="line"><span class="comment">	 * DefaultListableBeanFactory，并且赋值给beanFactory。</span></span><br><span class="line"><span class="comment">	 * 在本类的构造函数中，初始化了一个读取器reader = new AnnotatedBeanDefinitionReader(this);</span></span><br><span class="line"><span class="comment">	 * 和一个扫描器scanner = new ClassPathBeanDefinitionScanner(this);</span></span><br><span class="line"><span class="comment">	 * 扫描器scanner的用出不是很大，它仅仅是我们外部手动调用.scan()方法时才会用到的，常规方式是不会用到scanner</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">this</span>();</span><br><span class="line">	<span class="comment">/** 注册Bean</span></span><br><span class="line"><span class="comment">	 * 把传入的类进行注册，这里会有两种方式，一种是传入配置类，一种是传入bean。</span></span><br><span class="line"><span class="comment">	 * 这里spring会把传统的带有<span class="doctag">@Configuration</span>注解的类称之为FULL配置类，不带<span class="doctag">@Configuration</span>注解但是带有<span class="doctag">@Component</span>、</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@Import</span>、<span class="doctag">@ImportResource</span>、<span class="doctag">@Server</span>、<span class="doctag">@ComponentScan</span> 等注解的类称之为Lite配置类</span></span><br><span class="line"><span class="comment">	 * 我们这里先把带有<span class="doctag">@Configuration</span>注解的称之为传统配置类，不带该注解的称之为普通类</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	register(componentClasses);</span><br><span class="line">	<span class="comment">/** 刷新 */</span></span><br><span class="line">	refresh();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>在构造函数中调用了三个方法，下面一一说一下这三个方法都干了什么</p>
-<blockquote>
-<p><strong><code>this()</code>：</strong>这个方法调用了本类的无参数构造函数，其实在调用<code>AnnotationConfigApplicationContext</code>的无参数构造方法之前，先调用的父类的构造方法。在这些方法中主要是做了一些初始化的操作，比如初始化我们的容器<code>beanDefinitionMap</code>，初始化资源读取器<code>AnnotationBeanDefinitionReader</code>和资源扫描器<code>BeanDefinitionScanner</code>等</p>
-<p><strong><code>register(componentClasses)</code>：</strong> 这个方法很重要；在这个方法中会扫描所有的Bean，并且会把扫描出来的Bean定义进行注册；Spring还会在这里把带有<code>@Configuration</code>注解的类进行标记为<code>Full</code>配置类，不带<code>@Configuration</code>注解的类但是有<code>@Component</code>、<code>@ComponentScan</code>、<code>@Import</code>、<code>@ImportSource</code>、<code>@Server</code>等注解的类标记为<code>Lite</code>配置类，然后被标记为<code>Full</code>的配置类会进行<code>CGLIB</code>代理增强处理。</p>
-<blockquote>
-<p><em><strong>Spring的循环依赖也是在这个过程中解决的，后面会详细看这个方法</strong></em>    </p>
-</blockquote>
-<p><strong><code>refresh()</code>：</strong> 这个方法很重要，几乎Spring所有的启动动作都会在这个方法来完成的。在这里会准备Bean工厂，为Bean工厂设置一些依赖到的接口，也会添加后置处理器，注册类的后置处理器，注册Bean工厂后置处理器，解析<code>@Import</code>、<code>@Component</code>注解、注册Bean后置处理器、初始化事件、实例化Bean等操作、发布初始化完成事件等操作；这个方法后面也会详细看</p>
-</blockquote>
-<p>下面通过一个图来回顾总结一下整个流程：</p>
-<p><img src="/archives/81aeb1f/IOC%E5%8A%A0%E8%BD%BD%E6%B5%81%E7%A8%8B-IOC%E5%8A%A0%E8%BD%BD%E6%B5%81%E7%A8%8B.png" alt="Spring-IOC原理"></p>
-]]></content>
-      <categories>
-        <category>Spring源码</category>
-      </categories>
-      <tags>
-        <tag>Spring源码</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Zookeeper实战</title>
     <url>/archives/e5bda741/</url>
     <content><![CDATA[<h1 id="1、什么是Zookeeper"><a href="#1、什么是Zookeeper" class="headerlink" title="1、什么是Zookeeper"></a>1、什么是Zookeeper</h1><p>在Zookeeper官方文档中给出的接释是，它是一个分布式协调框架，是Apache Hadoop的一个子项目，它主要是用来解决分布式应用中经常遇到的一些数据管理问题，如统一命名服务、状态同步服务、集群管理、分布式应用配置项的管理等。</p>
@@ -1160,7 +1108,7 @@
 <li><p>TTL节点（默认禁用，只能通过系统配置<em>zookeeper.extendedTypesEnabled=true</em>开启，不稳定）</p>
 </li>
 </ol>
-<p>![Zookeeper节点](Zookeeper实战/clipboard (2).png)</p>
+<p><img src="/archives/e5bda741/image-20211003175418041.png" alt="zookeeper节点构成"></p>
 <h2 id="1-2-监听通知机制"><a href="#1-2-监听通知机制" class="headerlink" title="1.2 监听通知机制"></a>1.2 监听通知机制</h2><p>客户端监听他关心的任意节点，或者目录节点以及递归子目录节点</p>
 <ol>
 <li>如果注册的是对某个节点的监听，则当这个节点被删除，或者被修改时，对应的客户端将被通知</li>
@@ -1240,6 +1188,58 @@
       </categories>
       <tags>
         <tag>zookeeper</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Spring-IOC原理(一)</title>
+    <url>/archives/81aeb1f/</url>
+    <content><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在Spring中最重要的就属<code>IOC</code>了，不论是在面试中，还是在一些中间件与Spring的继承中，都离不开<code>IOC</code>，下面就来瞧瞧<code>IOC</code>是个什么东西，他是怎么一个加载流程，先大致粗略的了解一下！</p>
+<h2 id="一、下载Spring源码"><a href="#一、下载Spring源码" class="headerlink" title="一、下载Spring源码"></a>一、<a href="https://gitee.com/li-huibin/spring-framework-5.2.16.-release">下载Spring源码</a></h2><h2 id="二、编译Spring源码"><a href="#二、编译Spring源码" class="headerlink" title="二、编译Spring源码"></a>二、编译Spring源码</h2><p>在编译的时候有些包是需要从外网下载的，有条件的可以科学上网，这样可以加快编译速度。如果不管怎么编译都是报错，或者下载包总是失败，可以留言我，我可以提供一点有限的帮助。</p>
+<h2 id="三、创建demo模块"><a href="#三、创建demo模块" class="headerlink" title="三、创建demo模块"></a>三、创建demo模块</h2><p><img src="/archives/81aeb1f/image-20210813193225670.png" alt="创建demo模块"></p>
+<blockquote>
+<p><strong>注意：</strong> 一定要选择<code>Gradle</code>，别选错了，因为从<code>Spring5</code>开始，使用的是<code>Gradle</code>来构建整个项目的</p>
+</blockquote>
+<p><img src="/archives/81aeb1f/image-20210813193542786.png" alt="创建demo模块-2"></p>
+<p>这里因为我已经事先创建过了模块，所以上面会有一个报错。然后点<code>Finish</code>完成创建。</p>
+<p>创建完毕之后，在初始化模块的目录结构，我的目录结构是如下结构：</p>
+<p><img src="/archives/81aeb1f/image-20210813193846621.png" alt="demo模块目录结构"></p>
+<p>这里我创建了三个类<code>ApplicationMain</code>启动类、<code>TestIOC</code>接口、实现<code>TestIOC</code>接口的<code>TestIOCImpl</code>实现类。</p>
+<p><code>TestIOC.java</code>代码：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lhb.service;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Program</span>: spring</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Description</span>:</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Author</span>: LHB</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Version</span>: v0.0.1</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Time</span>: 2021-07-26 14:52</span></span><br><span class="line"><span class="comment"> **/</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">TestIOC</span> </span>&#123;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">helloIOC</span><span class="params">(String say)</span></span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p><code>TestIOCImpl.java</code>代码：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lhb.service.impl;</span><br><span class="line"><span class="keyword">import</span> com.lhb.service.TestIOC;</span><br><span class="line"><span class="keyword">import</span> org.springframework.stereotype.Service;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Program</span>: spring</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Description</span>:</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Author</span>: LHB</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Version</span>: v0.0.1</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Time</span>: 2021-07-26 14:53</span></span><br><span class="line"><span class="comment"> **/</span></span><br><span class="line"><span class="meta">@Service</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestIOCImpl</span> <span class="keyword">implements</span> <span class="title">TestIOC</span> </span>&#123;</span><br><span class="line">	<span class="meta">@Override</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">helloIOC</span><span class="params">(String say)</span> </span>&#123;</span><br><span class="line">		System.out.println(<span class="string">&quot;====&gt; &quot;</span> + say);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>ApplicationMain.java</code>启动类代码：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lhb;</span><br><span class="line"><span class="keyword">import</span> com.lhb.service.impl.TestIOCImpl;</span><br><span class="line"><span class="keyword">import</span> org.springframework.context.annotation.AnnotationConfigApplicationContext;</span><br><span class="line"><span class="keyword">import</span> org.springframework.context.annotation.ComponentScan;</span><br><span class="line"><span class="keyword">import</span> org.springframework.context.annotation.Configuration;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Program</span>: spring</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Description</span>:</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Author</span>: LHB</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Version</span>: v0.0.1 mode</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Time</span>: 2021-07-26 14:56</span></span><br><span class="line"><span class="comment"> **/</span></span><br><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="meta">@ComponentScan(&quot;com.lhb&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ApplicationMain</span> </span>&#123;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">		AnnotationConfigApplicationContext applicationContext = <span class="keyword">new</span> AnnotationConfigApplicationContext(ApplicationMain.class);</span><br><span class="line">		TestIOCImpl bean = applicationContext.getBean(TestIOCImpl.class);</span><br><span class="line">		bean.helloIOC(<span class="string">&quot;hello spring ioc&quot;</span>);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="四、IOC主流程分析"><a href="#四、IOC主流程分析" class="headerlink" title="四、IOC主流程分析"></a>四、<code>IOC</code>主流程分析</h2><p>首先，肯定是要从整个程序的入口开始分析的，下面就从<code>ApplicationMain</code>中的<code>main</code>方法开始。从上图中我们可以看到在<code>ApplicationMain</code>类中的<code>main</code>方法中手动创建了一个<code>AnnotationConfigApplicationContext</code></p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">AnnotationConfigApplicationContext applicationContext = <span class="keyword">new</span> AnnotationConfigApplicationContext(ApplicationMain.class);</span><br></pre></td></tr></table></figure>
+
+<p>嗯？？what.<code>AnnotationConfigApplicationContext</code>是一个什么东西。。为什么要创建这个东西；那么就带着这个疑问点到他的源码里看一看。<code>Ctrl</code>+鼠标左键走起。</p>
+<p><img src="/archives/81aeb1f/image-20210813200002798.png" alt="AnnotationConfigApplicationContext.java"></p>
+<p>这两个名叫<code>Juergen Hoeller和Chris Beams</code>的作者给写了一大片注释，大概意思就是<code>AnnotationConfigApplicationContext</code>是整个引用的上下文，可以用他来获取容器中的Bean，和注册Bean等；<code>AnnotationConfigApplicationContext</code>实现会这继承了Spring框架中大部分的基础能力，一切Spring的动作，都是从这个类开始进行的，并且整个过程也都是这个类来进行接管的；所以它也是比较强大；总之大部分容器中的和Bean的操作都可以通过<code>AnnotationConfigApplicationContext</code>来操作。</p>
+<p><img src="/archives/81aeb1f/image-20210813201436746.png" alt="AnnotationConfigApplicationContext关系图"></p>
+<p>从上面的<code>AnnotationConfigApplicatioinContext</code>类关系图中可以看出，这个类其实比较复杂的。好了这个类先聊到这里，接下来我们看到<code>AnnotationConfigApplicationContext</code>的构造方法</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Create a new AnnotationConfigApplicationContext, deriving bean definitions</span></span><br><span class="line"><span class="comment"> * from the given component classes and automatically refreshing the context.</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> componentClasses one or more component classes &amp;mdash; for example,</span></span><br><span class="line"><span class="comment"> * &#123;<span class="doctag">@link</span> Configuration <span class="doctag">@Configuration</span>&#125; classes</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">AnnotationConfigApplicationContext</span><span class="params">(Class&lt;?&gt;... componentClasses)</span> </span>&#123;</span><br><span class="line">	<span class="comment">/** 这里会实例化BeanDefinitionReader和BeanDefinitionScanner，并注册一些框架初始化必要的Bean</span></span><br><span class="line"><span class="comment">	 * 调用无参构造函数，会先调用父类GenericApplicationContext的构造函数，父类构造函数中就是初始化</span></span><br><span class="line"><span class="comment">	 * DefaultListableBeanFactory，并且赋值给beanFactory。</span></span><br><span class="line"><span class="comment">	 * 在本类的构造函数中，初始化了一个读取器reader = new AnnotatedBeanDefinitionReader(this);</span></span><br><span class="line"><span class="comment">	 * 和一个扫描器scanner = new ClassPathBeanDefinitionScanner(this);</span></span><br><span class="line"><span class="comment">	 * 扫描器scanner的用出不是很大，它仅仅是我们外部手动调用.scan()方法时才会用到的，常规方式是不会用到scanner</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">this</span>();</span><br><span class="line">	<span class="comment">/** 注册Bean</span></span><br><span class="line"><span class="comment">	 * 把传入的类进行注册，这里会有两种方式，一种是传入配置类，一种是传入bean。</span></span><br><span class="line"><span class="comment">	 * 这里spring会把传统的带有<span class="doctag">@Configuration</span>注解的类称之为FULL配置类，不带<span class="doctag">@Configuration</span>注解但是带有<span class="doctag">@Component</span>、</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@Import</span>、<span class="doctag">@ImportResource</span>、<span class="doctag">@Server</span>、<span class="doctag">@ComponentScan</span> 等注解的类称之为Lite配置类</span></span><br><span class="line"><span class="comment">	 * 我们这里先把带有<span class="doctag">@Configuration</span>注解的称之为传统配置类，不带该注解的称之为普通类</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	register(componentClasses);</span><br><span class="line">	<span class="comment">/** 刷新 */</span></span><br><span class="line">	refresh();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在构造函数中调用了三个方法，下面一一说一下这三个方法都干了什么</p>
+<blockquote>
+<p><strong><code>this()</code>：</strong>这个方法调用了本类的无参数构造函数，其实在调用<code>AnnotationConfigApplicationContext</code>的无参数构造方法之前，先调用的父类的构造方法。在这些方法中主要是做了一些初始化的操作，比如初始化我们的容器<code>beanDefinitionMap</code>，初始化资源读取器<code>AnnotationBeanDefinitionReader</code>和资源扫描器<code>BeanDefinitionScanner</code>等</p>
+<p><strong><code>register(componentClasses)</code>：</strong> 这个方法很重要；在这个方法中会扫描所有的Bean，并且会把扫描出来的Bean定义进行注册；Spring还会在这里把带有<code>@Configuration</code>注解的类进行标记为<code>Full</code>配置类，不带<code>@Configuration</code>注解的类但是有<code>@Component</code>、<code>@ComponentScan</code>、<code>@Import</code>、<code>@ImportSource</code>、<code>@Server</code>等注解的类标记为<code>Lite</code>配置类，然后被标记为<code>Full</code>的配置类会进行<code>CGLIB</code>代理增强处理。</p>
+<blockquote>
+<p><em><strong>Spring的循环依赖也是在这个过程中解决的，后面会详细看这个方法</strong></em>    </p>
+</blockquote>
+<p><strong><code>refresh()</code>：</strong> 这个方法很重要，几乎Spring所有的启动动作都会在这个方法来完成的。在这里会准备Bean工厂，为Bean工厂设置一些依赖到的接口，也会添加后置处理器，注册类的后置处理器，注册Bean工厂后置处理器，解析<code>@Import</code>、<code>@Component</code>注解、注册Bean后置处理器、初始化事件、实例化Bean等操作、发布初始化完成事件等操作；这个方法后面也会详细看</p>
+</blockquote>
+<p>下面通过一个图来回顾总结一下整个流程：</p>
+<p><img src="/archives/81aeb1f/IOC%E5%8A%A0%E8%BD%BD%E6%B5%81%E7%A8%8B-IOC%E5%8A%A0%E8%BD%BD%E6%B5%81%E7%A8%8B.png" alt="Spring-IOC原理"></p>
+]]></content>
+      <categories>
+        <category>Spring源码</category>
+      </categories>
+      <tags>
+        <tag>Spring源码</tag>
       </tags>
   </entry>
   <entry>
@@ -1333,6 +1333,31 @@
       </tags>
   </entry>
   <entry>
+    <title>invokeBeanDefinitionRegistryPostProcessors方法解析</title>
+    <url>/archives/8d05e930/</url>
+    <content><![CDATA[<p>在上一篇<a href="/archives/e74be873">《Spring-IOC原理之invokeBeanFactoryPostProcessor详解》</a>中我们提到了一个方法<code>invokeBeanDefinitionRegistryPostProcessors()</code>。也说了这个方法最终会调用<code>ConfigurationClassPostProcessor</code>类中的<code>postProcessBeanDefinitionRegistry</code>方法。并且在这个方法中会解析<code>@Import</code>、<code>@Component</code>等注解和创建<code>CGLIB</code>动态代理。那么这一篇我们来详细看一下这个调用链中的方法。</p>
+<p>先找到<code>refresh()</code>方法中的<code>invokeBeanFactoryPostProcessors()</code>，然后找到方法中的<code>invokeBeanDefinitionRegistryPostProcessors</code>方法。</p>
+<p><img src="/archives/8d05e930/image-20210828140340723.png" alt="PostProcessorRegistrationDelegate#invokeBeanFactoryPostProcessors"></p>
+<p>然后<code>Ctrl+鼠标左键</code>进入到该方法中</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">invokeBeanDefinitionRegistryPostProcessors</span><span class="params">(Collection&lt;? extends BeanDefinitionRegistryPostProcessor&gt; postProcessors, BeanDefinitionRegistry registry)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">for</span> (BeanDefinitionRegistryPostProcessor postProcessor : postProcessors) &#123;</span><br><span class="line">		<span class="comment">/** 这里调用ConfigutationClassPostProcessor处理beanDefinitionMap中的bean定义 */</span></span><br><span class="line">		postProcessor.postProcessBeanDefinitionRegistry(registry);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>循环遍历了传进来的<code>postProcessors</code>，不过<code>postProcessors</code>中只有一个类是<code>ConfigurationClassPostProcessor</code>。然后调用<code>postProcessBeanDefinitionRegistry</code>。</p>
+<p><img src="/archives/8d05e930/image-20210828141408341.png" alt="Debug-invokeBeanDefinitionRegistryPostProcessors"></p>
+<blockquote>
+<p>这里还有一个点，就是<code>postProcessBeanDefinitionRegistry</code>方法，这个方法是<code>BeanDefinitionRegistryPostProcessor</code>接口中的方法，所以要想看方法内的实现逻辑只能找实现类中该方法的实现逻辑；通过上面的调试图片我们可以知道，<code>postProcessor</code>是<code>ConfigurationClassPostProcessor</code>类型，而<code>ConfigurationClassPostProcessor</code>切好也实现了<code>BeanDefinitionRegistryPostProcessors</code>接口，当然也实现了这个接口中的方法。所以这里我们只要去<code>ConfigurationClassPostProcessor</code>类中去找方法即可。</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">postProcessBeanDefinitionRegistry</span><span class="params">(BeanDefinitionRegistry registry)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">int</span> registryId = System.identityHashCode(registry);</span><br><span class="line">	<span class="keyword">if</span> (<span class="keyword">this</span>.registriesPostProcessed.contains(registryId)) &#123;</span><br><span class="line">		<span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(</span><br><span class="line">				<span class="string">&quot;postProcessBeanDefinitionRegistry already called on this post-processor against &quot;</span> + registry);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (<span class="keyword">this</span>.factoriesPostProcessed.contains(registryId)) &#123;</span><br><span class="line">		<span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(</span><br><span class="line">				<span class="string">&quot;postProcessBeanFactory already called on this post-processor against &quot;</span> + registry);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">this</span>.registriesPostProcessed.add(registryId);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/** 这里会解析配置类的一些注解，例如<span class="doctag">@Configutation</span>、<span class="doctag">@Component</span>、<span class="doctag">@Import</span>等配置注解 */</span></span><br><span class="line">	processConfigBeanDefinitions(registry);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在<code>postProcessBeanDefinitionRegistry</code>方法中，我们直接看到最后一行，调用了<code>processConfigBeanDefinitions(registry)</code>，这个方法主要是解析<code>@Component</code>、<code>@Import</code>等配置注解。<a href="/archives/79103379">想要了解<code>processConfigBeanDefinitioins</code>中具体流程可以查看这一篇。</a></p>
+]]></content>
+      <categories>
+        <category>Spring源码</category>
+      </categories>
+      <tags>
+        <tag>Spring源码</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>html播放.m3u8格式视频</title>
     <url>/archives/e6ea49db/</url>
     <content><![CDATA[<p>播放<code>.m3u8</code>格式视频时需要借助<code>hls.js</code>，为了下载速度快点，我们直接通过国内的cdn访问<a href="https://www.bootcdn.cn/hls.js/">https://www.bootcdn.cn/hls.js/</a></p>
@@ -1386,31 +1411,6 @@
       </categories>
       <tags>
         <tag>html</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>invokeBeanDefinitionRegistryPostProcessors方法解析</title>
-    <url>/archives/8d05e930/</url>
-    <content><![CDATA[<p>在上一篇<a href="/archives/e74be873">《Spring-IOC原理之invokeBeanFactoryPostProcessor详解》</a>中我们提到了一个方法<code>invokeBeanDefinitionRegistryPostProcessors()</code>。也说了这个方法最终会调用<code>ConfigurationClassPostProcessor</code>类中的<code>postProcessBeanDefinitionRegistry</code>方法。并且在这个方法中会解析<code>@Import</code>、<code>@Component</code>等注解和创建<code>CGLIB</code>动态代理。那么这一篇我们来详细看一下这个调用链中的方法。</p>
-<p>先找到<code>refresh()</code>方法中的<code>invokeBeanFactoryPostProcessors()</code>，然后找到方法中的<code>invokeBeanDefinitionRegistryPostProcessors</code>方法。</p>
-<p><img src="/archives/8d05e930/image-20210828140340723.png" alt="PostProcessorRegistrationDelegate#invokeBeanFactoryPostProcessors"></p>
-<p>然后<code>Ctrl+鼠标左键</code>进入到该方法中</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">invokeBeanDefinitionRegistryPostProcessors</span><span class="params">(Collection&lt;? extends BeanDefinitionRegistryPostProcessor&gt; postProcessors, BeanDefinitionRegistry registry)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">for</span> (BeanDefinitionRegistryPostProcessor postProcessor : postProcessors) &#123;</span><br><span class="line">		<span class="comment">/** 这里调用ConfigutationClassPostProcessor处理beanDefinitionMap中的bean定义 */</span></span><br><span class="line">		postProcessor.postProcessBeanDefinitionRegistry(registry);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>循环遍历了传进来的<code>postProcessors</code>，不过<code>postProcessors</code>中只有一个类是<code>ConfigurationClassPostProcessor</code>。然后调用<code>postProcessBeanDefinitionRegistry</code>。</p>
-<p><img src="/archives/8d05e930/image-20210828141408341.png" alt="Debug-invokeBeanDefinitionRegistryPostProcessors"></p>
-<blockquote>
-<p>这里还有一个点，就是<code>postProcessBeanDefinitionRegistry</code>方法，这个方法是<code>BeanDefinitionRegistryPostProcessor</code>接口中的方法，所以要想看方法内的实现逻辑只能找实现类中该方法的实现逻辑；通过上面的调试图片我们可以知道，<code>postProcessor</code>是<code>ConfigurationClassPostProcessor</code>类型，而<code>ConfigurationClassPostProcessor</code>切好也实现了<code>BeanDefinitionRegistryPostProcessors</code>接口，当然也实现了这个接口中的方法。所以这里我们只要去<code>ConfigurationClassPostProcessor</code>类中去找方法即可。</p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">postProcessBeanDefinitionRegistry</span><span class="params">(BeanDefinitionRegistry registry)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">int</span> registryId = System.identityHashCode(registry);</span><br><span class="line">	<span class="keyword">if</span> (<span class="keyword">this</span>.registriesPostProcessed.contains(registryId)) &#123;</span><br><span class="line">		<span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(</span><br><span class="line">				<span class="string">&quot;postProcessBeanDefinitionRegistry already called on this post-processor against &quot;</span> + registry);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (<span class="keyword">this</span>.factoriesPostProcessed.contains(registryId)) &#123;</span><br><span class="line">		<span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(</span><br><span class="line">				<span class="string">&quot;postProcessBeanFactory already called on this post-processor against &quot;</span> + registry);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">this</span>.registriesPostProcessed.add(registryId);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/** 这里会解析配置类的一些注解，例如<span class="doctag">@Configutation</span>、<span class="doctag">@Component</span>、<span class="doctag">@Import</span>等配置注解 */</span></span><br><span class="line">	processConfigBeanDefinitions(registry);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>在<code>postProcessBeanDefinitionRegistry</code>方法中，我们直接看到最后一行，调用了<code>processConfigBeanDefinitions(registry)</code>，这个方法主要是解析<code>@Component</code>、<code>@Import</code>等配置注解。<a href="/archives/79103379">想要了解<code>processConfigBeanDefinitioins</code>中具体流程可以查看这一篇。</a></p>
-]]></content>
-      <categories>
-        <category>Spring源码</category>
-      </categories>
-      <tags>
-        <tag>Spring源码</tag>
       </tags>
   </entry>
   <entry>
