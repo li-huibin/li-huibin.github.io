@@ -6,7 +6,7 @@
   <link href="https://www.lihuibin.top/atom.xml" rel="self"/>
   
   <link href="https://www.lihuibin.top/"/>
-  <updated>2021-10-02T14:22:27.596Z</updated>
+  <updated>2021-10-03T09:26:07.178Z</updated>
   <id>https://www.lihuibin.top/</id>
   
   <author>
@@ -15,6 +15,31 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>Zookeeper实战</title>
+    <link href="https://www.lihuibin.top/archives/e5bda741/"/>
+    <id>https://www.lihuibin.top/archives/e5bda741/</id>
+    <published>2021-10-03T04:11:12.000Z</published>
+    <updated>2021-10-03T09:26:07.178Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h1 id=&quot;1、什么是Zookeeper&quot;&gt;&lt;a href=&quot;#1、什么是Zookeeper&quot; class=&quot;headerlink&quot;</summary>
+        
+      
+    
+    
+    
+    <category term="zookeeper" scheme="https://www.lihuibin.top/categories/zookeeper/"/>
+    
+    
+    <category term="zookeeper" scheme="https://www.lihuibin.top/tags/zookeeper/"/>
+    
+  </entry>
   
   <entry>
     <title>Redis缓存那些事</title>
@@ -483,31 +508,6 @@
         
         
     <summary type="html">&lt;h2 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h2&gt;&lt;p&gt;在上一篇博文《&lt;a</summary>
-        
-      
-    
-    
-    
-    <category term="Spring源码" scheme="https://www.lihuibin.top/categories/Spring%E6%BA%90%E7%A0%81/"/>
-    
-    
-    <category term="Spring源码" scheme="https://www.lihuibin.top/tags/Spring%E6%BA%90%E7%A0%81/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Spring-IOC原理(二)</title>
-    <link href="https://www.lihuibin.top/archives/49651b9e/"/>
-    <id>https://www.lihuibin.top/archives/49651b9e/</id>
-    <published>2021-08-17T01:40:32.000Z</published>
-    <updated>2021-09-03T13:51:21.247Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;h2 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h2&gt;&lt;p&gt;在上一篇博文&lt;a</summary>
         
       
     
