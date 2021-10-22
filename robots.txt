@@ -9,4 +9,6 @@ Allow: /photos/
 Disallow: 
 Disallow: /js/
 Disallow: /css/
+Sitemap: http://lihuibin.top/baidusitemap.xml
+Sitemap: http://www.lihuibin.top/baidusitemap.xml
 Sitemap: https://blog.lihuibin.top/baidusitemap.xml

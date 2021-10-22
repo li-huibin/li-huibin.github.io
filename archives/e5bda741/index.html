@@ -302,7 +302,7 @@
 <p><strong>生成授权ID的两种方式：</strong></p>
 <ul>
 <li><p>代码生成ID</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Test</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">generateSuperDigest</span><span class="params">()</span> <span class="keyword">throws</span> NoSuchAlgorithmException </span>&#123;</span><br><span class="line">    String sId = DigestAuthenticationProvider.generateDigest(<span class="string">&quot;gj:test&quot;</span>);</span><br><span class="line">    System.out.println(sId);<span class="comment">//  gj:X/NSthOB0fD/OT6iilJ55WJVado=</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Test</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">generateSuperDigest</span><span class="params">()</span> <span class="keyword">throws</span> NoSuchAlgorithmException </span>&#123;</span><br><span class="line">    String sId = DigestAuthenticationProvider.generateDigest(<span class="string">&quot;lhb:123456&quot;</span>);</span><br><span class="line">    System.out.println(sId);<span class="comment">//  lhb:nJnredAZxZ1dpEZSzZt/xmcFNUM=</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
 <li><p>通过命令生成</p>
 <figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> -n &lt;user&gt;:&lt;password&gt; | openssl dgst -binary -sha1 | openssl base64</span><br></pre></td></tr></table></figure></li>
 </ul>
@@ -312,11 +312,11 @@
 <figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">create [-s][-e][-c] path [data][acl]</span><br></pre></td></tr></table></figure>
 
 <blockquote>
-<p>create /zk-node datatest digest:gj:X/NSthOB0fD/OT6iilJ55WJVado=:cdrwa</p>
+<p>create /zk-node datatest digest:lhb:nJnredAZxZ1dpEZSzZt/xmcFNUM=:cdrwa</p>
 </blockquote>
 </li>
 <li><p>使用setAcl设置</p>
-<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">setAcl /zk-node digest:gj:X/NSthOB0fD/OT6iilJ55WJVado=:cdrwa</span><br></pre></td></tr></table></figure></li>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">setAcl /zk-node digest:lhb:nJnredAZxZ1dpEZSzZt/xmcFNUM=:cdrwa</span><br></pre></td></tr></table></figure></li>
 </ul>
 <p>添加权限信息后，不能直接访问，在访问前需要添加授权信息</p>
 <figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">addauth digest gj:<span class="built_in">test</span></span><br><span class="line">get /zk-node</span><br><span class="line">datatest</span><br></pre></td></tr></table></figure>

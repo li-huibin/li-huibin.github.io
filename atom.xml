@@ -6,7 +6,7 @@
   <link href="https://www.lihuibin.top/atom.xml" rel="self"/>
   
   <link href="https://www.lihuibin.top/"/>
-  <updated>2021-10-03T14:03:40.483Z</updated>
+  <updated>2021-10-22T13:32:24.344Z</updated>
   <id>https://www.lihuibin.top/</id>
   
   <author>
@@ -17,11 +17,88 @@
   <generator uri="https://hexo.io/">Hexo</generator>
   
   <entry>
+    <title>Java网络IO与Epoll模型</title>
+    <link href="https://www.lihuibin.top/archives/3449cc56/"/>
+    <id>https://www.lihuibin.top/archives/3449cc56/</id>
+    <published>2021-10-21T13:27:45.000Z</published>
+    <updated>2021-10-22T13:32:24.344Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h1 id=&quot;IO网络模型&quot;&gt;&lt;a href=&quot;#IO网络模型&quot; class=&quot;headerlink&quot;</summary>
+        
+      
+    
+    
+    
+    <category term="Netty" scheme="https://www.lihuibin.top/categories/Netty/"/>
+    
+    
+    <category term="Netty" scheme="https://www.lihuibin.top/tags/Netty/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>maven打包main可运行jar包</title>
+    <link href="https://www.lihuibin.top/archives/15bfa942/"/>
+    <id>https://www.lihuibin.top/archives/15bfa942/</id>
+    <published>2021-10-11T06:20:49.000Z</published>
+    <updated>2021-10-21T13:24:47.005Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;在pom.xml文件中加入以下代码：&lt;/p&gt;
+&lt;figure class=&quot;highlight xml&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span</summary>
+        
+      
+    
+    
+    
+    <category term="解决方案" scheme="https://www.lihuibin.top/categories/%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/"/>
+    
+    
+    <category term="解决方案" scheme="https://www.lihuibin.top/tags/%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>netty实现简单聊天室功能</title>
+    <link href="https://www.lihuibin.top/archives/8839ad77/"/>
+    <id>https://www.lihuibin.top/archives/8839ad77/</id>
+    <published>2021-10-11T04:54:54.000Z</published>
+    <updated>2021-10-21T13:24:47.020Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;首先看一下项目目录结构&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;/archives/8839ad77/image-20211011125748872.png&quot;</summary>
+        
+      
+    
+    
+    
+    <category term="Netty" scheme="https://www.lihuibin.top/categories/Netty/"/>
+    
+    
+    <category term="Netty" scheme="https://www.lihuibin.top/tags/Netty/"/>
+    
+  </entry>
+  
+  <entry>
     <title>Zookeeper实战</title>
     <link href="https://www.lihuibin.top/archives/e5bda741/"/>
     <id>https://www.lihuibin.top/archives/e5bda741/</id>
     <published>2021-10-03T04:11:12.000Z</published>
-    <updated>2021-10-03T14:03:40.483Z</updated>
+    <updated>2021-10-03T14:17:42.049Z</updated>
     
     
       
@@ -433,81 +510,6 @@
         
         
     <summary type="html">&lt;p&gt;在上一篇&lt;a</summary>
-        
-      
-    
-    
-    
-    <category term="Spring源码" scheme="https://www.lihuibin.top/categories/Spring%E6%BA%90%E7%A0%81/"/>
-    
-    
-    <category term="Spring源码" scheme="https://www.lihuibin.top/tags/Spring%E6%BA%90%E7%A0%81/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Spring-IOC原理之invokeBeanFactoryPostProcessor详解</title>
-    <link href="https://www.lihuibin.top/archives/e74be873/"/>
-    <id>https://www.lihuibin.top/archives/e74be873/</id>
-    <published>2021-08-25T09:48:36.000Z</published>
-    <updated>2021-09-03T13:51:21.312Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;h1 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot;</summary>
-        
-      
-    
-    
-    
-    <category term="Spring源码" scheme="https://www.lihuibin.top/categories/Spring%E6%BA%90%E7%A0%81/"/>
-    
-    
-    <category term="Spring源码" scheme="https://www.lihuibin.top/tags/Spring%E6%BA%90%E7%A0%81/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Spring-IOC原理(四)</title>
-    <link href="https://www.lihuibin.top/archives/cdd5d4ba/"/>
-    <id>https://www.lihuibin.top/archives/cdd5d4ba/</id>
-    <published>2021-08-24T02:06:03.000Z</published>
-    <updated>2021-09-03T13:51:21.289Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;h1 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h1&gt;&lt;p&gt;在上一篇博文《&lt;a</summary>
-        
-      
-    
-    
-    
-    <category term="Spring源码" scheme="https://www.lihuibin.top/categories/Spring%E6%BA%90%E7%A0%81/"/>
-    
-    
-    <category term="Spring源码" scheme="https://www.lihuibin.top/tags/Spring%E6%BA%90%E7%A0%81/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Spring-IOC原理(三)</title>
-    <link href="https://www.lihuibin.top/archives/37963bb5/"/>
-    <id>https://www.lihuibin.top/archives/37963bb5/</id>
-    <published>2021-08-23T11:15:07.000Z</published>
-    <updated>2021-09-03T13:51:21.246Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;h2 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h2&gt;&lt;p&gt;在上一篇博文《&lt;a</summary>
         
       
     
