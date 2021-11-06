@@ -1,65 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>Java网络IO与Epoll模型</title>
-    <url>/archives/3449cc56/</url>
-    <content><![CDATA[<h1 id="IO网络模型"><a href="#IO网络模型" class="headerlink" title="IO网络模型"></a>IO网络模型</h1><p>在Java中支持3种网络编程IO模式：</p>
-<ul>
-<li>BIO</li>
-<li>NIO</li>
-<li>AIO</li>
-</ul>
-<h2 id="BIO-Blocking-IO"><a href="#BIO-Blocking-IO" class="headerlink" title="BIO(Blocking IO)"></a>BIO(Blocking IO)</h2><p>同步阻塞模型，一个客户端连接对应一个处理线程</p>
-<p><img src="/archives/3449cc56/BIO%E6%A8%A1%E5%9E%8B.png" alt="BIO同步阻塞模型"></p>
-<p>BIO代码示例</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lhb.bio;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.io.IOException;</span><br><span class="line"><span class="keyword">import</span> java.net.ServerSocket;</span><br><span class="line"><span class="keyword">import</span> java.net.Socket;</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SocketServer</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">        ServerSocket serverSocket = <span class="keyword">new</span> ServerSocket(<span class="number">9000</span>);</span><br><span class="line">        <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;等待连接。。&quot;</span>);</span><br><span class="line">            <span class="comment">//阻塞方法</span></span><br><span class="line">            Socket clientSocket = serverSocket.accept();</span><br><span class="line">            System.out.println(<span class="string">&quot;有客户端连接了。。&quot;</span>);</span><br><span class="line">            handler(clientSocket);</span><br><span class="line"></span><br><span class="line">            <span class="comment">/*new Thread(new Runnable() &#123;</span></span><br><span class="line"><span class="comment">                @Override</span></span><br><span class="line"><span class="comment">                public void run() &#123;</span></span><br><span class="line"><span class="comment">                    try &#123;</span></span><br><span class="line"><span class="comment">                        handler(clientSocket);</span></span><br><span class="line"><span class="comment">                    &#125; catch (IOException e) &#123;</span></span><br><span class="line"><span class="comment">                        e.printStackTrace();</span></span><br><span class="line"><span class="comment">                    &#125;</span></span><br><span class="line"><span class="comment">                &#125;</span></span><br><span class="line"><span class="comment">            &#125;).start();*/</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">handler</span><span class="params">(Socket clientSocket)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">        <span class="keyword">byte</span>[] bytes = <span class="keyword">new</span> <span class="keyword">byte</span>[<span class="number">1024</span>];</span><br><span class="line">        System.out.println(<span class="string">&quot;准备read。。&quot;</span>);</span><br><span class="line">        <span class="comment">//接收客户端的数据，阻塞方法，没有数据可读时就阻塞</span></span><br><span class="line">        <span class="keyword">int</span> read = clientSocket.getInputStream().read(bytes);</span><br><span class="line">        System.out.println(<span class="string">&quot;read完毕。。&quot;</span>);</span><br><span class="line">        <span class="keyword">if</span> (read != -<span class="number">1</span>) &#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;接收到客户端的数据：&quot;</span> + <span class="keyword">new</span> String(bytes, <span class="number">0</span>, read));</span><br><span class="line">        &#125;</span><br><span class="line">        clientSocket.getOutputStream().write(<span class="string">&quot;HelloClient&quot;</span>.getBytes());</span><br><span class="line">        clientSocket.getOutputStream().flush();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>客户端代码</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SocketClient</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">        Socket socket = <span class="keyword">new</span> Socket(<span class="string">&quot;localhost&quot;</span>, <span class="number">9000</span>);</span><br><span class="line">        <span class="comment">//向服务端发送数据</span></span><br><span class="line">        socket.getOutputStream().write(<span class="string">&quot;HelloServer&quot;</span>.getBytes());</span><br><span class="line">        socket.getOutputStream().flush();</span><br><span class="line">        System.out.println(<span class="string">&quot;向服务端发送数据结束&quot;</span>);</span><br><span class="line">        <span class="keyword">byte</span>[] bytes = <span class="keyword">new</span> <span class="keyword">byte</span>[<span class="number">1024</span>];</span><br><span class="line">        <span class="comment">//接收服务端回传的数据</span></span><br><span class="line">        socket.getInputStream().read(bytes);</span><br><span class="line">        System.out.println(<span class="string">&quot;接收到服务端的数据：&quot;</span> + <span class="keyword">new</span> String(bytes));</span><br><span class="line">        socket.close();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h3><ol>
-<li>IO代码里read操作是阻塞操作，如果连接不做数据读写操作会导致线程阻塞，浪费资源</li>
-<li>如果线程很多，会导致服务器线程太多，压力太大，比如C10K问题</li>
-</ol>
-<h3 id="应用场景"><a href="#应用场景" class="headerlink" title="应用场景"></a>应用场景</h3><p>BIO方式适用于连接数目比较小且固定的架构，这种方式对服务器资源要求比较高，但是程序简单易理解</p>
-<h2 id="NIO-Non-Blocking-IO"><a href="#NIO-Non-Blocking-IO" class="headerlink" title="NIO(Non Blocking IO)"></a>NIO(Non Blocking IO)</h2><p>同步非阻塞模型，服务器实现模式为<strong>一个线程可以处理多个请求(连接)<strong>，，客户端发送的连接请求都会注册到</strong>多路复用器selector上</strong>，多路复用器轮询到连接有IO请求就进行处理，JDK1.4开始引入。</p>
-<h3 id="应用场景-1"><a href="#应用场景-1" class="headerlink" title="应用场景"></a>应用场景</h3><p>NIO方式适用于连接数据多并且连接比较短(轻操作)的架构，比如聊天服务、弹幕系统、服务器间通讯。编程比较复杂</p>
-<p>NIO非阻塞代码示例</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lhb.nio;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.io.IOException;</span><br><span class="line"><span class="keyword">import</span> java.net.InetSocketAddress;</span><br><span class="line"><span class="keyword">import</span> java.nio.ByteBuffer;</span><br><span class="line"><span class="keyword">import</span> java.nio.channels.ServerSocketChannel;</span><br><span class="line"><span class="keyword">import</span> java.nio.channels.SocketChannel;</span><br><span class="line"><span class="keyword">import</span> java.util.ArrayList;</span><br><span class="line"><span class="keyword">import</span> java.util.Iterator;</span><br><span class="line"><span class="keyword">import</span> java.util.List;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">NioServer</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 保存客户端连接</span></span><br><span class="line">    <span class="keyword">static</span> List&lt;SocketChannel&gt; channelList = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> IOException, InterruptedException </span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 创建NIO ServerSocketChannel,与BIO的serverSocket类似</span></span><br><span class="line">        ServerSocketChannel serverSocket = ServerSocketChannel.open();</span><br><span class="line">        serverSocket.socket().bind(<span class="keyword">new</span> InetSocketAddress(<span class="number">9000</span>));</span><br><span class="line">        <span class="comment">// 设置ServerSocketChannel为非阻塞</span></span><br><span class="line">        serverSocket.configureBlocking(<span class="keyword">false</span>);</span><br><span class="line">        System.out.println(<span class="string">&quot;服务启动成功&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">            <span class="comment">// 非阻塞模式accept方法不会阻塞，否则会阻塞</span></span><br><span class="line">            <span class="comment">// NIO的非阻塞是由操作系统内部实现的，底层调用了linux内核的accept函数</span></span><br><span class="line">            SocketChannel socketChannel = serverSocket.accept();</span><br><span class="line">            <span class="keyword">if</span> (socketChannel != <span class="keyword">null</span>) &#123; <span class="comment">// 如果有客户端进行连接</span></span><br><span class="line">                System.out.println(<span class="string">&quot;连接成功&quot;</span>);</span><br><span class="line">                <span class="comment">// 设置SocketChannel为非阻塞</span></span><br><span class="line">                socketChannel.configureBlocking(<span class="keyword">false</span>);</span><br><span class="line">                <span class="comment">// 保存客户端连接在List中</span></span><br><span class="line">                channelList.add(socketChannel);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 遍历连接进行数据读取</span></span><br><span class="line">            Iterator&lt;SocketChannel&gt; iterator = channelList.iterator();</span><br><span class="line">            <span class="keyword">while</span> (iterator.hasNext()) &#123;</span><br><span class="line">                SocketChannel sc = iterator.next();</span><br><span class="line">                ByteBuffer byteBuffer = ByteBuffer.allocate(<span class="number">128</span>);</span><br><span class="line">                <span class="comment">// 非阻塞模式read方法不会阻塞，否则会阻塞</span></span><br><span class="line">                <span class="keyword">int</span> len = sc.read(byteBuffer);</span><br><span class="line">                <span class="comment">// 如果有数据，把数据打印出来</span></span><br><span class="line">                <span class="keyword">if</span> (len &gt; <span class="number">0</span>) &#123;</span><br><span class="line">                    System.out.println(<span class="string">&quot;接收到消息：&quot;</span> + <span class="keyword">new</span> String(byteBuffer.array()));</span><br><span class="line">                &#125; <span class="keyword">else</span> <span class="keyword">if</span> (len == -<span class="number">1</span>) &#123; <span class="comment">// 如果客户端断开，把socket从集合中去掉</span></span><br><span class="line">                    iterator.remove();</span><br><span class="line">                    System.out.println(<span class="string">&quot;客户端断开连接&quot;</span>);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<p>总结：如果连接太多的话，会有大量的无效遍历，加入有10000个连接，其中只有1000个连接有写数据，但是由于其他9000个连接并没有断开，我们还是要每次遍历一万次，其中有十分之九的遍历都是无效的，这显然不是一个好的方案</p>
-</blockquote>
-<p>NIO引入多路复用器代码示例</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lhb.nio;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.io.IOException;</span><br><span class="line"><span class="keyword">import</span> java.net.InetSocketAddress;</span><br><span class="line"><span class="keyword">import</span> java.nio.ByteBuffer;</span><br><span class="line"><span class="keyword">import</span> java.nio.channels.SelectionKey;</span><br><span class="line"><span class="keyword">import</span> java.nio.channels.Selector;</span><br><span class="line"><span class="keyword">import</span> java.nio.channels.ServerSocketChannel;</span><br><span class="line"><span class="keyword">import</span> java.nio.channels.SocketChannel;</span><br><span class="line"><span class="keyword">import</span> java.util.Iterator;</span><br><span class="line"><span class="keyword">import</span> java.util.Set;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">NioSelectorServer</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> IOException, InterruptedException </span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 创建NIO ServerSocketChannel</span></span><br><span class="line">        ServerSocketChannel serverSocket = ServerSocketChannel.open();</span><br><span class="line">        serverSocket.socket().bind(<span class="keyword">new</span> InetSocketAddress(<span class="number">9000</span>));</span><br><span class="line">        <span class="comment">// 设置ServerSocketChannel为非阻塞</span></span><br><span class="line">        serverSocket.configureBlocking(<span class="keyword">false</span>);</span><br><span class="line">        <span class="comment">// 打开Selector处理Channel，即创建epoll</span></span><br><span class="line">        Selector selector = Selector.open();</span><br><span class="line">        <span class="comment">// 把ServerSocketChannel注册到selector上，并且selector对客户端accept连接操作感兴趣</span></span><br><span class="line">        serverSocket.register(selector, SelectionKey.OP_ACCEPT);</span><br><span class="line">        System.out.println(<span class="string">&quot;服务启动成功&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">            <span class="comment">// 阻塞等待需要处理的事件发生</span></span><br><span class="line">            selector.select();</span><br><span class="line"></span><br><span class="line">            <span class="comment">// 获取selector中注册的全部事件的 SelectionKey 实例</span></span><br><span class="line">            Set&lt;SelectionKey&gt; selectionKeys = selector.selectedKeys();</span><br><span class="line">            Iterator&lt;SelectionKey&gt; iterator = selectionKeys.iterator();</span><br><span class="line"></span><br><span class="line">            <span class="comment">// 遍历SelectionKey对事件进行处理</span></span><br><span class="line">            <span class="keyword">while</span> (iterator.hasNext()) &#123;</span><br><span class="line">                SelectionKey key = iterator.next();</span><br><span class="line">                <span class="comment">// 如果是OP_ACCEPT事件，则进行连接获取和事件注册</span></span><br><span class="line">                <span class="keyword">if</span> (key.isAcceptable()) &#123;</span><br><span class="line">                    ServerSocketChannel server = (ServerSocketChannel) key.channel();</span><br><span class="line">                    SocketChannel socketChannel = server.accept();</span><br><span class="line">                    socketChannel.configureBlocking(<span class="keyword">false</span>);</span><br><span class="line">                    <span class="comment">// 这里只注册了读事件，如果需要给客户端发送数据可以注册写事件</span></span><br><span class="line">                    socketChannel.register(selector, SelectionKey.OP_READ);</span><br><span class="line">                    System.out.println(<span class="string">&quot;客户端连接成功&quot;</span>);</span><br><span class="line">                &#125; <span class="keyword">else</span> <span class="keyword">if</span> (key.isReadable()) &#123;  <span class="comment">// 如果是OP_READ事件，则进行读取和打印</span></span><br><span class="line">                    SocketChannel socketChannel = (SocketChannel) key.channel();</span><br><span class="line">                    ByteBuffer byteBuffer = ByteBuffer.allocate(<span class="number">128</span>);</span><br><span class="line">                    <span class="keyword">int</span> len = socketChannel.read(byteBuffer);</span><br><span class="line">                    <span class="comment">// 如果有数据，把数据打印出来</span></span><br><span class="line">                    <span class="keyword">if</span> (len &gt; <span class="number">0</span>) &#123;</span><br><span class="line">                        System.out.println(<span class="string">&quot;接收到消息：&quot;</span> + <span class="keyword">new</span> String(byteBuffer.array()));</span><br><span class="line">                    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (len == -<span class="number">1</span>) &#123; <span class="comment">// 如果客户端断开连接，关闭Socket</span></span><br><span class="line">                        System.out.println(<span class="string">&quot;客户端断开连接&quot;</span>);</span><br><span class="line">                        socketChannel.close();</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="comment">//从事件集合里删除本次处理的key，防止下次select重复处理</span></span><br><span class="line">                iterator.remove();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>NIO有三大核心组件：</p>
-<ul>
-<li><strong>Channel(通道)</strong></li>
-<li><strong>Buffer(缓冲区)</strong></li>
-<li><strong>Selector(多路复用器)</strong></li>
-</ul>
-<blockquote>
-<ol>
-<li>channel类似于流，每个channel对应一个buffer缓冲区，buffer底层就是数组</li>
-<li>channel会注册到selector上，由selector根据channel读写事件的发生将其交由某个空闲的线程处理</li>
-<li>NIO的Buffer和channel都是既可以读也可以写</li>
-</ol>
-</blockquote>
-<p><img src="/archives/3449cc56/NIO%E6%A8%A1%E5%9E%8B.png" alt="NIO模型"></p>
-<p>NIO底层在JDK1.4版本是用的Linux的内核函数select()或poll()来实现，跟上面的NIOServer代码类似，selector每次都会轮询所有的sockChannel看下那个channel有读写事件，有的话就处理，没有的话就继续遍历，JDK1.5开始引入了epoll()基于事件响应机制来优化NIO。</p>
-<p>NIOSelectorServer代码里如下几个方法非常重要，我们从HotSpot与Linux内核函数级别来理解一下</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">Selector.open();  <span class="comment">//创建多路复用器</span></span><br><span class="line">socketChannel.register(selector,SelectionKey.OP_READ);  <span class="comment">//将channel注册到多路复用器上</span></span><br><span class="line">selector.select();  <span class="comment">//阻塞等待需要处理的事件发生</span></span><br></pre></td></tr></table></figure>
-
-]]></content>
-      <categories>
-        <category>Netty</category>
-      </categories>
-      <tags>
-        <tag>Netty</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Linux安装配置Redis</title>
     <url>/archives/a813391e/</url>
     <content><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><ul>
@@ -104,6 +45,115 @@
       </categories>
       <tags>
         <tag>Redis</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Netty核心源码解析</title>
+    <url>/archives/b4dafe2/</url>
+    <content><![CDATA[<h2 id="Netty线程模型图"><a href="#Netty线程模型图" class="headerlink" title="Netty线程模型图"></a>Netty线程模型图</h2><p><img src="/archives/b4dafe2/Netty%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B%E5%9B%BE.png" alt="Netty线程模型图"></p>
+<h2 id="Netty线程模型源码解析图"><a href="#Netty线程模型源码解析图" class="headerlink" title="Netty线程模型源码解析图"></a><a href="https://viewer.diagrams.net/?tags=%7B%7D&highlight=0000ff&edit=_blank&layers=1&nav=1&page-id=fAExpZiIWca5xK1e2uDy&title=Netty%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B%E5%9B%BE.drawio#Uhttps%3A%2F%2Fraw.githubusercontent.com%2Fli-huibin%2Fstudy-java%2Fmain%2Fnetty%2FNetty%25E7%25BA%25BF%25E7%25A8%258B%25E6%25A8%25A1%25E5%259E%258B%25E5%259B%25BE.drawio">Netty线程模型源码解析图</a></h2><p><img src="/archives/b4dafe2/Netty%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B%E6%BA%90%E7%A0%81%E5%89%96%E6%9E%90%E5%9B%BE.png" alt="Netty线程模型源码解析图"></p>
+<h2 id="Netty高并发架构设计妙处"><a href="#Netty高并发架构设计妙处" class="headerlink" title="Netty高并发架构设计妙处"></a>Netty高并发架构设计妙处</h2><ul>
+<li>主从Reactor线程模型</li>
+<li>NIO多路复用非阻塞</li>
+<li><strong>无锁串行化</strong>设计思想</li>
+<li>支持高性能序列化协议</li>
+<li>零拷贝(使用直接内存)</li>
+<li>ByteBuf内存池设计</li>
+<li>灵活的TCP参数配置能力</li>
+<li>并发优化</li>
+</ul>
+<h3 id="无锁串行化设计"><a href="#无锁串行化设计" class="headerlink" title="无锁串行化设计"></a>无锁串行化设计</h3><p>在大多数场景下，并行多线程处理可以提升系统的并发性能。但是对于共享资源的并发处理不当的话，会带来严重的锁竞争，从而导致性能下降。为了解决并发锁竞争带来的性能损耗，可以通过串行化的方式，即所有的处理都是在一个线程中完成的，期间不会进行线程之间的切换，避免了多线程的竞争和同步锁。NIO的多路复用就是一种无锁串行化的设计思想(可以理解一下Redis和Netty的线程模型)，为了尽可能提升性能，Netty采用了串行化无锁设计，在IO线程内部进行串行操作，避免了多线程导致的性能下降。表面上看是CPU利用率不高，并发程度不够，但是可以通过调整NIO线程参数，可以同时启动多个串行化的线程并行运行，这种局部无所华串行线程设计相比一个队列-多个工作线程模型性能更优。</p>
+<p>Netty的NioEventLoop读取到消息后，直接调用ChannelPipeline的fireChannelRead(Object msg),只要用户不主动切换线程，一直会由NioEventLoop调用用户的Handler，期间不进行线程切换，这种串行化处理方式可以避免多线程操作导致的锁竞争，从性能上看是最优的。</p>
+<h3 id="直接内存"><a href="#直接内存" class="headerlink" title="直接内存"></a>直接内存</h3><p>直接内存(Direct Memory)并不是虚拟机运行时数据区的一部分，也不是Java虚拟机规范中定义的内存区域，某些情况下这部分内存也会被频繁的使用，而且也可能导致OutOfMemoryError异常出现。Java里用的DirectByteBuffer可以分配一块直接内存(堆外内存)，元空间对应的内存也叫作直接内存，他们对应的都是机器的直接物理内存。</p>
+<p><img src="/archives/b4dafe2/%E7%9B%B4%E6%8E%A5%E5%86%85%E5%AD%98%E7%BB%93%E6%9E%84%E5%9B%BE.png" alt="直接内存结构图"></p>
+<p>直接内存和堆内存区别代码演示：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 直接内存与堆内存的区别</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">DirectMemoryTest</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">heapAccess</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">long</span> startTime = System.currentTimeMillis();</span><br><span class="line">        <span class="comment">//分配堆内存</span></span><br><span class="line">        ByteBuffer buffer = ByteBuffer.allocate(<span class="number">1000</span>);</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">100000</span>; i++) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; <span class="number">200</span>; j++) &#123;</span><br><span class="line">                buffer.putInt(j);</span><br><span class="line">            &#125;</span><br><span class="line">            buffer.flip();</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; <span class="number">200</span>; j++) &#123;</span><br><span class="line">                buffer.getInt();</span><br><span class="line">            &#125;</span><br><span class="line">            buffer.clear();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">long</span> endTime = System.currentTimeMillis();</span><br><span class="line">        System.out.println(<span class="string">&quot;堆内存访问:&quot;</span> + (endTime - startTime) + <span class="string">&quot;ms&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">directAccess</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">long</span> startTime = System.currentTimeMillis();</span><br><span class="line">        <span class="comment">//分配直接内存</span></span><br><span class="line">        ByteBuffer buffer = ByteBuffer.allocateDirect(<span class="number">1000</span>);</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">100000</span>; i++) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; <span class="number">200</span>; j++) &#123;</span><br><span class="line">                buffer.putInt(j);</span><br><span class="line">            &#125;</span><br><span class="line">            buffer.flip();</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; <span class="number">200</span>; j++) &#123;</span><br><span class="line">                buffer.getInt();</span><br><span class="line">            &#125;</span><br><span class="line">            buffer.clear();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">long</span> endTime = System.currentTimeMillis();</span><br><span class="line">        System.out.println(<span class="string">&quot;直接内存访问:&quot;</span> + (endTime - startTime) + <span class="string">&quot;ms&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">heapAllocate</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">long</span> startTime = System.currentTimeMillis();</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">100000</span>; i++) &#123;</span><br><span class="line">            ByteBuffer.allocate(<span class="number">100</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">long</span> endTime = System.currentTimeMillis();</span><br><span class="line">        System.out.println(<span class="string">&quot;堆内存申请:&quot;</span> + (endTime - startTime) + <span class="string">&quot;ms&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">directAllocate</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">long</span> startTime = System.currentTimeMillis();</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">100000</span>; i++) &#123;</span><br><span class="line">            ByteBuffer.allocateDirect(<span class="number">100</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">long</span> endTime = System.currentTimeMillis();</span><br><span class="line">        System.out.println(<span class="string">&quot;直接内存申请:&quot;</span> + (endTime - startTime) + <span class="string">&quot;ms&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span> </span>&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++) &#123;</span><br><span class="line">            heapAccess();</span><br><span class="line">            directAccess();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        System.out.println();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++) &#123;</span><br><span class="line">            heapAllocate();</span><br><span class="line">            directAllocate();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">运行结果：</span><br><span class="line">堆内存访问:44ms</span><br><span class="line">直接内存访问:29ms</span><br><span class="line">堆内存访问:33ms</span><br><span class="line">直接内存访问:19ms</span><br><span class="line">堆内存访问:55ms</span><br><span class="line">直接内存访问:38ms</span><br><span class="line">堆内存访问:39ms</span><br><span class="line">直接内存访问:20ms</span><br><span class="line">堆内存访问:38ms</span><br><span class="line">直接内存访问:18ms</span><br><span class="line">堆内存访问:36ms</span><br><span class="line">直接内存访问:19ms</span><br><span class="line">堆内存访问:34ms</span><br><span class="line">直接内存访问:19ms</span><br><span class="line">堆内存访问:40ms</span><br><span class="line">直接内存访问:20ms</span><br><span class="line">堆内存访问:37ms</span><br><span class="line">直接内存访问:24ms</span><br><span class="line">堆内存访问:59ms</span><br><span class="line">直接内存访问:25ms</span><br><span class="line"></span><br><span class="line">堆内存申请:11ms</span><br><span class="line">直接内存申请:36ms</span><br><span class="line">堆内存申请:13ms</span><br><span class="line">直接内存申请:52ms</span><br><span class="line">堆内存申请:62ms</span><br><span class="line">直接内存申请:40ms</span><br><span class="line">堆内存申请:2ms</span><br><span class="line">直接内存申请:37ms</span><br><span class="line">堆内存申请:1ms</span><br><span class="line">直接内存申请:81ms</span><br><span class="line">堆内存申请:2ms</span><br><span class="line">直接内存申请:23ms</span><br><span class="line">堆内存申请:1ms</span><br><span class="line">直接内存申请:31ms</span><br><span class="line">堆内存申请:2ms</span><br><span class="line">直接内存申请:32ms</span><br><span class="line">堆内存申请:7ms</span><br><span class="line">直接内存申请:41ms</span><br><span class="line">堆内存申请:8ms</span><br><span class="line">直接内存申请:142ms</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>从上述程序运行结果看出：</p>
+<p>直接内存申请比较慢，但是访问效率高。在Java虚拟机实现上，本地IO一般会直接操作直接内存(直接内存→系统调用→硬盘/网卡)，而非直接内存则需要二次拷贝(堆内存→直接内存→系统调用→硬盘/网卡)。</p>
+</blockquote>
+<h4 id="直接内存分配源码解析"><a href="#直接内存分配源码解析" class="headerlink" title="直接内存分配源码解析"></a>直接内存分配源码解析</h4><figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> ByteBuffer <span class="title">allocateDirect</span><span class="params">(<span class="keyword">int</span> capacity)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> <span class="built_in">DirectByteBuffer</span>(capacity);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="built_in">DirectByteBuffer</span>(<span class="keyword">int</span> cap) &#123;                   <span class="comment">// package-private</span></span><br><span class="line">    <span class="built_in">super</span>(<span class="number">-1</span>, <span class="number">0</span>, cap, cap);</span><br><span class="line">    boolean pa = VM.<span class="built_in">isDirectMemoryPageAligned</span>();</span><br><span class="line">    <span class="keyword">int</span> ps = Bits.<span class="built_in">pageSize</span>();</span><br><span class="line">    <span class="keyword">long</span> size = Math.<span class="built_in">max</span>(<span class="number">1L</span>, (<span class="keyword">long</span>)cap + (pa ? ps : <span class="number">0</span>));</span><br><span class="line">    <span class="comment">//判断是否有足够的直接内存空间分配，可通过-XX:MaxDirectMemorySize=&lt;size&gt;参数指定直接内存最大可分配空间，如果不指定默认为最大堆内存大小，</span></span><br><span class="line">    <span class="comment">//在分配直接内存时如果发现空间不够会显示调用System.gc()触发一次full gc回收掉一部分无用的直接内存的引用对象，同时直接内存也会被释放掉</span></span><br><span class="line">    <span class="comment">//如果释放完分配空间还是不够会抛出异常java.lang.OutOfMemoryError</span></span><br><span class="line">   Bits.<span class="built_in">reserveMemory</span>(size, cap);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">long</span> base = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// 调用unsafe本地方法分配直接内存</span></span><br><span class="line">        base = unsafe.<span class="built_in">allocateMemory</span>(size);</span><br><span class="line">    &#125; <span class="built_in"><span class="keyword">catch</span></span> (OutOfMemoryError x) &#123;</span><br><span class="line">        <span class="comment">// 分配失败，释放内存</span></span><br><span class="line">        Bits.<span class="built_in">unreserveMemory</span>(size, cap);</span><br><span class="line">        <span class="keyword">throw</span> x;</span><br><span class="line">    &#125;</span><br><span class="line">    unsafe.<span class="built_in">setMemory</span>(base, size, (byte) <span class="number">0</span>);</span><br><span class="line">    <span class="keyword">if</span> (pa &amp;&amp; (base % ps != <span class="number">0</span>)) &#123;</span><br><span class="line">        <span class="comment">// Round up to page boundary</span></span><br><span class="line">        address = base + ps - (base &amp; (ps - <span class="number">1</span>));</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        address = base;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 使用Cleaner机制注册内存回收处理函数，当直接内存引用对象被GC清理掉时，</span></span><br><span class="line">    <span class="comment">// 会提前调用这里注册的释放直接内存的Deallocator线程对象的run方法</span></span><br><span class="line">    cleaner = Cleaner.<span class="built_in">create</span>(<span class="keyword">this</span>, <span class="keyword">new</span> <span class="built_in">Deallocator</span>(base, size, cap));</span><br><span class="line">    att = null;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">// 申请一块本地内存。内存空间是未初始化的，其内容是无法预期的。</span></span><br><span class="line"><span class="comment">// 使用freeMemory释放内存，使用reallocateMemory修改内存大小</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> native <span class="keyword">long</span> <span class="title">allocateMemory</span><span class="params">(<span class="keyword">long</span> bytes)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// openjdk8/hotspot/src/share/vm/prims/unsafe.cpp</span></span><br><span class="line"><span class="built_in">UNSAFE_ENTRY</span>(jlong, <span class="built_in">Unsafe_AllocateMemory</span>(JNIEnv *env, jobject unsafe, jlong size))</span><br><span class="line">  <span class="built_in">UnsafeWrapper</span>(<span class="string">&quot;Unsafe_AllocateMemory&quot;</span>);</span><br><span class="line">  <span class="keyword">size_t</span> sz = (<span class="keyword">size_t</span>)size;</span><br><span class="line">  <span class="keyword">if</span> (sz != (julong)size || size &lt; <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="built_in">THROW_0</span>(vmSymbols::<span class="built_in">java_lang_IllegalArgumentException</span>());</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span> (sz == <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">  &#125;</span><br><span class="line">  sz = <span class="built_in">round_to</span>(sz, HeapWordSize);</span><br><span class="line">  <span class="comment">// 调用os::malloc申请内存，内部使用malloc这个C标准库的函数申请内存</span></span><br><span class="line">  <span class="keyword">void</span>* x = os::<span class="built_in">malloc</span>(sz, mtInternal);</span><br><span class="line">  <span class="keyword">if</span> (x == <span class="literal">NULL</span>) &#123;</span><br><span class="line">    <span class="built_in">THROW_0</span>(vmSymbols::<span class="built_in">java_lang_OutOfMemoryError</span>());</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">//Copy::fill_to_words((HeapWord*)x, sz / HeapWordSize);</span></span><br><span class="line">      <span class="keyword">return</span> <span class="built_in">addr_to_java</span>(x);</span><br><span class="line">UNSAFE_END</span><br></pre></td></tr></table></figure>
+
+<h4 id="直接内存的优缺点"><a href="#直接内存的优缺点" class="headerlink" title="直接内存的优缺点"></a>直接内存的优缺点</h4><p>优点: </p>
+<ul>
+<li>不占用堆内空间，减少了发生GC的可能</li>
+<li>在Java虚拟机实现上，本地IO一般会直接操作直接内存(直接内存→系统调用→硬盘/网卡)，而非直接内存则需要二次拷贝(堆内存→直接内存→系统调用→硬盘/网卡)。</li>
+</ul>
+<p>缺点：</p>
+<ul>
+<li>初始分配比较慢</li>
+<li>没有JVM直接帮助管理内存，容易发生内存溢出。为了避免一直没有FULL GC，最终导致直接内存把物理内存耗尽。我们可以指定直接内存的最大值，通过<code>-XX:MaxDirectMemorySize</code>来指定，当达到阈值的时候，调用System.gc来进行一次FULL GC，间接把哪些没有被使用的直接内存回收掉。</li>
+</ul>
+<h3 id="Nety零拷贝"><a href="#Nety零拷贝" class="headerlink" title="Nety零拷贝"></a>Nety零拷贝</h3><p><img src="/archives/b4dafe2/Netty%E9%9B%B6%E6%8B%B7%E8%B4%9D.png" alt="Netty零拷贝"></p>
+<p>Netty的接收和发送ByteBuf采用DIRECT BUFFERS，使用对外<strong>直接内存</strong>进行Socket读写，不需要进行字节缓冲区的二次拷贝。</p>
+<p>如果使用传统的JVM堆内存(HEAP BUFFERS)进行Socket读写，JVM会将堆内Buffer拷贝一份到直接内存中，然后才能写入Socket中。JVM堆内存的数据时不能直接写入Socket中的。相比于对外直接内存，消息在发送过程中多了一次缓冲区的内存拷贝。</p>
+<p>比如以下netty源码中的read源码<code>NioByteUnsafe.read()</code></p>
+<p><img src="/archives/b4dafe2/read().png" alt="read()源码"></p>
+<p>![ioBuffer(int initialCapacity)源码](Netty核心源码解析/ioBuffer(int initialCapacity).png)</p>
+<p><img src="/archives/b4dafe2/initMemoryAddress().png" alt="initMemoryAddress()"></p>
+<h3 id="ByteBuf内存池设计"><a href="#ByteBuf内存池设计" class="headerlink" title="ByteBuf内存池设计"></a>ByteBuf内存池设计</h3><p>随着JVM虚拟机和JIT即时编辑技术的发展，对象的分配和回收变得非常轻量级饿的工作了。但是对于缓冲区Buffer(相当于一块内存块)，情况却稍微不同，特别是对于对外直接内存的分配和回收，是一件耗时的操作。为了复用缓冲区，Netty提供了基于ByteBuf内存池的缓冲重用机制。需要的时候直接从缓冲池中获取ByteBuf使用即可，使用完毕就重新放回到缓冲池中。下面是Netty ByteBuf的实现:</p>
+<p><img src="/archives/b4dafe2/ByteBuf%E7%9A%84%E5%AE%9E%E7%8E%B0.png" alt="ByteBuf的实现"></p>
+<p>可以看下netty的读写源码里面用到的ByteBuf内存池，比如read源码NioByteUnsafe.read()</p>
+<p><img src="/archives/b4dafe2/NioByteUnsafe.read().png" alt="NioByteUnsafe.read()源码"></p>
+<p><img src="/archives/b4dafe2/image-20211029143930357.png" alt="DefaultMaxByteRecvByteBufAllocator.allocate()"></p>
+<p>进入ioBuffer()方法</p>
+<p><img src="/archives/b4dafe2/image-20211029144121450.png" alt="AbstractByteBufAllocator.ioBuffer(int initialCapacity)源码"></p>
+<p><img src="/archives/b4dafe2/image-20211029144314425.png" alt="image-20211029144314425"></p>
+<p>继续看newDirectBuffer方法，我们发现他是一个抽象方法，由AbstractByteBufAllocator的子类负责具体实现，</p>
+<p><img src="/archives/b4dafe2/image-20211029144727744.png" alt="实现类"></p>
+<p>代码跳转到PooledByteBufAllocator的newDirectBuffer方法，从Cache中获取内存区域PoolArena，调用它的allocate方法进行内存分配：</p>
+<p><img src="/archives/b4dafe2/image-20211029145104420.png" alt="PooledByteBufAllocator.newHeapBuffer方法源码"></p>
+<p>PoolArena的allocate方法如下：</p>
+<p><img src="/archives/b4dafe2/image-20211029145227866.png" alt="allocate方法源码"></p>
+<p>我们重点分析newByteBuf的实现，它同样是个抽象方法，由子类DirectArena和HeapArena来实现不同类型的缓冲区分配</p>
+<p><img src="/archives/b4dafe2/image-20211029145408499.png" alt="newByteBuf方法的实现类"></p>
+<p>我们这里使用的是直接内存，因此重点分析一下DirectArena的实现</p>
+<p><img src="/archives/b4dafe2/image-20211029145525546.png" alt="DirectArena.newByteBuf方法实现"></p>
+<p>最终执行了PooledUnsafeDirectByteBuf的newInstance方法，代码如下：</p>
+<p><img src="/archives/b4dafe2/image-20211029145707347.png" alt="PooledUnsafeDirectByteBuf.newInstance方法实现"></p>
+<p>通过RECYCLER的get方法循环使用ByteBuf对象，如果是非内存池实现，则直接创建一个新的ByteBuf对象。</p>
+<h3 id="灵活的TCP参数配置能力"><a href="#灵活的TCP参数配置能力" class="headerlink" title="灵活的TCP参数配置能力"></a>灵活的TCP参数配置能力</h3><p>合理设置TCP参数在某些场景下对于性能的提升可以起到显著的效果，例如接收缓冲区SO_RCVBUF和发送缓冲区SO_SNDBUF。如果设置不当，对性能影响非常大的。通常建议设置128K或者256K。</p>
+<p>Netty在启动辅助类ChannelOption中可以灵活的配置TCP参数，满足不同的用户场景</p>
+<p><img src="/archives/b4dafe2/image-20211029150243286.png" alt="ChannelOption中TCP配置参数"></p>
+<h3 id="并发优化"><a href="#并发优化" class="headerlink" title="并发优化"></a>并发优化</h3><ul>
+<li>volatile的大量、正确使用</li>
+<li>CAS和原子类的广泛使用</li>
+<li>线程安全容器的使用</li>
+<li>通过读写锁提升并发性能</li>
+</ul>
+<h3 id="ByteBuf扩容机制"><a href="#ByteBuf扩容机制" class="headerlink" title="ByteBuf扩容机制"></a>ByteBuf扩容机制</h3><p>首先了解一下ByteBuf中定义的几个成员变量，再从源码的角度来分析扩容。</p>
+<p><img src="/archives/b4dafe2/ByteBuf%E6%A8%A1%E5%9E%8B.jpeg" alt="ByteBuf模型"></p>
+<ul>
+<li><code>minNewCapacity</code>: 表示用户需要写入的值大小</li>
+<li><code>threshold</code>: 阈值，为ByteBuf内部设定容量的最大值</li>
+<li><code>maxCapacity</code>：Netty最大能接受的容量大小，一般为int的最大值</li>
+</ul>
+<h4 id="ByteBuf核心扩容方法"><a href="#ByteBuf核心扩容方法" class="headerlink" title="ByteBuf核心扩容方法"></a>ByteBuf核心扩容方法</h4><p>进入源码中分析一下：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">ByteBuf.writeByte() ---&gt; AbstractByteBuf.writeByte() ---&gt; ensureWritable0 ---&gt; calculateNewCapacity</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>判断目标值与阈值<code>threshold(4MB)</code>的大小关系，等于直接返回阈值</li>
+</ol>
+<p><img src="/archives/b4dafe2/image-20211029151742982.png" alt="AbstractByteBufAllocator.calculateNewCapacity方法"></p>
+<ol start="2">
+<li>采用步进4MB的方式完成扩容</li>
+</ol>
+<p><img src="/archives/b4dafe2/image-20211029151929485.png" alt="calculateNewCapacity方法扩容策略"></p>
+<ol start="3">
+<li>采用64位基数，做倍增的方式完成扩容</li>
+</ol>
+<p><img src="/archives/b4dafe2/image-20211029152103954.png" alt="calculateNewCapacity采用倍增方式扩容"></p>
+<blockquote>
+<p><strong>总结：</strong></p>
+<p>Netty的ByteBuf需要动态扩容来满足需求，扩容过程：默认阈值为4MB，当需要的容量等于阈值，使用阈值作为新的缓冲区容量目标容量，如果大于阈值，采用每次步进4MB的方式进行内存扩张((需要扩容值/4MB)*4MB)，扩张后需要和最大内存(maxCapacity)进行比较，大于maxCapacity的话就用maxCapacity，否则使用扩容值目标容量，如果小于阈值，采用倍增的方式，以64(字节)作为基本数值，每次翻倍增长64–&gt;128–&gt;256，直到倍增后的结果大于或等于需要的容量值。</p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>Netty</category>
+      </categories>
+      <tags>
+        <tag>Netty</tag>
       </tags>
   </entry>
   <entry>
@@ -481,6 +531,197 @@
       </tags>
   </entry>
   <entry>
+    <title>Redis缓存那些事</title>
+    <url>/archives/cfd129cc/</url>
+    <content><![CDATA[<h2 id="Redis有哪些特性？"><a href="#Redis有哪些特性？" class="headerlink" title="Redis有哪些特性？"></a>Redis有哪些特性？</h2><ul>
+<li>性能高，读的速度是100000次/s，写的速度是80000次/s</li>
+<li>数据持久化，支持RDB、AOF</li>
+<li>支持事务。通过<code>MULTI</code>和<code>EXEC</code>指令包起来</li>
+<li>多数据结构类型</li>
+<li>主从复制</li>
+<li>其他特性：发布/订阅、通知、key过期等</li>
+</ul>
+<h2 id="Redis为什么这么快？"><a href="#Redis为什么这么快？" class="headerlink" title="Redis为什么这么快？"></a>Redis为什么这么快？</h2><ul>
+<li>完全基于内存，没有磁盘IO的开销，异步持久化除外</li>
+<li>单线程，避免多线程切换造成的性能损耗</li>
+<li>非阻塞的IO多路复用机制</li>
+<li>底层的数据存储结构优化、使用原生的数据结构提升性能</li>
+</ul>
+<h2 id="Redis底层的基础数据结构有哪些？"><a href="#Redis底层的基础数据结构有哪些？" class="headerlink" title="Redis底层的基础数据结构有哪些？"></a>Redis底层的基础数据结构有哪些？</h2><ul>
+<li><code>字符串：</code>没有采用C语言的传统字符串，而是自己实现的一个简单动态字符串SDS的抽象类，并保存了长度信息。</li>
+<li><code>链表（linkedlist）：</code>双向无环链表结构，每个链表的结点由一个listNode结构来表示，每个节点都有前置和后置节点的指针。</li>
+<li><code>字典（hashtable）：</code>保存键值对的抽象数据结构，底层使用hash表，每个字典带有两个hash表，供平时使用和rehash时使用。</li>
+<li><code>跳跃表（skiplist）：</code>跳跃表是有序集合的底层实现之一。redis跳跃表由zskiplist和zskiplistNode组成，zskiplist用于保存跳跃表信息（表头、表尾节点、长度等），zskiplistNode用于表示条约节点，每个跳跃表的层高都是1~32的随机数，在同一个跳跃表中，多个节点可以包含相同的分值，但是每个节点的成员对象都必须是唯一的，节点按照分值大小排序，如果分值相同，则按照成员对象的大小排序。</li>
+<li><code>整数集合（intset）：</code>用于保存整数值的集合抽象数据结构，不会出现重复元素，底层实现为数组。</li>
+<li><code>压缩列表（ziplist）：</code>为了节约内存而开发的顺序性数据结构，可以包含多个节点，每一个节点可以保存一个字节数组或整数值。</li>
+</ul>
+<h2 id="Redis支持哪些数据类型？"><a href="#Redis支持哪些数据类型？" class="headerlink" title="Redis支持哪些数据类型？"></a>Redis支持哪些数据类型？</h2><p>五种常用数据类型：<code>String</code>、<code>Hash</code>、<code>Set</code>、<code>List</code>、<code>SortedSet</code>。三种特殊的数据类型：<code>Bitmap</code>、<code>HyperLogLog</code>、<code>GeoSpatial</code>，其中Bitmap、HyperLogLog的底层都是String数据类型，Geospatial底层是Sorted Set数据类型。</p>
+<ul>
+<li>字符串对象String：int整数、embstr编码的简单动态字符串、raw简单动态字符串</li>
+<li>列表对象list：ziplist、linkedlist</li>
+<li>哈希对象hash：hashtable、ziplist</li>
+<li>集合对象set：hashtable、intset</li>
+<li>有序集合对象zset：ziplist、skiplist</li>
+</ul>
+<h2 id="Redis常用的5种数据结构和应用场景？"><a href="#Redis常用的5种数据结构和应用场景？" class="headerlink" title="Redis常用的5种数据结构和应用场景？"></a>Redis常用的5种数据结构和应用场景？</h2><ul>
+<li>String：缓存、计数器、分布式锁等</li>
+<li>List：链表、队列、微博关注人时间轴列表等</li>
+<li>Hash：用户信息、Hash表等</li>
+<li>Set：去重、赞、踩、共同好友等</li>
+<li>Zset：访问量排行榜、点击量排行榜等</li>
+</ul>
+<h2 id="为什么采用的单线程？"><a href="#为什么采用的单线程？" class="headerlink" title="为什么采用的单线程？"></a>为什么采用的单线程？</h2><p>官方回复，CPU不会成为Redis的制约瓶颈，Redis主要受制于内存、网络限制。例如，在一个普通的Linux系统上，使用pipelining可以每秒传递100万个请求，所以如果您的应用程序主要使用O(N)或O(logN)命令，则几乎不会使用太多的CPU，属于IO密集型系统。</p>
+<h2 id="Redis-6-0-之后又改用多线程呢？"><a href="#Redis-6-0-之后又改用多线程呢？" class="headerlink" title="Redis 6.0 之后又改用多线程呢？"></a>Redis 6.0 之后又改用多线程呢？</h2><p>Redis的多线程主要是用来处理数据的读写、协议解析。执行命令还是采用单线程顺序执行。</p>
+<p>主要是因为redis的性能瓶颈在于网络IO而非CPU，使用多线程进行一些周边预处理，提升IO的读写效率，从而提升了整体的吞吐量。antirez在RedisConf 2019分享时提到，Redis 6 引入的多线程IO对性能提升至少在一倍以上。</p>
+<h2 id="过期Key的删除策略有哪些？"><a href="#过期Key的删除策略有哪些？" class="headerlink" title="过期Key的删除策略有哪些？"></a>过期Key的删除策略有哪些？</h2><p>有三种过期删除策略。惰性删除、定期删除、定时删除</p>
+<ul>
+<li>惰性删除：使用key时才进行检测，如果已经过期，则删除。缺点：过期key如果一直没有被访问到，一直无法删除，一直占用内存，造成空间浪费。</li>
+<li>定期删除：每隔一段时间做一次检查，删除过期的key，每次只是随机去一些key去检查</li>
+<li>定时删除：为每个key设置过期时间，同时创建一个定时器。一旦到期，立即执行删除。缺点：如果过期键比较多时，占用CPU比较多，对服务的性能影响很大。</li>
+</ul>
+<h2 id="如果Redis的内存空间不足，淘汰机制？"><a href="#如果Redis的内存空间不足，淘汰机制？" class="headerlink" title="如果Redis的内存空间不足，淘汰机制？"></a>如果Redis的内存空间不足，淘汰机制？</h2><ul>
+<li>volatile-lru：从已设置的过期时间的key中，移除最近最少使用的key进行淘汰</li>
+<li>allkeys-lru：当内存不足以容纳新写入的数据时，再键空间中，移除最近最少使用的key（这个是最常用的）</li>
+<li>volatile-ttl：从已设置过期时间的key中，移除即将要过期的key</li>
+<li>volatile-random：从已设置过期时间的key中，随机选择key淘汰</li>
+<li>allkeys-random：从key中随机选择key进行淘汰</li>
+<li>no-eviction：禁止淘汰数据，当内存达到阈值的时候，新写入操作报错</li>
+<li>volatile-lfu：从已设置过期时间的数据集（server.db[i].expires）中挑选最不经常使用的数据淘汰（LFU(Least Frequently Used)算法，也就是最频繁被访问的数据将来最可能被访问到）</li>
+<li>allkeys-lfu：当内存不足以容纳新写入的数据时，在键空间中，移除最不经常使用的key</li>
+</ul>
+<h2 id="Redis突然挂了怎么解决？"><a href="#Redis突然挂了怎么解决？" class="headerlink" title="Redis突然挂了怎么解决？"></a>Redis突然挂了怎么解决？</h2><ol>
+<li>从系统可用性角度思考，Redis Cluster引入主备机制，当主节点挂了后，自动切换到备用节点，继续提供服务。</li>
+<li>Client端引入本地缓存，通过开关切换，避免Redis突然挂掉，高并发流量把数据库打垮。</li>
+</ol>
+<h2 id="Redis持久化有哪些方式？"><a href="#Redis持久化有哪些方式？" class="headerlink" title="Redis持久化有哪些方式？"></a>Redis持久化有哪些方式？</h2><ol>
+<li>快照RDB。将某个时间点上的数据库状态保存到<code>RDB文件</code>中，RDB文件是一个压缩的二进制文件，保存在磁盘上。当Redis崩溃时，可用于恢复数据。通过<code>SAVE</code>或<code>BGSAVE</code>来来生成RDB文件。<ul>
+<li>SAVE：会阻塞redis进程，直到RDB文件创建完成，在进程阻塞期间，redis不能处理任何命令请求。</li>
+<li>BGSAVE：会fork出一个子进程，然后由子进程负责生成RDB文件，父进程还可以继续处理命令请求，不会阻塞进程。</li>
+</ul>
+</li>
+<li>只追加文件AOF。以日志的形式记录每个写操作（非读操作）。当不同的节点同步数据时，读取日志文件中的内容将写指令从前到后执行一次，既可以完成数据的恢复。</li>
+</ol>
+<h2 id="Redis常用场景"><a href="#Redis常用场景" class="headerlink" title="Redis常用场景"></a>Redis常用场景</h2><ol>
+<li>缓存</li>
+<li>分布式锁，利用Redis的setnx</li>
+<li>分布式session</li>
+<li>计数器，通过incr命令</li>
+<li>排行榜，Redis的有序集合</li>
+<li>其他</li>
+</ol>
+<h2 id="Redis缓存要注意的七大经典问题？"><a href="#Redis缓存要注意的七大经典问题？" class="headerlink" title="Redis缓存要注意的七大经典问题？"></a>Redis缓存要注意的七大经典问题？</h2><p>列举了亿级系统，高访问量情况下Redis缓存可能遇到哪些问题？以及对应的解决方案。</p>
+<ol>
+<li>缓存集中失效</li>
+<li>缓存穿透</li>
+<li>缓存雪崩</li>
+<li>缓存热点</li>
+<li>缓存大key</li>
+<li>缓存数据一直性</li>
+<li>数据并发竞争预热</li>
+</ol>
+<p>每个问题的详细解决方案可以参考<a href="/archives/f435d36e/">Redis缓冲穿透</a>、<a href="/archives/134045b4/">Redis缓存失效和缓存雪崩以及热点缓存key重建优化</a>、<a href="https://mp.weixin.qq.com/s?__biz=Mzg2NzYyNjQzNg==&mid=2247484947&idx=1&sn=5a70f88fba83b435b8144bf1ddd3cc9f&scene=21#wechat_redirect">亿级系统的Redis缓存如何设计？？</a></p>
+<h2 id="Redis集群方案有哪几种？"><a href="#Redis集群方案有哪几种？" class="headerlink" title="Redis集群方案有哪几种？"></a>Redis集群方案有哪几种？</h2><ul>
+<li>主从复制模式</li>
+<li>Sentinel（哨兵）模式</li>
+<li>Redis Cluster模式</li>
+</ul>
+<h2 id="Redis主从数据同步（主从复制）的过程？"><a href="#Redis主从数据同步（主从复制）的过程？" class="headerlink" title="Redis主从数据同步（主从复制）的过程？"></a>Redis主从数据同步（主从复制）的过程？</h2><ol>
+<li>slave启动后，会向master发送sync同步命令</li>
+<li>master收到sync之后，执行bgsave保存快照，生成RDB全量文件</li>
+<li>如果在生成RDB全量快照的过程中，有写命令请求，则将写命令请求记录到临时缓存中</li>
+<li>bgsave执行完毕之后，将RDB全量文件发送到slave节点</li>
+<li>slave清除缓存中的数据，并将RDB中的二进制数据加载到缓存中，</li>
+<li>master发送临时缓存区中写命令给slave，slave接收到写命令并依次顺序执行写命令，将数据加载到缓存中，完成数据初始化</li>
+<li>此后，master会和slave保持长连接，master每次执行一个写命令都会发送给slave，保持master与slave之间数据的一致性</li>
+</ol>
+<h2 id="主从复制的优缺点？"><a href="#主从复制的优缺点？" class="headerlink" title="主从复制的优缺点？"></a>主从复制的优缺点？</h2><h3 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h3><ul>
+<li>master能自动将数据同步到slave，可以进行读写分离，分担master的读压力</li>
+<li>master、slave之间的同步是以非阻塞的方式进行的，同步期间，客户端仍然可以提交查询或更新请求</li>
+</ul>
+<h3 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h3><ul>
+<li>不具备自动容错与恢复功能，master节点宕机后，需要手动指定新的master</li>
+<li>master宕机，如果宕机前数据没有同步完，则切换IP后会存在数据不一致的问题</li>
+<li>难以支持在线扩容，Redis容量受限与单机配置</li>
+</ul>
+<h2 id="Sentinel（哨兵）模式的优缺点？"><a href="#Sentinel（哨兵）模式的优缺点？" class="headerlink" title="Sentinel（哨兵）模式的优缺点？"></a>Sentinel（哨兵）模式的优缺点？</h2><p>哨兵模式基于主从复制模式，增加了<strong>哨兵来监控</strong>与<strong>自动处理故障</strong></p>
+<h3 id="优点-1"><a href="#优点-1" class="headerlink" title="优点"></a>优点</h3><ul>
+<li>哨兵模式基于主从复制模式，所以主从模式有的优点，哨兵模式也有</li>
+<li>master节点挂掉之后可以自动进行切换，系统可用性更高</li>
+</ul>
+<h3 id="缺点-1"><a href="#缺点-1" class="headerlink" title="缺点"></a>缺点</h3><ul>
+<li>Redis的容量受限于单机配置</li>
+<li>需要额外的资源来启动Sentinel进程</li>
+</ul>
+<h2 id="Redis-Cluster模式的优缺点？"><a href="#Redis-Cluster模式的优缺点？" class="headerlink" title="Redis Cluster模式的优缺点？"></a>Redis Cluster模式的优缺点？</h2><p>实现了Redis的分布式存储，即每台节点都存储不同的内容，来解决在线扩容的问题。</p>
+<h3 id="优点-2"><a href="#优点-2" class="headerlink" title="优点"></a>优点</h3><ul>
+<li>无中心架构，数据按照slot分布在多个节点</li>
+<li>集群中的每个节点都是平等的，每个节点都保存各自的数据和整个集群的状态。每个节点都和其他所有节点连接，而且这些连接保持活跃，这样就保证了我们只需要连接集群中的任意一个节点，就可以获取到其他节点的数据。</li>
+<li>可在线扩容到1000多个节点，节点可以动态添加或删除</li>
+<li>能够实现自动故障转移，节点之间通过<code>gossip协议</code>交换状态信息，用投票机制完成slave到master的角色转换</li>
+</ul>
+<h3 id="缺点-2"><a href="#缺点-2" class="headerlink" title="缺点"></a>缺点</h3><ul>
+<li>数据通过异步复制，不保证数据的强一致性</li>
+<li>slave充当“冷备”，不对外提供读、写服务，只作为故障转移使用</li>
+<li>批量操作限制，目前只支持具有相同slot值的key执行批量操作，对mset、mget、sunion等操作支持不友好</li>
+<li>key事务操作支持有限，只支持多key在同一个节点的事务操作，多个key分布在不同的节点是无法使用事务功能</li>
+<li>不支持多数据库空间，一台Redis可以支持16个db，集群模式下只能使用一个，即<code>db 0</code>。Redis Cluster模式不建议使用pipeline和multi-keys操作，减少max redirect产生的场景</li>
+</ul>
+<h2 id="Redis如何做扩容？"><a href="#Redis如何做扩容？" class="headerlink" title="Redis如何做扩容？"></a>Redis如何做扩容？</h2><p>为了避免数据迁移失败，通常使用<code>一致性哈希</code>实现动态扩容缩容，有效减少需要迁移的key数量。</p>
+<p>但是Cluster模式，采用固定Slot槽位方式（16384个），对每个key计算CRC16值，然后对16384取模，然后根据slot值找到目标机器，扩容时，我们只需要迁移一部分的slot到新节点即可。</p>
+<h2 id="Redis的集群原理？"><a href="#Redis的集群原理？" class="headerlink" title="Redis的集群原理？"></a>Redis的集群原理？</h2><p>一个redis集群由多个node节点组成，而多个node节点之间通过<code>cluster meet</code>命令来进行连接，组成一个集群。</p>
+<p>数据存储通过分片的形式，整个集群分成<code>16384</code>个slot，每个节点负责一部分槽位。整个槽位的信息会同步到所有节点中。</p>
+<p>key与slot的映射关系：</p>
+<ul>
+<li>键值对key，进行<code>CRC16</code>计算，计算出一个16 bit 的值</li>
+<li>将16 bit 的值对16384取模，得到0~16384的数字表示key对应的哈希槽</li>
+</ul>
+<h2 id="Redis如何做到高可用的？"><a href="#Redis如何做到高可用的？" class="headerlink" title="Redis如何做到高可用的？"></a>Redis如何做到高可用的？</h2><p>哨兵机制。具有自动故障转移、集群监控、消息通知等功能。</p>
+<p>哨兵可以同时监控所有的主、从服务器，当某个master下线时，自动提升对应的slave为master，然后由新的master对外提供服务。</p>
+<h2 id="什么时Redis事务？"><a href="#什么时Redis事务？" class="headerlink" title="什么时Redis事务？"></a>什么时Redis事务？</h2><p>Redis事务是一组命令的集合，将多个命令打包，然后把这些命令按顺序添加到队列中，并且顺序执行这些命令。</p>
+<p>Redis事务中没有像Mysql关系型数据库中事务隔离级别的概念，不能保证原子性操作，也没有像Mysql那样执行事务失败会进行事务回滚操作。</p>
+<h2 id="Redis事务执行流程？"><a href="#Redis事务执行流程？" class="headerlink" title="Redis事务执行流程？"></a>Redis事务执行流程？</h2><p>通过<code>MULTI</code>、<code>EXEC</code>、<code>WATCH</code>等命令来实现事务机制，事务执行过程将一系列多个命令按照顺序一次性执行，在执行期间，事务不会被中断，也不会执行客户端的其他请求，直到所有命令执行完毕。</p>
+<p>具体过程：</p>
+<ul>
+<li>服务端收到客户端请求，事务以<code>MULTI</code>开始</li>
+<li>如果正处于事务状态时，则会把后续命令放入队列同时返回给客户端<code>QUEUED</code>，反之直接执行这个命令</li>
+<li>当收到客户端的<code>EXEC</code>命令时，才会将队列里的命令取出、顺序执行、执行完将当前事务状态改为非事务状态</li>
+<li>如果收到<code>DISCARD</code>命令，放弃执行队列中的命令，可以理解为Mysql中的回滚操作，并且将当前的事务状态改为非事务状态</li>
+</ul>
+<blockquote>
+<p>WATCH监视某个key，该命令只能在MULTI命令之前执行。如果监视的key被其他客户端修改，EXEC将会放弃执行队列中的所有命令。UNWATCH取消监视之前通过WATCH命令监视的key。通过执行EXEC、DISCARD两个命令之前监视的key也会被取消监视。</p>
+</blockquote>
+<h2 id="Redis与Guava、Caffeine-有什么区别？"><a href="#Redis与Guava、Caffeine-有什么区别？" class="headerlink" title="Redis与Guava、Caffeine 有什么区别？"></a>Redis与Guava、Caffeine 有什么区别？</h2><p>缓存分为本地缓存和分布式缓存。</p>
+<p>1、Caffeine、Guava，属于本地缓存，特点：</p>
+<ul>
+<li>直接访问内存，速度快，受内存限制，无法进行大数据存储。</li>
+<li>无网络通讯开销，性能更高。</li>
+<li>只支持本地应用进程访问，同步更新所有节点的本地缓存数据成本较高。</li>
+<li>应用进程重启，数据会丢失。</li>
+</ul>
+<p>所以，本地缓存适合存储一些不易改变或者低频改变的高热点数据。</p>
+<p>2、Redis属于分布式缓存，特点：</p>
+<ul>
+<li>集群模式，支持大数据量存储</li>
+<li>数据集中存储，保证数据的一致性</li>
+<li>数据跨网络传输，性能低于本地缓存。但同一个机房，两台服务器之间请求跑一个来回也就500微秒，比起其优势，这点损耗完全可以忽略，这也是分布式缓存受欢迎的原因。</li>
+<li>支持副本机制，有效保证高可用性</li>
+</ul>
+<h2 id="如何实现一个分布式锁？"><a href="#如何实现一个分布式锁？" class="headerlink" title="如何实现一个分布式锁？"></a>如何实现一个分布式锁？</h2><ol>
+<li>数据库表，性能比较差</li>
+<li>使用Lua脚本(包括 Setnx + expire 两条指令)</li>
+<li>set的扩展命令(set key value [ex][px] [NX|XX])</li>
+<li>Redlock框架</li>
+<li>Zookeeper Curator框架提供了现成的分布式锁。</li>
+</ol>
+]]></content>
+      <categories>
+        <category>面试宝典</category>
+      </categories>
+      <tags>
+        <tag>面试宝典</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Redis键值设计规范与性能优化</title>
     <url>/archives/c0eb8ebf/</url>
     <content><![CDATA[<h2 id="一、键值设计"><a href="#一、键值设计" class="headerlink" title="一、键值设计"></a>一、键值设计</h2><h3 id="1、key名设计"><a href="#1、key名设计" class="headerlink" title="1、key名设计"></a>1、key名设计</h3><p>(1) 【建议】：可读性和可管理性<br>以业务名（或数据库名）为前缀（防止key冲突），用冒号分隔，比如业务表:表名:id</p>
@@ -694,197 +935,6 @@
       </categories>
       <tags>
         <tag>Redis</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Redis缓存那些事</title>
-    <url>/archives/cfd129cc/</url>
-    <content><![CDATA[<h2 id="Redis有哪些特性？"><a href="#Redis有哪些特性？" class="headerlink" title="Redis有哪些特性？"></a>Redis有哪些特性？</h2><ul>
-<li>性能高，读的速度是100000次/s，写的速度是80000次/s</li>
-<li>数据持久化，支持RDB、AOF</li>
-<li>支持事务。通过<code>MULTI</code>和<code>EXEC</code>指令包起来</li>
-<li>多数据结构类型</li>
-<li>主从复制</li>
-<li>其他特性：发布/订阅、通知、key过期等</li>
-</ul>
-<h2 id="Redis为什么这么快？"><a href="#Redis为什么这么快？" class="headerlink" title="Redis为什么这么快？"></a>Redis为什么这么快？</h2><ul>
-<li>完全基于内存，没有磁盘IO的开销，异步持久化除外</li>
-<li>单线程，避免多线程切换造成的性能损耗</li>
-<li>非阻塞的IO多路复用机制</li>
-<li>底层的数据存储结构优化、使用原生的数据结构提升性能</li>
-</ul>
-<h2 id="Redis底层的基础数据结构有哪些？"><a href="#Redis底层的基础数据结构有哪些？" class="headerlink" title="Redis底层的基础数据结构有哪些？"></a>Redis底层的基础数据结构有哪些？</h2><ul>
-<li><code>字符串：</code>没有采用C语言的传统字符串，而是自己实现的一个简单动态字符串SDS的抽象类，并保存了长度信息。</li>
-<li><code>链表（linkedlist）：</code>双向无环链表结构，每个链表的结点由一个listNode结构来表示，每个节点都有前置和后置节点的指针。</li>
-<li><code>字典（hashtable）：</code>保存键值对的抽象数据结构，底层使用hash表，每个字典带有两个hash表，供平时使用和rehash时使用。</li>
-<li><code>跳跃表（skiplist）：</code>跳跃表是有序集合的底层实现之一。redis跳跃表由zskiplist和zskiplistNode组成，zskiplist用于保存跳跃表信息（表头、表尾节点、长度等），zskiplistNode用于表示条约节点，每个跳跃表的层高都是1~32的随机数，在同一个跳跃表中，多个节点可以包含相同的分值，但是每个节点的成员对象都必须是唯一的，节点按照分值大小排序，如果分值相同，则按照成员对象的大小排序。</li>
-<li><code>整数集合（intset）：</code>用于保存整数值的集合抽象数据结构，不会出现重复元素，底层实现为数组。</li>
-<li><code>压缩列表（ziplist）：</code>为了节约内存而开发的顺序性数据结构，可以包含多个节点，每一个节点可以保存一个字节数组或整数值。</li>
-</ul>
-<h2 id="Redis支持哪些数据类型？"><a href="#Redis支持哪些数据类型？" class="headerlink" title="Redis支持哪些数据类型？"></a>Redis支持哪些数据类型？</h2><p>五种常用数据类型：<code>String</code>、<code>Hash</code>、<code>Set</code>、<code>List</code>、<code>SortedSet</code>。三种特殊的数据类型：<code>Bitmap</code>、<code>HyperLogLog</code>、<code>GeoSpatial</code>，其中Bitmap、HyperLogLog的底层都是String数据类型，Geospatial底层是Sorted Set数据类型。</p>
-<ul>
-<li>字符串对象String：int整数、embstr编码的简单动态字符串、raw简单动态字符串</li>
-<li>列表对象list：ziplist、linkedlist</li>
-<li>哈希对象hash：hashtable、ziplist</li>
-<li>集合对象set：hashtable、intset</li>
-<li>有序集合对象zset：ziplist、skiplist</li>
-</ul>
-<h2 id="Redis常用的5种数据结构和应用场景？"><a href="#Redis常用的5种数据结构和应用场景？" class="headerlink" title="Redis常用的5种数据结构和应用场景？"></a>Redis常用的5种数据结构和应用场景？</h2><ul>
-<li>String：缓存、计数器、分布式锁等</li>
-<li>List：链表、队列、微博关注人时间轴列表等</li>
-<li>Hash：用户信息、Hash表等</li>
-<li>Set：去重、赞、踩、共同好友等</li>
-<li>Zset：访问量排行榜、点击量排行榜等</li>
-</ul>
-<h2 id="为什么采用的单线程？"><a href="#为什么采用的单线程？" class="headerlink" title="为什么采用的单线程？"></a>为什么采用的单线程？</h2><p>官方回复，CPU不会成为Redis的制约瓶颈，Redis主要受制于内存、网络限制。例如，在一个普通的Linux系统上，使用pipelining可以每秒传递100万个请求，所以如果您的应用程序主要使用O(N)或O(logN)命令，则几乎不会使用太多的CPU，属于IO密集型系统。</p>
-<h2 id="Redis-6-0-之后又改用多线程呢？"><a href="#Redis-6-0-之后又改用多线程呢？" class="headerlink" title="Redis 6.0 之后又改用多线程呢？"></a>Redis 6.0 之后又改用多线程呢？</h2><p>Redis的多线程主要是用来处理数据的读写、协议解析。执行命令还是采用单线程顺序执行。</p>
-<p>主要是因为redis的性能瓶颈在于网络IO而非CPU，使用多线程进行一些周边预处理，提升IO的读写效率，从而提升了整体的吞吐量。antirez在RedisConf 2019分享时提到，Redis 6 引入的多线程IO对性能提升至少在一倍以上。</p>
-<h2 id="过期Key的删除策略有哪些？"><a href="#过期Key的删除策略有哪些？" class="headerlink" title="过期Key的删除策略有哪些？"></a>过期Key的删除策略有哪些？</h2><p>有三种过期删除策略。惰性删除、定期删除、定时删除</p>
-<ul>
-<li>惰性删除：使用key时才进行检测，如果已经过期，则删除。缺点：过期key如果一直没有被访问到，一直无法删除，一直占用内存，造成空间浪费。</li>
-<li>定期删除：每隔一段时间做一次检查，删除过期的key，每次只是随机去一些key去检查</li>
-<li>定时删除：为每个key设置过期时间，同时创建一个定时器。一旦到期，立即执行删除。缺点：如果过期键比较多时，占用CPU比较多，对服务的性能影响很大。</li>
-</ul>
-<h2 id="如果Redis的内存空间不足，淘汰机制？"><a href="#如果Redis的内存空间不足，淘汰机制？" class="headerlink" title="如果Redis的内存空间不足，淘汰机制？"></a>如果Redis的内存空间不足，淘汰机制？</h2><ul>
-<li>volatile-lru：从已设置的过期时间的key中，移除最近最少使用的key进行淘汰</li>
-<li>allkeys-lru：当内存不足以容纳新写入的数据时，再键空间中，移除最近最少使用的key（这个是最常用的）</li>
-<li>volatile-ttl：从已设置过期时间的key中，移除即将要过期的key</li>
-<li>volatile-random：从已设置过期时间的key中，随机选择key淘汰</li>
-<li>allkeys-random：从key中随机选择key进行淘汰</li>
-<li>no-eviction：禁止淘汰数据，当内存达到阈值的时候，新写入操作报错</li>
-<li>volatile-lfu：从已设置过期时间的数据集（server.db[i].expires）中挑选最不经常使用的数据淘汰（LFU(Least Frequently Used)算法，也就是最频繁被访问的数据将来最可能被访问到）</li>
-<li>allkeys-lfu：当内存不足以容纳新写入的数据时，在键空间中，移除最不经常使用的key</li>
-</ul>
-<h2 id="Redis突然挂了怎么解决？"><a href="#Redis突然挂了怎么解决？" class="headerlink" title="Redis突然挂了怎么解决？"></a>Redis突然挂了怎么解决？</h2><ol>
-<li>从系统可用性角度思考，Redis Cluster引入主备机制，当主节点挂了后，自动切换到备用节点，继续提供服务。</li>
-<li>Client端引入本地缓存，通过开关切换，避免Redis突然挂掉，高并发流量把数据库打垮。</li>
-</ol>
-<h2 id="Redis持久化有哪些方式？"><a href="#Redis持久化有哪些方式？" class="headerlink" title="Redis持久化有哪些方式？"></a>Redis持久化有哪些方式？</h2><ol>
-<li>快照RDB。将某个时间点上的数据库状态保存到<code>RDB文件</code>中，RDB文件是一个压缩的二进制文件，保存在磁盘上。当Redis崩溃时，可用于恢复数据。通过<code>SAVE</code>或<code>BGSAVE</code>来来生成RDB文件。<ul>
-<li>SAVE：会阻塞redis进程，直到RDB文件创建完成，在进程阻塞期间，redis不能处理任何命令请求。</li>
-<li>BGSAVE：会fork出一个子进程，然后由子进程负责生成RDB文件，父进程还可以继续处理命令请求，不会阻塞进程。</li>
-</ul>
-</li>
-<li>只追加文件AOF。以日志的形式记录每个写操作（非读操作）。当不同的节点同步数据时，读取日志文件中的内容将写指令从前到后执行一次，既可以完成数据的恢复。</li>
-</ol>
-<h2 id="Redis常用场景"><a href="#Redis常用场景" class="headerlink" title="Redis常用场景"></a>Redis常用场景</h2><ol>
-<li>缓存</li>
-<li>分布式锁，利用Redis的setnx</li>
-<li>分布式session</li>
-<li>计数器，通过incr命令</li>
-<li>排行榜，Redis的有序集合</li>
-<li>其他</li>
-</ol>
-<h2 id="Redis缓存要注意的七大经典问题？"><a href="#Redis缓存要注意的七大经典问题？" class="headerlink" title="Redis缓存要注意的七大经典问题？"></a>Redis缓存要注意的七大经典问题？</h2><p>列举了亿级系统，高访问量情况下Redis缓存可能遇到哪些问题？以及对应的解决方案。</p>
-<ol>
-<li>缓存集中失效</li>
-<li>缓存穿透</li>
-<li>缓存雪崩</li>
-<li>缓存热点</li>
-<li>缓存大key</li>
-<li>缓存数据一直性</li>
-<li>数据并发竞争预热</li>
-</ol>
-<p>每个问题的详细解决方案可以参考<a href="/archives/f435d36e/">Redis缓冲穿透</a>、<a href="/archives/134045b4/">Redis缓存失效和缓存雪崩以及热点缓存key重建优化</a>、<a href="https://mp.weixin.qq.com/s?__biz=Mzg2NzYyNjQzNg==&mid=2247484947&idx=1&sn=5a70f88fba83b435b8144bf1ddd3cc9f&scene=21#wechat_redirect">亿级系统的Redis缓存如何设计？？</a></p>
-<h2 id="Redis集群方案有哪几种？"><a href="#Redis集群方案有哪几种？" class="headerlink" title="Redis集群方案有哪几种？"></a>Redis集群方案有哪几种？</h2><ul>
-<li>主从复制模式</li>
-<li>Sentinel（哨兵）模式</li>
-<li>Redis Cluster模式</li>
-</ul>
-<h2 id="Redis主从数据同步（主从复制）的过程？"><a href="#Redis主从数据同步（主从复制）的过程？" class="headerlink" title="Redis主从数据同步（主从复制）的过程？"></a>Redis主从数据同步（主从复制）的过程？</h2><ol>
-<li>slave启动后，会向master发送sync同步命令</li>
-<li>master收到sync之后，执行bgsave保存快照，生成RDB全量文件</li>
-<li>如果在生成RDB全量快照的过程中，有写命令请求，则将写命令请求记录到临时缓存中</li>
-<li>bgsave执行完毕之后，将RDB全量文件发送到slave节点</li>
-<li>slave清除缓存中的数据，并将RDB中的二进制数据加载到缓存中，</li>
-<li>master发送临时缓存区中写命令给slave，slave接收到写命令并依次顺序执行写命令，将数据加载到缓存中，完成数据初始化</li>
-<li>此后，master会和slave保持长连接，master每次执行一个写命令都会发送给slave，保持master与slave之间数据的一致性</li>
-</ol>
-<h2 id="主从复制的优缺点？"><a href="#主从复制的优缺点？" class="headerlink" title="主从复制的优缺点？"></a>主从复制的优缺点？</h2><h3 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h3><ul>
-<li>master能自动将数据同步到slave，可以进行读写分离，分担master的读压力</li>
-<li>master、slave之间的同步是以非阻塞的方式进行的，同步期间，客户端仍然可以提交查询或更新请求</li>
-</ul>
-<h3 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h3><ul>
-<li>不具备自动容错与恢复功能，master节点宕机后，需要手动指定新的master</li>
-<li>master宕机，如果宕机前数据没有同步完，则切换IP后会存在数据不一致的问题</li>
-<li>难以支持在线扩容，Redis容量受限与单机配置</li>
-</ul>
-<h2 id="Sentinel（哨兵）模式的优缺点？"><a href="#Sentinel（哨兵）模式的优缺点？" class="headerlink" title="Sentinel（哨兵）模式的优缺点？"></a>Sentinel（哨兵）模式的优缺点？</h2><p>哨兵模式基于主从复制模式，增加了<strong>哨兵来监控</strong>与<strong>自动处理故障</strong></p>
-<h3 id="优点-1"><a href="#优点-1" class="headerlink" title="优点"></a>优点</h3><ul>
-<li>哨兵模式基于主从复制模式，所以主从模式有的优点，哨兵模式也有</li>
-<li>master节点挂掉之后可以自动进行切换，系统可用性更高</li>
-</ul>
-<h3 id="缺点-1"><a href="#缺点-1" class="headerlink" title="缺点"></a>缺点</h3><ul>
-<li>Redis的容量受限于单机配置</li>
-<li>需要额外的资源来启动Sentinel进程</li>
-</ul>
-<h2 id="Redis-Cluster模式的优缺点？"><a href="#Redis-Cluster模式的优缺点？" class="headerlink" title="Redis Cluster模式的优缺点？"></a>Redis Cluster模式的优缺点？</h2><p>实现了Redis的分布式存储，即每台节点都存储不同的内容，来解决在线扩容的问题。</p>
-<h3 id="优点-2"><a href="#优点-2" class="headerlink" title="优点"></a>优点</h3><ul>
-<li>无中心架构，数据按照slot分布在多个节点</li>
-<li>集群中的每个节点都是平等的，每个节点都保存各自的数据和整个集群的状态。每个节点都和其他所有节点连接，而且这些连接保持活跃，这样就保证了我们只需要连接集群中的任意一个节点，就可以获取到其他节点的数据。</li>
-<li>可在线扩容到1000多个节点，节点可以动态添加或删除</li>
-<li>能够实现自动故障转移，节点之间通过<code>gossip协议</code>交换状态信息，用投票机制完成slave到master的角色转换</li>
-</ul>
-<h3 id="缺点-2"><a href="#缺点-2" class="headerlink" title="缺点"></a>缺点</h3><ul>
-<li>数据通过异步复制，不保证数据的强一致性</li>
-<li>slave充当“冷备”，不对外提供读、写服务，只作为故障转移使用</li>
-<li>批量操作限制，目前只支持具有相同slot值的key执行批量操作，对mset、mget、sunion等操作支持不友好</li>
-<li>key事务操作支持有限，只支持多key在同一个节点的事务操作，多个key分布在不同的节点是无法使用事务功能</li>
-<li>不支持多数据库空间，一台Redis可以支持16个db，集群模式下只能使用一个，即<code>db 0</code>。Redis Cluster模式不建议使用pipeline和multi-keys操作，减少max redirect产生的场景</li>
-</ul>
-<h2 id="Redis如何做扩容？"><a href="#Redis如何做扩容？" class="headerlink" title="Redis如何做扩容？"></a>Redis如何做扩容？</h2><p>为了避免数据迁移失败，通常使用<code>一致性哈希</code>实现动态扩容缩容，有效减少需要迁移的key数量。</p>
-<p>但是Cluster模式，采用固定Slot槽位方式（16384个），对每个key计算CRC16值，然后对16384取模，然后根据slot值找到目标机器，扩容时，我们只需要迁移一部分的slot到新节点即可。</p>
-<h2 id="Redis的集群原理？"><a href="#Redis的集群原理？" class="headerlink" title="Redis的集群原理？"></a>Redis的集群原理？</h2><p>一个redis集群由多个node节点组成，而多个node节点之间通过<code>cluster meet</code>命令来进行连接，组成一个集群。</p>
-<p>数据存储通过分片的形式，整个集群分成<code>16384</code>个slot，每个节点负责一部分槽位。整个槽位的信息会同步到所有节点中。</p>
-<p>key与slot的映射关系：</p>
-<ul>
-<li>键值对key，进行<code>CRC16</code>计算，计算出一个16 bit 的值</li>
-<li>将16 bit 的值对16384取模，得到0~16384的数字表示key对应的哈希槽</li>
-</ul>
-<h2 id="Redis如何做到高可用的？"><a href="#Redis如何做到高可用的？" class="headerlink" title="Redis如何做到高可用的？"></a>Redis如何做到高可用的？</h2><p>哨兵机制。具有自动故障转移、集群监控、消息通知等功能。</p>
-<p>哨兵可以同时监控所有的主、从服务器，当某个master下线时，自动提升对应的slave为master，然后由新的master对外提供服务。</p>
-<h2 id="什么时Redis事务？"><a href="#什么时Redis事务？" class="headerlink" title="什么时Redis事务？"></a>什么时Redis事务？</h2><p>Redis事务是一组命令的集合，将多个命令打包，然后把这些命令按顺序添加到队列中，并且顺序执行这些命令。</p>
-<p>Redis事务中没有像Mysql关系型数据库中事务隔离级别的概念，不能保证原子性操作，也没有像Mysql那样执行事务失败会进行事务回滚操作。</p>
-<h2 id="Redis事务执行流程？"><a href="#Redis事务执行流程？" class="headerlink" title="Redis事务执行流程？"></a>Redis事务执行流程？</h2><p>通过<code>MULTI</code>、<code>EXEC</code>、<code>WATCH</code>等命令来实现事务机制，事务执行过程将一系列多个命令按照顺序一次性执行，在执行期间，事务不会被中断，也不会执行客户端的其他请求，直到所有命令执行完毕。</p>
-<p>具体过程：</p>
-<ul>
-<li>服务端收到客户端请求，事务以<code>MULTI</code>开始</li>
-<li>如果正处于事务状态时，则会把后续命令放入队列同时返回给客户端<code>QUEUED</code>，反之直接执行这个命令</li>
-<li>当收到客户端的<code>EXEC</code>命令时，才会将队列里的命令取出、顺序执行、执行完将当前事务状态改为非事务状态</li>
-<li>如果收到<code>DISCARD</code>命令，放弃执行队列中的命令，可以理解为Mysql中的回滚操作，并且将当前的事务状态改为非事务状态</li>
-</ul>
-<blockquote>
-<p>WATCH监视某个key，该命令只能在MULTI命令之前执行。如果监视的key被其他客户端修改，EXEC将会放弃执行队列中的所有命令。UNWATCH取消监视之前通过WATCH命令监视的key。通过执行EXEC、DISCARD两个命令之前监视的key也会被取消监视。</p>
-</blockquote>
-<h2 id="Redis与Guava、Caffeine-有什么区别？"><a href="#Redis与Guava、Caffeine-有什么区别？" class="headerlink" title="Redis与Guava、Caffeine 有什么区别？"></a>Redis与Guava、Caffeine 有什么区别？</h2><p>缓存分为本地缓存和分布式缓存。</p>
-<p>1、Caffeine、Guava，属于本地缓存，特点：</p>
-<ul>
-<li>直接访问内存，速度快，受内存限制，无法进行大数据存储。</li>
-<li>无网络通讯开销，性能更高。</li>
-<li>只支持本地应用进程访问，同步更新所有节点的本地缓存数据成本较高。</li>
-<li>应用进程重启，数据会丢失。</li>
-</ul>
-<p>所以，本地缓存适合存储一些不易改变或者低频改变的高热点数据。</p>
-<p>2、Redis属于分布式缓存，特点：</p>
-<ul>
-<li>集群模式，支持大数据量存储</li>
-<li>数据集中存储，保证数据的一致性</li>
-<li>数据跨网络传输，性能低于本地缓存。但同一个机房，两台服务器之间请求跑一个来回也就500微秒，比起其优势，这点损耗完全可以忽略，这也是分布式缓存受欢迎的原因。</li>
-<li>支持副本机制，有效保证高可用性</li>
-</ul>
-<h2 id="如何实现一个分布式锁？"><a href="#如何实现一个分布式锁？" class="headerlink" title="如何实现一个分布式锁？"></a>如何实现一个分布式锁？</h2><ol>
-<li>数据库表，性能比较差</li>
-<li>使用Lua脚本(包括 Setnx + expire 两条指令)</li>
-<li>set的扩展命令(set key value [ex][px] [NX|XX])</li>
-<li>Redlock框架</li>
-<li>Zookeeper Curator框架提供了现成的分布式锁。</li>
-</ol>
-]]></content>
-      <categories>
-        <category>面试宝典</category>
-      </categories>
-      <tags>
-        <tag>面试宝典</tag>
       </tags>
   </entry>
   <entry>
@@ -1408,25 +1458,6 @@
       </tags>
   </entry>
   <entry>
-    <title>vmare_workstation16许可证秘钥</title>
-    <url>/archives/59b9c4e6/</url>
-    <content><![CDATA[<p><code>vmare workstation16 player</code>虚拟机许可秘钥</p>
-<blockquote>
-<p>ZF3R0-FHED2-M80TY-8QYGC-NPKYF<br>YF390-0HF8P-M81RQ-2DXQE-M2UT6<br>ZF71R-DMX85-08DQY-8YMNC-PPHV8</p>
-</blockquote>
-<p>如果上面三个已经失效可以使用下面这个秘钥</p>
-<blockquote>
-<p>FA1M0-89YE3-081TQ-AFNX9-NKUC0</p>
-</blockquote>
-]]></content>
-      <categories>
-        <category>软件破解</category>
-      </categories>
-      <tags>
-        <tag>软件破解</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>redis主从架构搭建</title>
     <url>/archives/ba77e58/</url>
     <content><![CDATA[<h2 id="一、环境准备"><a href="#一、环境准备" class="headerlink" title="一、环境准备"></a>一、环境准备</h2><blockquote>
@@ -1502,6 +1533,148 @@
       </tags>
   </entry>
   <entry>
+    <title>vmare_workstation16许可证秘钥</title>
+    <url>/archives/59b9c4e6/</url>
+    <content><![CDATA[<p><code>vmare workstation16 player</code>虚拟机许可秘钥</p>
+<blockquote>
+<p>ZF3R0-FHED2-M80TY-8QYGC-NPKYF<br>YF390-0HF8P-M81RQ-2DXQE-M2UT6<br>ZF71R-DMX85-08DQY-8YMNC-PPHV8</p>
+</blockquote>
+<p>如果上面三个已经失效可以使用下面这个秘钥</p>
+<blockquote>
+<p>FA1M0-89YE3-081TQ-AFNX9-NKUC0</p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>软件破解</category>
+      </categories>
+      <tags>
+        <tag>软件破解</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>使用栈数据结构实现简易计算器算法</title>
+    <url>/archives/12e6bc0/</url>
+    <content><![CDATA[<p>首先看一下设计思路：</p>
+<p><img src="/archives/12e6bc0/%E6%A0%88%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%AE%9E%E7%8E%B0%E8%AE%A1%E7%AE%97%E5%99%A8.png" alt="栈数据结构实现简易计算器"></p>
+<p>具体代码实现：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lhb.test;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.util.Stack;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Program</span>: netty-chat 数字</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Description</span>:</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Author</span>: LHB</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Version</span>: v0.0.1</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Time</span>: 2021-11-01 15:02</span></span><br><span class="line"><span class="comment"> **/</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CalculateStack</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 操作数栈</span></span><br><span class="line">    <span class="keyword">private</span> Stack&lt;Integer&gt; numberStack = <span class="keyword">new</span> Stack&lt;&gt;();</span><br><span class="line">    <span class="comment">// 符号栈</span></span><br><span class="line">    <span class="keyword">private</span> Stack&lt;Character&gt; operatorStack = <span class="keyword">new</span> Stack&lt;&gt;();</span><br><span class="line">    <span class="function"><span class="keyword">public</span> Integer <span class="title">calculate</span><span class="params">(String des)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; des.length(); i++) &#123;</span><br><span class="line">            <span class="comment">// 如果读取出来的是数字，直接将数字加入到操作数栈，否则加入的符号栈中</span></span><br><span class="line">            <span class="keyword">if</span> (Character.getType(des.charAt(i)) == <span class="number">9</span>) &#123;</span><br><span class="line">                <span class="comment">// 读取出来的是ASCII码，需要减去48才是真正是数字</span></span><br><span class="line">                numberStack.push(Integer.valueOf(des.charAt(i)-<span class="number">48</span>));</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="comment">// 如果符号栈为空，则直接加入到符号栈中</span></span><br><span class="line">                <span class="keyword">if</span> (operatorStack.isEmpty()) &#123;</span><br><span class="line">                    operatorStack.push(des.charAt(i));</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="comment">// 如果符号栈不为空，则比较符号栈栈顶符号和截取出来的符号的优先级，如果小于栈顶符号优先级，则取出栈顶符号和操作数栈中的两个数字做运算，</span></span><br><span class="line">                    <span class="comment">// 并将最后运算结果重新加入到操作数栈中，同时将此刻解析到的符号加入到符号栈中</span></span><br><span class="line">                    <span class="keyword">if</span> (priority(des.charAt(i)) &lt;= priority(operatorStack.peek())) &#123;</span><br><span class="line">                        Integer sec = numberStack.pop();</span><br><span class="line">                        Integer fir = numberStack.pop();</span><br><span class="line">                        Character operator = operatorStack.pop();</span><br><span class="line">                        <span class="keyword">int</span> result = <span class="keyword">this</span>.cal(fir, sec, operator);</span><br><span class="line">                        numberStack.push(result);</span><br><span class="line">                        operatorStack.push(des.charAt(i));</span><br><span class="line">                    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                        operatorStack.push(des.charAt(i));</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 处理符号栈中剩余的还没有做运算的符号</span></span><br><span class="line">        <span class="keyword">while</span>(<span class="keyword">true</span>) &#123;</span><br><span class="line">            <span class="keyword">if</span> (operatorStack.isEmpty()) &#123;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            Integer sec = numberStack.pop();</span><br><span class="line">            Integer fir = numberStack.pop();</span><br><span class="line">            Character operator = operatorStack.pop();</span><br><span class="line">            <span class="keyword">int</span> result = cal(fir, sec, operator);</span><br><span class="line">            numberStack.push(result);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 最后留在操作数栈中的数字，就是最后表达式的运算结果</span></span><br><span class="line">        <span class="keyword">return</span> numberStack.pop();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 获取操作数优先级</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> operator 操作数</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">priority</span><span class="params">(<span class="keyword">char</span> operator)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (operator == <span class="string">&#x27;*&#x27;</span> || operator == <span class="string">&#x27;/&#x27;</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (operator == <span class="string">&#x27;+&#x27;</span> || operator == <span class="string">&#x27;-&#x27;</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 做计算操作</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> a</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> b</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> operator</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">cal</span><span class="params">(<span class="keyword">int</span> a, <span class="keyword">int</span> b, <span class="keyword">int</span> operator)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> result = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">switch</span> (operator)&#123;</span><br><span class="line">            <span class="keyword">case</span> <span class="string">&#x27;+&#x27;</span>:</span><br><span class="line">                result = a + b;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> <span class="string">&#x27;-&#x27;</span>:</span><br><span class="line">                result = a - b;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> <span class="string">&#x27;*&#x27;</span>:</span><br><span class="line">                result = a * b;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> <span class="string">&#x27;/&#x27;</span>:</span><br><span class="line">                result = a / b;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">default</span>:</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Integer calculate = <span class="keyword">new</span> CalculateStack().calculate(<span class="string">&quot;8+4*3-6/2+1&quot;</span>);</span><br><span class="line">        System.out.println(<span class="string">&quot;8+4*3-6/2+1 = &quot;</span> + calculate);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/12e6bc0/image-20211101162442155.png" alt="运行结果"></p>
+]]></content>
+      <categories>
+        <category>数据结构</category>
+      </categories>
+      <tags>
+        <tag>栈</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>利用数组实现队列操作</title>
+    <url>/archives/ace10538/</url>
+    <content><![CDATA[<p>题目：利用数组来实现队列的入队，出队，队列扩容等操作，写出具体实现代码。</p>
+<blockquote>
+<p>解析：</p>
+<p>首先应该知道队列最大的特点就是先进先出(FIFO)，所以这里也就限制了队列只能进行入队，并且只能是从尾部入队，不能随意插入；出队也只能是从头开始一次出队；知道了这个特点就可以开始写代码了</p>
+</blockquote>
+<p>代码如下：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lhb.test;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.util.Arrays;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Program</span>: netty-chat</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Description</span>:</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Author</span>: LHB</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Version</span>: v0.0.1</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Time</span>: 2021-11-02 09:17</span></span><br><span class="line"><span class="comment"> **/</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ArrayQueue</span>&lt;<span class="title">T</span>&gt; </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> Object[] data;   <span class="comment">// 队列数据</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> size = <span class="number">2</span>&lt;&lt;<span class="number">4</span>; <span class="comment">// 队列初始化大小</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> tail = <span class="number">0</span>;    <span class="comment">// 队尾</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> head = <span class="number">0</span>;    <span class="comment">// 对头</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">int</span> maxCapcity = <span class="number">2</span>&lt;&lt;<span class="number">5</span>;  <span class="comment">// 队列最大容量，超过这个最大容量，队列将不会再进行扩容</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">ArrayQueue</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.data = <span class="keyword">new</span> Object[size];</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">ArrayQueue</span><span class="params">(<span class="keyword">int</span> size)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.size = size;</span><br><span class="line">        <span class="keyword">this</span>.data = <span class="keyword">new</span> Object[size];</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 入队操作</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> data</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">add</span><span class="params">(T data)</span> </span>&#123;</span><br><span class="line">        <span class="comment">/**</span></span><br><span class="line"><span class="comment">         * 这里时间复杂度最好为O(1)，即不进行扩容操作，最坏是在最后一步进行扩容操作，此时扩容的时候时间复杂度为O(n)</span></span><br><span class="line"><span class="comment">         *</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> (isFull()) &#123;</span><br><span class="line">                <span class="comment">// 队列满时进行扩容操作，扩容大小为原来容量的2倍</span></span><br><span class="line">                <span class="keyword">this</span>.resize();</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">this</span>.data[tail] = data;</span><br><span class="line">            tail++;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (IndexOutOfBoundsException e) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> IndexOutOfBoundsException(<span class="string">&quot;队列已满&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 队列是否已满</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">isFull</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">this</span>.tail &gt;= <span class="keyword">this</span>.size;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 队列是否为空</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">isEmpty</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> head == tail;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 扩容操作</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">resize</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 扩容时的容量是原来容量的二倍</span></span><br><span class="line">        <span class="keyword">this</span>.size *= <span class="number">2</span>;</span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">this</span>.size &gt;= <span class="keyword">this</span>.maxCapcity) &#123;</span><br><span class="line">            <span class="keyword">this</span>.size = <span class="keyword">this</span>.maxCapcity;</span><br><span class="line">        &#125;</span><br><span class="line">        Object[] temp = <span class="keyword">new</span> Object[<span class="keyword">this</span>.size];</span><br><span class="line">        <span class="keyword">int</span> tailTmp = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; head &lt; tail; i++) &#123;</span><br><span class="line">            <span class="comment">/**</span></span><br><span class="line"><span class="comment">             * 这里的时间复杂度为O(n)</span></span><br><span class="line"><span class="comment">             */</span></span><br><span class="line">            temp[i] = <span class="keyword">this</span>.data[head++];</span><br><span class="line">            tailTmp++;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">this</span>.data = temp;</span><br><span class="line">        head = <span class="number">0</span>;</span><br><span class="line">        tail = tailTmp;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 出队列</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@SuppressWarnings(&quot;unchecked&quot;)</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> T <span class="title">remove</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (isEmpty()) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        Object datum = <span class="keyword">this</span>.data[head];</span><br><span class="line">        <span class="keyword">this</span>.data[head++] = <span class="keyword">null</span>;</span><br><span class="line">        <span class="keyword">return</span> (T)datum;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">toString</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;ArrayQueue&#123;&quot;</span> +</span><br><span class="line">                <span class="string">&quot;data=&quot;</span> + Arrays.toString(data) +</span><br><span class="line">                <span class="string">&quot;, size=&quot;</span> + size +</span><br><span class="line">                <span class="string">&quot;, tail=&quot;</span> + tail +</span><br><span class="line">                <span class="string">&quot;, head=&quot;</span> + head +</span><br><span class="line">                <span class="string">&#x27;&#125;&#x27;</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        ArrayQueue&lt;Integer&gt; arrayQueue = <span class="keyword">new</span> ArrayQueue&lt;&gt;(<span class="number">5</span>);</span><br><span class="line">        arrayQueue.add(<span class="number">1</span>);</span><br><span class="line">        arrayQueue.add(<span class="number">2</span>);</span><br><span class="line">        arrayQueue.add(<span class="number">3</span>);</span><br><span class="line">        arrayQueue.add(<span class="number">4</span>);</span><br><span class="line">        arrayQueue.add(<span class="number">5</span>);</span><br><span class="line">        arrayQueue.add(<span class="number">6</span>);</span><br><span class="line">        arrayQueue.add(<span class="number">7</span>);</span><br><span class="line">        arrayQueue.add(<span class="number">8</span>);</span><br><span class="line">        arrayQueue.add(<span class="number">9</span>);</span><br><span class="line">        arrayQueue.add(<span class="number">10</span>);</span><br><span class="line">        arrayQueue.add(<span class="number">11</span>);</span><br><span class="line">        System.out.println(arrayQueue.remove());</span><br><span class="line">        System.out.println(arrayQueue.remove());</span><br><span class="line">        System.out.println(arrayQueue.remove());</span><br><span class="line">        System.out.println(arrayQueue.remove());</span><br><span class="line">        System.out.println(arrayQueue.remove());</span><br><span class="line">        System.out.println(arrayQueue.remove());</span><br><span class="line">        System.out.println(arrayQueue.remove());</span><br><span class="line">        System.out.println(arrayQueue.remove());</span><br><span class="line">        System.out.println(arrayQueue.remove());</span><br><span class="line">        System.out.println(arrayQueue.remove());</span><br><span class="line">        System.out.println(arrayQueue.toString());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>运行上述代码可以看到如下结果:</p>
+<p><img src="/archives/ace10538/image-20211102104159677.png" alt="运行结果"></p>
+]]></content>
+      <categories>
+        <category>数据结构</category>
+      </categories>
+      <tags>
+        <tag>队列</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>手写LinkedList（简易版）</title>
+    <url>/archives/f9405533/</url>
+    <content><![CDATA[<p>MyLinked代码实现:</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lhb.test;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Program</span>: netty-chat</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Description</span>:</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Author</span>: LHB</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Version</span>: v0.0.1</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Time</span>: 2021-11-01 09:43</span></span><br><span class="line"><span class="comment"> **/</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyLinked</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Node head;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">volatile</span> <span class="keyword">int</span> length = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">MyLinked</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.head = <span class="keyword">new</span> Node();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">addFirst</span><span class="params">(<span class="keyword">int</span> data)</span> </span>&#123;</span><br><span class="line">        Node node = <span class="keyword">new</span> Node(data);</span><br><span class="line">        node.next = head;</span><br><span class="line">        head = node;</span><br><span class="line">        <span class="keyword">this</span>.incrLength();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">add</span><span class="params">(<span class="keyword">int</span> data)</span> </span>&#123;</span><br><span class="line">        Node temp = head;</span><br><span class="line">        <span class="keyword">while</span>(temp.next != <span class="keyword">null</span>) &#123;</span><br><span class="line">            temp = temp.next;</span><br><span class="line">        &#125;</span><br><span class="line">        temp.next = <span class="keyword">new</span> Node(data);</span><br><span class="line">        <span class="keyword">this</span>.incrLength();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">insert</span><span class="params">(<span class="keyword">int</span> loc, <span class="keyword">int</span> data)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (loc &lt; length) &#123;</span><br><span class="line">            Node temp = head;</span><br><span class="line">            <span class="keyword">while</span>(loc-<span class="number">1</span> &gt; <span class="number">0</span>) &#123;</span><br><span class="line">                temp = temp.next;</span><br><span class="line">                loc--;</span><br><span class="line">            &#125;</span><br><span class="line">            Node node = <span class="keyword">new</span> Node(data);</span><br><span class="line">            node.next = temp.next;</span><br><span class="line">            temp.next = node;</span><br><span class="line">            <span class="keyword">this</span>.incrLength();</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span>(loc &lt;= <span class="number">1</span>) &#123;</span><br><span class="line">            <span class="keyword">this</span>.addFirst(data);</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (loc &gt; length) &#123;</span><br><span class="line">            <span class="keyword">this</span>.add(data);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">update</span><span class="params">(<span class="keyword">int</span> loc, <span class="keyword">int</span> data)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (loc &lt; length) &#123;</span><br><span class="line">            Node temp = head;</span><br><span class="line">            <span class="keyword">while</span>(loc &gt; <span class="number">0</span>) &#123;</span><br><span class="line">                temp = temp.next;</span><br><span class="line">                loc--;</span><br><span class="line">            &#125;</span><br><span class="line">            temp.data = data;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">delete</span><span class="params">(<span class="keyword">int</span> loc)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (loc &lt; length) &#123;</span><br><span class="line">            Node temp = head;</span><br><span class="line">            <span class="keyword">while</span> (loc-<span class="number">1</span> &gt; <span class="number">0</span>) &#123;</span><br><span class="line">                temp = temp.next;</span><br><span class="line">                loc--;</span><br><span class="line">            &#125;</span><br><span class="line">            temp.next = temp.next.next;</span><br><span class="line">            <span class="keyword">this</span>.subLength();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">incrLength</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.length++;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">subLength</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.length--;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">toString</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;&#123;length : &quot;</span>+<span class="keyword">this</span>.length + <span class="string">&quot;, head: &quot;</span>+ head.toString()+<span class="string">&quot;&#125;&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">Node</span> </span>&#123;</span><br><span class="line">        <span class="keyword">private</span> <span class="keyword">int</span> data;</span><br><span class="line">        <span class="keyword">private</span> Node next;</span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="title">Node</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">this</span>.data = <span class="number">0</span>;</span><br><span class="line">            <span class="keyword">this</span>.next = <span class="keyword">null</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="title">Node</span><span class="params">(<span class="keyword">int</span> data)</span> </span>&#123;</span><br><span class="line">            <span class="keyword">this</span>.data = data;</span><br><span class="line">            <span class="keyword">this</span>.next = <span class="keyword">null</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="title">Node</span><span class="params">(<span class="keyword">int</span> data, Node next)</span> </span>&#123;</span><br><span class="line">            <span class="keyword">this</span>.data = data;</span><br><span class="line">            <span class="keyword">this</span>.next = next;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">public</span> String <span class="title">toString</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            StringBuilder stringBuilder = <span class="keyword">new</span> StringBuilder();</span><br><span class="line">            stringBuilder.append(<span class="string">&quot;&#123;&quot;</span>);</span><br><span class="line">            stringBuilder.append(<span class="string">&quot;data: &quot;</span> + data);</span><br><span class="line">            stringBuilder.append(<span class="string">&quot;, &quot;</span>);</span><br><span class="line">            stringBuilder.append(<span class="string">&quot;next: &quot;</span>);</span><br><span class="line">            stringBuilder.append(next == <span class="keyword">null</span> ? <span class="string">&quot;null&quot;</span> : next.toString());</span><br><span class="line">            stringBuilder.append(<span class="string">&quot;&#125;&quot;</span>);</span><br><span class="line">            <span class="keyword">return</span> stringBuilder.toString();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>Main.java</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lhb.test;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Program</span>: netty-chat</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Description</span>:</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Author</span>: LHB</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Version</span>: v0.0.1</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Time</span>: 2021-11-01 09:50</span></span><br><span class="line"><span class="comment"> **/</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">LinkedMain</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        MyLinked myLinked = <span class="keyword">new</span> MyLinked();</span><br><span class="line">        myLinked.addFirst(<span class="number">5</span>);</span><br><span class="line">        myLinked.addFirst(-<span class="number">1</span>);</span><br><span class="line">        myLinked.add(<span class="number">1</span>);</span><br><span class="line">        myLinked.add(<span class="number">2</span>);</span><br><span class="line">        myLinked.add(<span class="number">3</span>);</span><br><span class="line">        myLinked.insert(<span class="number">2</span>,<span class="number">6</span>);</span><br><span class="line">        myLinked.insert(<span class="number">3</span>,<span class="number">10</span>);</span><br><span class="line">        myLinked.update(<span class="number">3</span>,<span class="number">20</span>);</span><br><span class="line">        myLinked.delete(<span class="number">2</span>);</span><br><span class="line">        System.out.println(myLinked.toString());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>输出结果:</p>
+<p><img src="/archives/f9405533/image-20211101173137897.png" alt="结果"></p>
+]]></content>
+      <categories>
+        <category>数据结构</category>
+      </categories>
+      <tags>
+        <tag>链表</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>排序算法——希尔排序</title>
+    <url>/archives/41c4cd29/</url>
+    <content><![CDATA[<h2 id="基本排序思想"><a href="#基本排序思想" class="headerlink" title="基本排序思想"></a>基本排序思想</h2><p>算法先将要排序的一组数组按某个增量d分成若干组，每组中记录的下标相差d。对每组中全部元素进行排序，然后再用一个比较小的增量对他进行分组，在每组中再进行排序。当增量减到1时，整个要排序的数被分成了一组，排序完成。</p>
+<p>例如：</p>
+<blockquote>
+<p>假设待排序数组为：[49,38,65,97,76,13,27,49,55,04]</p>
+<p>增量序列的取值一次为</p>
+<p>5，2，1</p>
+</blockquote>
+<p>在排序过程中，由于希尔算法需要多次排序，所以该算法排序是<strong>不稳定的</strong></p>
+<p>代码实现：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.company;</span><br><span class="line"><span class="keyword">import</span> java.util.Arrays;</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span>[] data =  &#123;<span class="number">1</span>,<span class="number">3</span>,<span class="number">2</span>,<span class="number">4</span>,<span class="number">6</span>,<span class="number">7</span>,<span class="number">5</span>,<span class="number">9</span>,<span class="number">0</span>,<span class="number">8</span>&#125;;</span><br><span class="line">        shellSort(data);</span><br><span class="line">        System.out.println(<span class="string">&quot;希尔排序&quot;</span> + Arrays.toString(data));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">shellSort</span><span class="params">(<span class="keyword">int</span>[] data)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> length = data.length;</span><br><span class="line">        <span class="comment">// 决定比较间隔</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = length/<span class="number">2</span>; i&gt;<span class="number">0</span>; i/=<span class="number">2</span>) &#123;</span><br><span class="line">            <span class="comment">// 根据比较间隔将数组分成若干个子数组</span></span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> j = i; j &lt; length; j++) &#123;</span><br><span class="line">                <span class="comment">// 对若干个子数组进行插入排序</span></span><br><span class="line">                <span class="keyword">for</span> (<span class="keyword">int</span> k = j; k &gt;=i &amp;&amp; data[k] &lt; data[k-i] ; k-=i) &#123;</span><br><span class="line">                    <span class="keyword">int</span> tmp = data[k];</span><br><span class="line">                    data[k] = data[k-i];</span><br><span class="line">                    data[k-i] = tmp;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>运行以上代码结果如下：</p>
+<p><img src="/archives/41c4cd29/image-20211106125559680.png" alt="运行结果"></p>
+]]></content>
+      <categories>
+        <category>算法</category>
+      </categories>
+      <tags>
+        <tag>希尔排序</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>排序算法——归并排序</title>
+    <url>/archives/4e99e3ae/</url>
+    <content><![CDATA[<h2 id="基本思想"><a href="#基本思想" class="headerlink" title="基本思想"></a>基本思想</h2><p>把一个序列切分成左右两个子序列，然后分别再切分左右两个子序列，一次切分下去，直到每个序列不能再切分为止，也就是只剩一个元素。这是一个递归的过程。然后将每个子序列排序合并，最后合并成一个完整的有序的序列。</p>
+<p>图解如下：</p>
+<p><img src="/archives/4e99e3ae/%E5%BD%92%E5%B9%B6%E6%8E%92%E5%BA%8F%E5%9B%BE%E8%A7%A3.png" alt="归并排序图解"></p>
+<p>归并过程如下动态图：</p>
+<p><img src="/archives/4e99e3ae/mergeSort.gif" alt="归并排序流程"></p>
+<h2 id="代码实现"><a href="#代码实现" class="headerlink" title="代码实现"></a>代码实现</h2><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">//&#x27;main&#x27; method must be in a class &#x27;Rextester&#x27;.</span></span><br><span class="line"><span class="comment">//Compiler version 1.8.0_111</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.util.*;</span><br><span class="line"><span class="keyword">import</span> java.lang.*;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Rextester</span></span></span><br><span class="line"><span class="class"></span>&#123;  </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">		<span class="keyword">int</span>[] data = &#123;<span class="number">3</span>,<span class="number">44</span>,<span class="number">38</span>,<span class="number">5</span>,<span class="number">47</span>,<span class="number">15</span>,<span class="number">36</span>,<span class="number">26</span>,<span class="number">27</span>,<span class="number">2</span>,<span class="number">46</span>,<span class="number">4</span>,<span class="number">19</span>,<span class="number">50</span>,<span class="number">48</span>&#125;;</span><br><span class="line">		mergeSort(data,<span class="number">0</span>,data.length - <span class="number">1</span>);</span><br><span class="line">		System.out.println(<span class="string">&quot;归并排序结果：&quot;</span> + Arrays.toString(data));</span><br><span class="line">    &#125;</span><br><span class="line">	</span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * 归并排序</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> data 数组</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> left 数组起始位置</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> right 数组结束位置</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">mergeSort</span><span class="params">(<span class="keyword">int</span>[] data,<span class="keyword">int</span> left,<span class="keyword">int</span> right)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">if</span>(left &lt; right) &#123;</span><br><span class="line">			<span class="comment">// 将数组从中间切分成左右两个子数组</span></span><br><span class="line">			<span class="keyword">int</span> mid = (left + right) / <span class="number">2</span>;</span><br><span class="line">			<span class="comment">// 递归切分左边子数组</span></span><br><span class="line">			mergeSort(data, left, mid);</span><br><span class="line">			<span class="comment">// 递归切分右边子数组</span></span><br><span class="line">			mergeSort(data, mid+<span class="number">1</span>, right);</span><br><span class="line">			<span class="comment">// 开始将切分的子数组排序合并</span></span><br><span class="line">			merge(data, left, mid, right);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * 对子数组进行合并排序</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> data 数组</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> left 数组起始位置</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> mid 数组中间位置</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> right 数组结束位置</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">merge</span><span class="params">(<span class="keyword">int</span>[] data, <span class="keyword">int</span> left, <span class="keyword">int</span> mid, <span class="keyword">int</span> right)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">int</span>[] tmp = <span class="keyword">new</span> <span class="keyword">int</span>[data.length];</span><br><span class="line">		<span class="comment">// 左边子数组开始位置</span></span><br><span class="line">		<span class="keyword">int</span> leftPointer = left;</span><br><span class="line">		<span class="comment">// 右边子数组开始位置</span></span><br><span class="line">		<span class="keyword">int</span> rightPointer = mid + <span class="number">1</span>;</span><br><span class="line">		<span class="comment">// 临时数组的游标指针，起始位置为left</span></span><br><span class="line">		<span class="keyword">int</span> loc = left;</span><br><span class="line">		<span class="keyword">while</span>(leftPointer &lt;= mid &amp;&amp; rightPointer &lt;= right) &#123;</span><br><span class="line">			<span class="keyword">if</span>(data[leftPointer] &lt; data[rightPointer]) &#123;</span><br><span class="line">				<span class="comment">// 如果左边的数小于右边的数，就将左边小的数放入到临时数组中</span></span><br><span class="line">				<span class="comment">// 并且将loc++,leftPointer++</span></span><br><span class="line">				tmp[loc++] = data[leftPointer++];</span><br><span class="line">			&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">				<span class="comment">// 如果左边的数大于等于右边的数，就将右边的数放入到临时数组中</span></span><br><span class="line">				<span class="comment">// 并且将loc++,rightPointer++</span></span><br><span class="line">				tmp[loc++] = data[rightPointer++];</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="comment">// 将左边没有放入临时数组的数放入到临时数组中</span></span><br><span class="line">		<span class="keyword">while</span>(leftPointer &lt;= mid) &#123;</span><br><span class="line">			tmp[loc++] = data[leftPointer++];</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="comment">// 将右边没有放入临时数组的数放入到临时数组中</span></span><br><span class="line">		<span class="keyword">while</span>(rightPointer &lt;= right) &#123;</span><br><span class="line">			tmp[loc++] = data[rightPointer++];</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="comment">// 将临时数组中排好序的元素放到data中</span></span><br><span class="line">		<span class="keyword">for</span>(<span class="keyword">int</span> i = left; i &lt;= right; i++) &#123;</span><br><span class="line">			data[i] = tmp[i];</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="复杂度"><a href="#复杂度" class="headerlink" title="复杂度"></a>复杂度</h2><ul>
+<li><strong>时间复杂度：O(nLogn)</strong></li>
+<li>**空间复杂度：T(N)**，归并排序过程中创建了一个与原来数组一样大小的临时数组。</li>
+</ul>
+]]></content>
+      <categories>
+        <category>算法</category>
+      </categories>
+      <tags>
+        <tag>归并排序</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>排序算法——插入排序</title>
+    <url>/archives/cd5503e2/</url>
+    <content><![CDATA[<p>题目：将该数组<code>int[] data = &#123;8,5,7,4,1,3,2&#125;</code>进行排序，要求手写插入排序进行实现。</p>
+<blockquote>
+<p><strong>插入排序整体思想：</strong><br>  将一个数组分成已排序和未排序两个部分，每次都从未排序的部分中取出一个数(b)，和已排序部分中的每个元素(arr[i])去<br>  做比较，如果在已排序部分中找到一个数小于从未排序中拿出来的那个数(arr[i]&lt;b)，就停止比较，将未排序部分取出来的<br>  数插入到已排序部分比较小的元素后面(arr[i+1] = b)；每次从未排序部分取一个数都重复上面步骤，直到排序完成。<br><strong>注意：</strong>未排序数字和已排序部分在作比较的时候，最好是从已排序部分的尾部开始比较，依次往头部进行。这样做的好处就是可以保证<br>元素之间的相对位置不会改变，同时在比较的时候同步可以向后移动数组元素，为即将插入的数字预留空间。降低时间复杂度</p>
+</blockquote>
+<p>代码实现：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lhb.test;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.util.Arrays;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Program</span>: netty-chat</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Description</span>:</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Author</span>: LHB</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Version</span>: v0.0.1</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Time</span>: 2021-11-03 12:15</span></span><br><span class="line"><span class="comment"> **/</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SortTest</span> </span>&#123;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 插入排序整体思想：</span></span><br><span class="line"><span class="comment">     *   将一个数组分成已排序和未排序两个部分，每次都从未排序的部分中取出一个数(b)，和已排序部分中的每个元素(arr[i])去</span></span><br><span class="line"><span class="comment">     *   做比较，如果在已排序部分中找到一个数小于从未排序中拿出来的那个数(arr[i]&lt;b)，就停止比较，将未排序部分取出来的</span></span><br><span class="line"><span class="comment">     *   数插入到已排序部分比较小的元素后面(arr[i+1] = b)；每次从未排序部分取一个数都重复上面步骤，直到排序完成。</span></span><br><span class="line"><span class="comment">     * 注意：未排序数字和已排序部分在作比较的时候，最好是从已排序部分的尾部开始比较，依次往头部进行。这样做的好处就是可以保证</span></span><br><span class="line"><span class="comment">     * 元素之间的相对位置不会改变，同时在比较的时候同步可以向后移动数组元素，为即将插入的数字预留空间。降低时间复杂度</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> arr</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span>[] insertSort(<span class="keyword">int</span>[] arr) &#123;</span><br><span class="line">        <span class="keyword">if</span> (arr.length &gt; <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="comment">// 这里有两层循环</span></span><br><span class="line">            <span class="comment">// 时间复杂度最坏是: O(n²)-----每次都会执行第二次循环中的if语句</span></span><br><span class="line">            <span class="comment">// 时间复杂度最好是: O(n)------即每次都执行第二次循环的break</span></span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt; arr.length; i++) &#123;</span><br><span class="line">                <span class="keyword">int</span> data = arr[i];</span><br><span class="line">                <span class="keyword">int</span> j = i - <span class="number">1</span>;</span><br><span class="line">                <span class="keyword">for</span> (; j &gt;= <span class="number">0</span> ; j--) &#123;</span><br><span class="line">                    <span class="keyword">if</span> (data &lt; arr[j]) &#123;</span><br><span class="line">                        arr[j+<span class="number">1</span>] = arr[j];</span><br><span class="line">                    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">                arr[j+<span class="number">1</span>] = data;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> arr;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 插入排序第二种写法</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">insertSort</span><span class="params">(<span class="keyword">int</span>[] data)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> length = data.length;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt; length; i++) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> j = i; j &gt;<span class="number">0</span> &amp;&amp; data[j] &lt; data[j-<span class="number">1</span>]; j--) &#123;</span><br><span class="line">                <span class="keyword">int</span> tmp = data[j];</span><br><span class="line">                data[j] = data[j-<span class="number">1</span>];</span><br><span class="line">                data[j-<span class="number">1</span>] = tmp;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span>[] data = &#123;<span class="number">8</span>,<span class="number">5</span>,<span class="number">7</span>,<span class="number">4</span>,<span class="number">1</span>,<span class="number">3</span>,<span class="number">2</span>&#125;;</span><br><span class="line">        <span class="keyword">int</span>[] result = insertSort(data);</span><br><span class="line">        System.out.println(Arrays.toString(result));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>运行结果如下：</p>
+<p><img src="/archives/cd5503e2/image-20211103124225442.png" alt="排序运行结果"></p>
+]]></content>
+      <categories>
+        <category>算法</category>
+      </categories>
+      <tags>
+        <tag>插入排序</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>设计模式-工厂模式</title>
     <url>/archives/ccff2b22/</url>
     <content><![CDATA[<h1 id="工厂模式"><a href="#工厂模式" class="headerlink" title="工厂模式"></a>工厂模式</h1><p>工厂模式是Java中最常用的设计模式之一。在我们悉知的Spring中源码中的bean创建就是使用了工厂模式；这种类型的设计模式属于创建型模式，他提供一种创建对象的最佳方式。在工厂模式中，我们在创建对象时不会对客户端暴露创建逻辑，并且是通过使用一个共同的接口来指向新创建的对象。</p>
@@ -1538,6 +1711,259 @@
       </categories>
       <tags>
         <tag>设计模式</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Java网络IO与Epoll模型</title>
+    <url>/archives/3449cc56/</url>
+    <content><![CDATA[<h1 id="IO网络模型"><a href="#IO网络模型" class="headerlink" title="IO网络模型"></a>IO网络模型</h1><p>在Java中支持3种网络编程IO模式：</p>
+<ul>
+<li>BIO</li>
+<li>NIO</li>
+<li>AIO</li>
+</ul>
+<h2 id="BIO-Blocking-IO"><a href="#BIO-Blocking-IO" class="headerlink" title="BIO(Blocking IO)"></a>BIO(Blocking IO)</h2><p>同步阻塞模型，一个客户端连接对应一个处理线程</p>
+<p><img src="/archives/3449cc56/BIO%E6%A8%A1%E5%9E%8B.png" alt="BIO同步阻塞模型"></p>
+<p>BIO代码示例</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lhb.bio;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.io.IOException;</span><br><span class="line"><span class="keyword">import</span> java.net.ServerSocket;</span><br><span class="line"><span class="keyword">import</span> java.net.Socket;</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SocketServer</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">        ServerSocket serverSocket = <span class="keyword">new</span> ServerSocket(<span class="number">9000</span>);</span><br><span class="line">        <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;等待连接。。&quot;</span>);</span><br><span class="line">            <span class="comment">//阻塞方法</span></span><br><span class="line">            Socket clientSocket = serverSocket.accept();</span><br><span class="line">            System.out.println(<span class="string">&quot;有客户端连接了。。&quot;</span>);</span><br><span class="line">            handler(clientSocket);</span><br><span class="line"></span><br><span class="line">            <span class="comment">/*new Thread(new Runnable() &#123;</span></span><br><span class="line"><span class="comment">                @Override</span></span><br><span class="line"><span class="comment">                public void run() &#123;</span></span><br><span class="line"><span class="comment">                    try &#123;</span></span><br><span class="line"><span class="comment">                        handler(clientSocket);</span></span><br><span class="line"><span class="comment">                    &#125; catch (IOException e) &#123;</span></span><br><span class="line"><span class="comment">                        e.printStackTrace();</span></span><br><span class="line"><span class="comment">                    &#125;</span></span><br><span class="line"><span class="comment">                &#125;</span></span><br><span class="line"><span class="comment">            &#125;).start();*/</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">handler</span><span class="params">(Socket clientSocket)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">        <span class="keyword">byte</span>[] bytes = <span class="keyword">new</span> <span class="keyword">byte</span>[<span class="number">1024</span>];</span><br><span class="line">        System.out.println(<span class="string">&quot;准备read。。&quot;</span>);</span><br><span class="line">        <span class="comment">//接收客户端的数据，阻塞方法，没有数据可读时就阻塞</span></span><br><span class="line">        <span class="keyword">int</span> read = clientSocket.getInputStream().read(bytes);</span><br><span class="line">        System.out.println(<span class="string">&quot;read完毕。。&quot;</span>);</span><br><span class="line">        <span class="keyword">if</span> (read != -<span class="number">1</span>) &#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;接收到客户端的数据：&quot;</span> + <span class="keyword">new</span> String(bytes, <span class="number">0</span>, read));</span><br><span class="line">        &#125;</span><br><span class="line">        clientSocket.getOutputStream().write(<span class="string">&quot;HelloClient&quot;</span>.getBytes());</span><br><span class="line">        clientSocket.getOutputStream().flush();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>客户端代码</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SocketClient</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">        Socket socket = <span class="keyword">new</span> Socket(<span class="string">&quot;localhost&quot;</span>, <span class="number">9000</span>);</span><br><span class="line">        <span class="comment">//向服务端发送数据</span></span><br><span class="line">        socket.getOutputStream().write(<span class="string">&quot;HelloServer&quot;</span>.getBytes());</span><br><span class="line">        socket.getOutputStream().flush();</span><br><span class="line">        System.out.println(<span class="string">&quot;向服务端发送数据结束&quot;</span>);</span><br><span class="line">        <span class="keyword">byte</span>[] bytes = <span class="keyword">new</span> <span class="keyword">byte</span>[<span class="number">1024</span>];</span><br><span class="line">        <span class="comment">//接收服务端回传的数据</span></span><br><span class="line">        socket.getInputStream().read(bytes);</span><br><span class="line">        System.out.println(<span class="string">&quot;接收到服务端的数据：&quot;</span> + <span class="keyword">new</span> String(bytes));</span><br><span class="line">        socket.close();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h3><ol>
+<li>IO代码里read操作是阻塞操作，如果连接不做数据读写操作会导致线程阻塞，浪费资源</li>
+<li>如果线程很多，会导致服务器线程太多，压力太大，比如C10K问题</li>
+</ol>
+<h3 id="应用场景"><a href="#应用场景" class="headerlink" title="应用场景"></a>应用场景</h3><p>BIO方式适用于连接数目比较小且固定的架构，这种方式对服务器资源要求比较高，但是程序简单易理解</p>
+<h2 id="NIO-Non-Blocking-IO"><a href="#NIO-Non-Blocking-IO" class="headerlink" title="NIO(Non Blocking IO)"></a>NIO(Non Blocking IO)</h2><p>同步非阻塞模型，服务器实现模式为<strong>一个线程可以处理多个请求(连接)<strong>，，客户端发送的连接请求都会注册到</strong>多路复用器selector上</strong>，多路复用器轮询到连接有IO请求就进行处理，JDK1.4开始引入。</p>
+<h3 id="应用场景-1"><a href="#应用场景-1" class="headerlink" title="应用场景"></a>应用场景</h3><p>NIO方式适用于连接数据多并且连接比较短(轻操作)的架构，比如聊天服务、弹幕系统、服务器间通讯。编程比较复杂</p>
+<p>NIO非阻塞代码示例</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lhb.nio;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.io.IOException;</span><br><span class="line"><span class="keyword">import</span> java.net.InetSocketAddress;</span><br><span class="line"><span class="keyword">import</span> java.nio.ByteBuffer;</span><br><span class="line"><span class="keyword">import</span> java.nio.channels.ServerSocketChannel;</span><br><span class="line"><span class="keyword">import</span> java.nio.channels.SocketChannel;</span><br><span class="line"><span class="keyword">import</span> java.util.ArrayList;</span><br><span class="line"><span class="keyword">import</span> java.util.Iterator;</span><br><span class="line"><span class="keyword">import</span> java.util.List;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">NioServer</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 保存客户端连接</span></span><br><span class="line">    <span class="keyword">static</span> List&lt;SocketChannel&gt; channelList = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> IOException, InterruptedException </span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 创建NIO ServerSocketChannel,与BIO的serverSocket类似</span></span><br><span class="line">        ServerSocketChannel serverSocket = ServerSocketChannel.open();</span><br><span class="line">        serverSocket.socket().bind(<span class="keyword">new</span> InetSocketAddress(<span class="number">9000</span>));</span><br><span class="line">        <span class="comment">// 设置ServerSocketChannel为非阻塞</span></span><br><span class="line">        serverSocket.configureBlocking(<span class="keyword">false</span>);</span><br><span class="line">        System.out.println(<span class="string">&quot;服务启动成功&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">            <span class="comment">// 非阻塞模式accept方法不会阻塞，否则会阻塞</span></span><br><span class="line">            <span class="comment">// NIO的非阻塞是由操作系统内部实现的，底层调用了linux内核的accept函数</span></span><br><span class="line">            SocketChannel socketChannel = serverSocket.accept();</span><br><span class="line">            <span class="keyword">if</span> (socketChannel != <span class="keyword">null</span>) &#123; <span class="comment">// 如果有客户端进行连接</span></span><br><span class="line">                System.out.println(<span class="string">&quot;连接成功&quot;</span>);</span><br><span class="line">                <span class="comment">// 设置SocketChannel为非阻塞</span></span><br><span class="line">                socketChannel.configureBlocking(<span class="keyword">false</span>);</span><br><span class="line">                <span class="comment">// 保存客户端连接在List中</span></span><br><span class="line">                channelList.add(socketChannel);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 遍历连接进行数据读取</span></span><br><span class="line">            Iterator&lt;SocketChannel&gt; iterator = channelList.iterator();</span><br><span class="line">            <span class="keyword">while</span> (iterator.hasNext()) &#123;</span><br><span class="line">                SocketChannel sc = iterator.next();</span><br><span class="line">                ByteBuffer byteBuffer = ByteBuffer.allocate(<span class="number">128</span>);</span><br><span class="line">                <span class="comment">// 非阻塞模式read方法不会阻塞，否则会阻塞</span></span><br><span class="line">                <span class="keyword">int</span> len = sc.read(byteBuffer);</span><br><span class="line">                <span class="comment">// 如果有数据，把数据打印出来</span></span><br><span class="line">                <span class="keyword">if</span> (len &gt; <span class="number">0</span>) &#123;</span><br><span class="line">                    System.out.println(<span class="string">&quot;接收到消息：&quot;</span> + <span class="keyword">new</span> String(byteBuffer.array()));</span><br><span class="line">                &#125; <span class="keyword">else</span> <span class="keyword">if</span> (len == -<span class="number">1</span>) &#123; <span class="comment">// 如果客户端断开，把socket从集合中去掉</span></span><br><span class="line">                    iterator.remove();</span><br><span class="line">                    System.out.println(<span class="string">&quot;客户端断开连接&quot;</span>);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>总结：如果连接太多的话，会有大量的无效遍历，加入有10000个连接，其中只有1000个连接有写数据，但是由于其他9000个连接并没有断开，我们还是要每次遍历一万次，其中有十分之九的遍历都是无效的，这显然不是一个好的方案</p>
+</blockquote>
+<p>NIO引入多路复用器代码示例</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lhb.nio;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.io.IOException;</span><br><span class="line"><span class="keyword">import</span> java.net.InetSocketAddress;</span><br><span class="line"><span class="keyword">import</span> java.nio.ByteBuffer;</span><br><span class="line"><span class="keyword">import</span> java.nio.channels.SelectionKey;</span><br><span class="line"><span class="keyword">import</span> java.nio.channels.Selector;</span><br><span class="line"><span class="keyword">import</span> java.nio.channels.ServerSocketChannel;</span><br><span class="line"><span class="keyword">import</span> java.nio.channels.SocketChannel;</span><br><span class="line"><span class="keyword">import</span> java.util.Iterator;</span><br><span class="line"><span class="keyword">import</span> java.util.Set;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">NioSelectorServer</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> IOException, InterruptedException </span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 创建NIO ServerSocketChannel</span></span><br><span class="line">        ServerSocketChannel serverSocket = ServerSocketChannel.open();</span><br><span class="line">        serverSocket.socket().bind(<span class="keyword">new</span> InetSocketAddress(<span class="number">9000</span>));</span><br><span class="line">        <span class="comment">// 设置ServerSocketChannel为非阻塞</span></span><br><span class="line">        serverSocket.configureBlocking(<span class="keyword">false</span>);</span><br><span class="line">        <span class="comment">// 打开Selector处理Channel，即创建epoll</span></span><br><span class="line">        Selector selector = Selector.open();</span><br><span class="line">        <span class="comment">// 把ServerSocketChannel注册到selector上，并且selector对客户端accept连接操作感兴趣</span></span><br><span class="line">        serverSocket.register(selector, SelectionKey.OP_ACCEPT);</span><br><span class="line">        System.out.println(<span class="string">&quot;服务启动成功&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">            <span class="comment">// 阻塞等待需要处理的事件发生</span></span><br><span class="line">            selector.select();</span><br><span class="line"></span><br><span class="line">            <span class="comment">// 获取selector中注册的全部事件的 SelectionKey 实例</span></span><br><span class="line">            Set&lt;SelectionKey&gt; selectionKeys = selector.selectedKeys();</span><br><span class="line">            Iterator&lt;SelectionKey&gt; iterator = selectionKeys.iterator();</span><br><span class="line"></span><br><span class="line">            <span class="comment">// 遍历SelectionKey对事件进行处理</span></span><br><span class="line">            <span class="keyword">while</span> (iterator.hasNext()) &#123;</span><br><span class="line">                SelectionKey key = iterator.next();</span><br><span class="line">                <span class="comment">// 如果是OP_ACCEPT事件，则进行连接获取和事件注册</span></span><br><span class="line">                <span class="keyword">if</span> (key.isAcceptable()) &#123;</span><br><span class="line">                    ServerSocketChannel server = (ServerSocketChannel) key.channel();</span><br><span class="line">                    SocketChannel socketChannel = server.accept();</span><br><span class="line">                    socketChannel.configureBlocking(<span class="keyword">false</span>);</span><br><span class="line">                    <span class="comment">// 这里只注册了读事件，如果需要给客户端发送数据可以注册写事件</span></span><br><span class="line">                    socketChannel.register(selector, SelectionKey.OP_READ);</span><br><span class="line">                    System.out.println(<span class="string">&quot;客户端连接成功&quot;</span>);</span><br><span class="line">                &#125; <span class="keyword">else</span> <span class="keyword">if</span> (key.isReadable()) &#123;  <span class="comment">// 如果是OP_READ事件，则进行读取和打印</span></span><br><span class="line">                    SocketChannel socketChannel = (SocketChannel) key.channel();</span><br><span class="line">                    ByteBuffer byteBuffer = ByteBuffer.allocate(<span class="number">128</span>);</span><br><span class="line">                    <span class="keyword">int</span> len = socketChannel.read(byteBuffer);</span><br><span class="line">                    <span class="comment">// 如果有数据，把数据打印出来</span></span><br><span class="line">                    <span class="keyword">if</span> (len &gt; <span class="number">0</span>) &#123;</span><br><span class="line">                        System.out.println(<span class="string">&quot;接收到消息：&quot;</span> + <span class="keyword">new</span> String(byteBuffer.array()));</span><br><span class="line">                    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (len == -<span class="number">1</span>) &#123; <span class="comment">// 如果客户端断开连接，关闭Socket</span></span><br><span class="line">                        System.out.println(<span class="string">&quot;客户端断开连接&quot;</span>);</span><br><span class="line">                        socketChannel.close();</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="comment">//从事件集合里删除本次处理的key，防止下次select重复处理</span></span><br><span class="line">                iterator.remove();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>NIO有三大核心组件：</p>
+<ul>
+<li><strong>Channel(通道)</strong></li>
+<li><strong>Buffer(缓冲区)</strong></li>
+<li><strong>Selector(多路复用器)</strong></li>
+</ul>
+<blockquote>
+<ol>
+<li>channel类似于流，每个channel对应一个buffer缓冲区，buffer底层就是数组</li>
+<li>channel会注册到selector上，由selector根据channel读写事件的发生将其交由某个空闲的线程处理</li>
+<li>NIO的Buffer和channel都是既可以读也可以写</li>
+</ol>
+</blockquote>
+<p><img src="/archives/3449cc56/NIO%E6%A8%A1%E5%9E%8B.png" alt="NIO模型"></p>
+<p>NIO底层在JDK1.4版本是用的Linux的内核函数select()或poll()来实现，跟上面的NIOServer代码类似，selector每次都会轮询所有的sockChannel看下那个channel有读写事件，有的话就处理，没有的话就继续遍历，JDK1.5开始引入了epoll()基于事件响应机制来优化NIO。</p>
+<p>NIOSelectorServer代码里如下几个方法非常重要，我们从HotSpot与Linux内核函数级别来理解一下</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">Selector.open();  <span class="comment">//创建多路复用器</span></span><br><span class="line">socketChannel.register(selector,SelectionKey.OP_READ);  <span class="comment">//将channel注册到多路复用器上</span></span><br><span class="line">selector.select();  <span class="comment">//阻塞等待需要处理的事件发生</span></span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/3449cc56/NIO%E5%BA%95%E5%B1%82%E6%BA%90%E7%A0%81.png" alt="NIO底层源码"></p>
+<blockquote>
+<p>总结：NIO整个调用流程就是Java调用了操作系统的内核函数来创建Socket，获取Socket的文件描述符，再创建一个Selector对象，对应操作系统的Epoll描述符，将获取到的Socket连接的文件描述符的事件绑定到Selector对应的Epoll文件描述符上，进行事件的异步通知，这样就实现了使用一条线程，并且不需要太多的无效遍历，将事件处理交给了操作系统内核(操作系统中断程序实现)，大大提高了效率。</p>
+</blockquote>
+<h2 id="Epoll函数详解"><a href="#Epoll函数详解" class="headerlink" title="Epoll函数详解"></a>Epoll函数详解</h2><figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">epoll_create</span><span class="params">(<span class="keyword">int</span> size)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<p>创建一个epoll实例，并返回一个非负数作为文件描述符，用于对epoll接口的所有后续调用。参数size代表可能会容纳size个描述符，但size不是一个最大值，只是提示操作系统他的数量级，现在这个参数基本已经废弃。</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">epoll_ctl</span><span class="params">(<span class="keyword">int</span> epfd,<span class="keyword">int</span> op,<span class="keyword">int</span> fd,struct epoll_event *event)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<p>使用文件描述符epfd引用的epoll实例，对目标文件描述符fd执行op操作。</p>
+<p>参数epfd表示epoll对应的文件描述符，参数fd表示socket对应的文件描述符。</p>
+<blockquote>
+<p>参数op有以下几个值：</p>
+<p>EPOLL_CTL_ADD: 注册新的fd到epfd中，并关联事件event； </p>
+<p>EPOLL_CTL_MOD: 修改已经注册的fd的监听事件</p>
+<p>EPOLL_CTL_DEL: 从epfd中移除fd，并且忽略掉绑定的event，这时event可以为null</p>
+</blockquote>
+<p>参数event是一个结构体</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">epoll_event</span> &#123;</span></span><br><span class="line">  <span class="keyword">__unit32_t</span> events; <span class="comment">/* Epoll events */</span></span><br><span class="line">  <span class="keyword">epoll_data_t</span> data; <span class="comment">/* User data variable */</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">union</span> <span class="title">epoll_data</span> &#123;</span></span><br><span class="line">  <span class="keyword">void</span> *ptr;</span><br><span class="line">  <span class="keyword">int</span> fd;</span><br><span class="line">  <span class="keyword">__unit32_t</span> u32;</span><br><span class="line">  <span class="keyword">__unit64_t</span> u64;</span><br><span class="line">&#125; <span class="keyword">epoll_data_t</span>;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>events有很多可选值，这里列举几个常用的:</p>
+<p>EPOLLIN: 表示对应的文件描述符是可读的</p>
+<p>EPOLLOUT: 表示对应的文件描述符是可写的</p>
+<p>EPOLLERR: 表示对应的文件描述符发生了错误；</p>
+<p>成功返回0，失败返回-1</p>
+</blockquote>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">epoll_wait</span><span class="params">(<span class="keyword">int</span> epfd,struct epoll_event *events,<span class="keyword">int</span> maxevents,<span class="keyword">int</span> timeout)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<p>等待文件描述符epfd上的事件。</p>
+<p>epfd是Epoll对应的文件描述符，events表示调用者有可能用事件的集合，maxevents表示最多等到多少个事件就返回，timeout是超时时间。</p>
+<p>I/O多路复用底层主要用的Linux内核函数(select,poll,epoll)来实现，windows不支持epoll实现，windows底层是基于winsock2的select函数实现的(不开源)</p>
+<table style="width:100%;" cellpadding="2" cellspacing="0" align="center" border="1" bordercolor="#000000">
+  <tbody>
+      <tr bgcolor="#71bff6">
+          <td style="text-align:center;">
+         &emsp;
+      </td>
+        <td style="text-align:center;">
+        <b>select</b>
+      </td>
+        <td style="text-align:center;">
+        <b>poll</b>
+      </td> 
+        <td style="text-align:center;">
+        <b>epoll(jdk 1.5及以上)</b>
+      </td>
+    </tr>
+      <tr>
+          <td bgcolor="#71bff6" style="text-align:center;">
+         <b>操作方式</b>
+      </td>
+        <td style="text-align:center;">
+        遍历
+      </td>
+        <td style="text-align:center;">
+        遍历
+      </td> 
+        <td style="text-align:center;">
+        回调
+      </td>
+    </tr>
+      <tr>
+          <td bgcolor="#71bff6" style="text-align:center;">
+         <b>底层实现</b>
+      </td>
+        <td style="text-align:center;">
+        数组
+      </td>
+        <td style="text-align:center;">
+        链表
+      </td> 
+        <td style="text-align:center;">
+        哈希表
+      </td>
+    </tr>
+      <tr>
+          <td bgcolor="#71bff6" style="text-align:center;">
+         <b>IO效率</b>
+      </td>
+        <td style="text-align:center;">
+        每次调用都进行线性遍历，时间复杂度为O(n)
+      </td>
+        <td style="text-align:center;">
+        每次调用都进行线性遍历，时间复杂度为O(n)
+      </td> 
+        <td style="text-align:center;">
+        事件通知方式，每当有IO事件就绪，系统注册的回调函数就会被调用，时间复杂度O(1)
+      </td>
+    </tr>
+      <tr>
+          <td bgcolor="#71bff6" style="text-align:center;">
+         <b>最大连接</b>
+      </td>
+        <td style="text-align:center;">
+        有上限
+      </td>
+        <td style="text-align:center;">
+        无上限
+      </td> 
+        <td style="text-align:center;">
+        无上限
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="AIO-NIO-2-0"><a href="#AIO-NIO-2-0" class="headerlink" title="AIO(NIO 2.0)"></a>AIO(NIO 2.0)</h2><p>异步非阻塞，由操作系统完成后回调通知服务端程序启动线程去处理，一般适用于连接数较多且连接时间较长的应用</p>
+<p><strong>应用场景：</strong> AIO方式适用于链接数目多且连接较长(重操作)的架构，JDK7开始支持</p>
+<p>AIO代码示例:</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lhb.aio;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.io.IOException;</span><br><span class="line"><span class="keyword">import</span> java.net.InetSocketAddress;</span><br><span class="line"><span class="keyword">import</span> java.nio.ByteBuffer;</span><br><span class="line"><span class="keyword">import</span> java.nio.channels.AsynchronousServerSocketChannel;</span><br><span class="line"><span class="keyword">import</span> java.nio.channels.AsynchronousSocketChannel;</span><br><span class="line"><span class="keyword">import</span> java.nio.channels.CompletionHandler;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">AIOServer</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        <span class="keyword">final</span> AsynchronousServerSocketChannel serverChannel =</span><br><span class="line">                AsynchronousServerSocketChannel.open().bind(<span class="keyword">new</span> InetSocketAddress(<span class="number">9000</span>));</span><br><span class="line"></span><br><span class="line">        serverChannel.accept(<span class="keyword">null</span>, <span class="keyword">new</span> CompletionHandler&lt;AsynchronousSocketChannel, Object&gt;() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">completed</span><span class="params">(AsynchronousSocketChannel socketChannel, Object attachment)</span> </span>&#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    System.out.println(<span class="string">&quot;2--&quot;</span>+Thread.currentThread().getName());</span><br><span class="line">                    <span class="comment">// 再此接收客户端连接，如果不写这行代码后面的客户端连接连不上服务端</span></span><br><span class="line">                    serverChannel.accept(attachment, <span class="keyword">this</span>);</span><br><span class="line">                    System.out.println(socketChannel.getRemoteAddress());</span><br><span class="line">                    ByteBuffer buffer = ByteBuffer.allocate(<span class="number">1024</span>);</span><br><span class="line">                    socketChannel.read(buffer, buffer, <span class="keyword">new</span> CompletionHandler&lt;Integer, ByteBuffer&gt;() &#123;</span><br><span class="line">                        <span class="meta">@Override</span></span><br><span class="line">                        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">completed</span><span class="params">(Integer result, ByteBuffer buffer)</span> </span>&#123;</span><br><span class="line">                            System.out.println(<span class="string">&quot;3--&quot;</span>+Thread.currentThread().getName());</span><br><span class="line">                            buffer.flip();</span><br><span class="line">                            System.out.println(<span class="keyword">new</span> String(buffer.array(), <span class="number">0</span>, result));</span><br><span class="line">                            socketChannel.write(ByteBuffer.wrap(<span class="string">&quot;HelloClient&quot;</span>.getBytes()));</span><br><span class="line">                        &#125;</span><br><span class="line"></span><br><span class="line">                        <span class="meta">@Override</span></span><br><span class="line">                        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">failed</span><span class="params">(Throwable exc, ByteBuffer buffer)</span> </span>&#123;</span><br><span class="line">                            exc.printStackTrace();</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;);</span><br><span class="line">                &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">                    e.printStackTrace();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">failed</span><span class="params">(Throwable exc, Object attachment)</span> </span>&#123;</span><br><span class="line">                exc.printStackTrace();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line"></span><br><span class="line">        System.out.println(<span class="string">&quot;1--&quot;</span>+Thread.currentThread().getName());</span><br><span class="line">        Thread.sleep(Integer.MAX_VALUE);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lhb.aio;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.net.InetSocketAddress;</span><br><span class="line"><span class="keyword">import</span> java.nio.ByteBuffer;</span><br><span class="line"><span class="keyword">import</span> java.nio.channels.AsynchronousSocketChannel;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">AIOClient</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String... args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        AsynchronousSocketChannel socketChannel = AsynchronousSocketChannel.open();</span><br><span class="line">        socketChannel.connect(<span class="keyword">new</span> InetSocketAddress(<span class="string">&quot;127.0.0.1&quot;</span>, <span class="number">9000</span>)).get();</span><br><span class="line">        socketChannel.write(ByteBuffer.wrap(<span class="string">&quot;HelloServer&quot;</span>.getBytes()));</span><br><span class="line">        ByteBuffer buffer = ByteBuffer.allocate(<span class="number">512</span>);</span><br><span class="line">        Integer len = socketChannel.read(buffer).get();</span><br><span class="line">        <span class="keyword">if</span> (len != -<span class="number">1</span>) &#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;客户端收到信息：&quot;</span> + <span class="keyword">new</span> String(buffer.array(), <span class="number">0</span>, len));</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>**BIO、NIO、AIO对比: ** </p>
+<table style="width:100%;" cellpadding="2" cellspacing="0" align="center" border="1" bordercolor="#000000">
+  <tbody>
+      <tr>
+          <td style="text-align:center;">
+         <b>对比项</b>
+      </td>
+        <td style="text-align:center;">
+        <b>BIO</b>
+      </td>
+        <td style="text-align:center;">
+        <b>NIO</b>
+      </td> 
+        <td style="text-align:center;">
+        <b>AIO</b>
+      </td>
+    </tr>
+      <tr>
+          <td style="text-align:center;">
+         <b>IO模型</b>
+      </td>
+        <td style="text-align:center;">
+        同步阻塞
+      </td>
+        <td style="text-align:center;">
+        同步非阻塞(多路复用)
+      </td> 
+        <td style="text-align:center;">
+        异步非阻塞
+      </td>
+    </tr>
+      <tr>
+          <td style="text-align:center;">
+         <b>编程难度</b>
+      </td>
+        <td style="text-align:center;">
+        简单
+      </td>
+        <td style="text-align:center;">
+        复杂
+      </td> 
+        <td style="text-align:center;">
+        复杂
+      </td>
+    </tr>
+      <tr>
+          <td style="text-align:center;">
+         <b>可靠性</b>
+      </td>
+        <td style="text-align:center;">
+        差
+      </td>
+        <td style="text-align:center;">
+        好
+      </td> 
+        <td style="text-align:center;">
+        好
+      </td>
+    </tr>
+      <tr>
+          <td style="text-align:center;">
+         <b>吞吐量</b>
+      </td>
+        <td style="text-align:center;">
+        低
+      </td>
+        <td style="text-align:center;">
+        高
+      </td> 
+        <td style="text-align:center;">
+        高
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<blockquote>
+<p><strong>为什么Netty使用NIO而不使用AIO？</strong></p>
+<p>在Linux系统上，AIO的底层实现任然使用Epoll，没有很好实现AIO，因此在性能上没有明显的优势，而且被JDK封装了一层不容易深度优化，Linux上AIO还不够成熟。Netty是<strong>异步非阻塞</strong>框架，Netty在NIO上做了很多异步的封装。</p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>Netty</category>
+      </categories>
+      <tags>
+        <tag>Netty</tag>
       </tags>
   </entry>
   <entry>

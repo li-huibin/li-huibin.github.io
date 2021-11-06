@@ -6,7 +6,7 @@
   <link href="https://www.lihuibin.top/atom.xml" rel="self"/>
   
   <link href="https://www.lihuibin.top/"/>
-  <updated>2021-10-22T13:32:24.344Z</updated>
+  <updated>2021-11-06T10:59:06.273Z</updated>
   <id>https://www.lihuibin.top/</id>
   
   <author>
@@ -17,11 +17,193 @@
   <generator uri="https://hexo.io/">Hexo</generator>
   
   <entry>
+    <title>排序算法——归并排序</title>
+    <link href="https://www.lihuibin.top/archives/4e99e3ae/"/>
+    <id>https://www.lihuibin.top/archives/4e99e3ae/</id>
+    <published>2021-11-06T09:55:30.000Z</published>
+    <updated>2021-11-06T10:59:06.273Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h2 id=&quot;基本思想&quot;&gt;&lt;a href=&quot;#基本思想&quot; class=&quot;headerlink&quot;</summary>
+        
+      
+    
+    
+    
+    <category term="算法" scheme="https://www.lihuibin.top/categories/%E7%AE%97%E6%B3%95/"/>
+    
+    
+    <category term="归并排序" scheme="https://www.lihuibin.top/tags/%E5%BD%92%E5%B9%B6%E6%8E%92%E5%BA%8F/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>排序算法——希尔排序</title>
+    <link href="https://www.lihuibin.top/archives/41c4cd29/"/>
+    <id>https://www.lihuibin.top/archives/41c4cd29/</id>
+    <published>2021-11-06T04:42:23.000Z</published>
+    <updated>2021-11-06T08:43:55.628Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h2 id=&quot;基本排序思想&quot;&gt;&lt;a href=&quot;#基本排序思想&quot; class=&quot;headerlink&quot;</summary>
+        
+      
+    
+    
+    
+    <category term="算法" scheme="https://www.lihuibin.top/categories/%E7%AE%97%E6%B3%95/"/>
+    
+    
+    <category term="希尔排序" scheme="https://www.lihuibin.top/tags/%E5%B8%8C%E5%B0%94%E6%8E%92%E5%BA%8F/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>排序算法——插入排序</title>
+    <link href="https://www.lihuibin.top/archives/cd5503e2/"/>
+    <id>https://www.lihuibin.top/archives/cd5503e2/</id>
+    <published>2021-11-03T04:37:14.000Z</published>
+    <updated>2021-11-06T04:32:29.798Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;题目：将该数组&lt;code&gt;int[] data = &amp;#123;8,5,7,4,1,3,2&amp;#125;&lt;/code&gt;进行排序，要求手写插入排序进行实现。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;插入排序整体思想：&lt;/strong&gt;&lt;br&gt; </summary>
+        
+      
+    
+    
+    
+    <category term="算法" scheme="https://www.lihuibin.top/categories/%E7%AE%97%E6%B3%95/"/>
+    
+    
+    <category term="插入排序" scheme="https://www.lihuibin.top/tags/%E6%8F%92%E5%85%A5%E6%8E%92%E5%BA%8F/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>利用数组实现队列操作</title>
+    <link href="https://www.lihuibin.top/archives/ace10538/"/>
+    <id>https://www.lihuibin.top/archives/ace10538/</id>
+    <published>2021-11-02T02:33:48.000Z</published>
+    <updated>2021-11-06T04:11:06.773Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;题目：利用数组来实现队列的入队，出队，队列扩容等操作，写出具体实现代码。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;解析：&lt;/p&gt;
+&lt;p&gt;首先应该知道队列最大的特点就是先进先出(FIFO)，所以这里也就限制了队列只能进行入队，并且只能是从尾部入队，不能随意插入；出队也只能是从</summary>
+        
+      
+    
+    
+    
+    <category term="数据结构" scheme="https://www.lihuibin.top/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/"/>
+    
+    
+    <category term="队列" scheme="https://www.lihuibin.top/tags/%E9%98%9F%E5%88%97/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>手写LinkedList（简易版）</title>
+    <link href="https://www.lihuibin.top/archives/f9405533/"/>
+    <id>https://www.lihuibin.top/archives/f9405533/</id>
+    <published>2021-11-01T09:25:28.000Z</published>
+    <updated>2021-11-06T04:11:06.784Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;MyLinked代码实现:&lt;/p&gt;
+&lt;figure class=&quot;highlight java&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span</summary>
+        
+      
+    
+    
+    
+    <category term="数据结构" scheme="https://www.lihuibin.top/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/"/>
+    
+    
+    <category term="链表" scheme="https://www.lihuibin.top/tags/%E9%93%BE%E8%A1%A8/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>使用栈数据结构实现简易计算器算法</title>
+    <link href="https://www.lihuibin.top/archives/12e6bc0/"/>
+    <id>https://www.lihuibin.top/archives/12e6bc0/</id>
+    <published>2021-11-01T08:23:09.000Z</published>
+    <updated>2021-11-06T04:11:06.758Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;首先看一下设计思路：&lt;/p&gt;
+&lt;p&gt;&lt;img</summary>
+        
+      
+    
+    
+    
+    <category term="数据结构" scheme="https://www.lihuibin.top/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/"/>
+    
+    
+    <category term="栈" scheme="https://www.lihuibin.top/tags/%E6%A0%88/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Netty核心源码解析</title>
+    <link href="https://www.lihuibin.top/archives/b4dafe2/"/>
+    <id>https://www.lihuibin.top/archives/b4dafe2/</id>
+    <published>2021-10-29T04:22:33.000Z</published>
+    <updated>2021-11-06T04:11:06.607Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h2 id=&quot;Netty线程模型图&quot;&gt;&lt;a href=&quot;#Netty线程模型图&quot; class=&quot;headerlink&quot; title=&quot;Netty线程模型图&quot;&gt;&lt;/a&gt;Netty线程模型图&lt;/h2&gt;&lt;p&gt;&lt;img</summary>
+        
+      
+    
+    
+    
+    <category term="Netty" scheme="https://www.lihuibin.top/categories/Netty/"/>
+    
+    
+    <category term="Netty" scheme="https://www.lihuibin.top/tags/Netty/"/>
+    
+  </entry>
+  
+  <entry>
     <title>Java网络IO与Epoll模型</title>
     <link href="https://www.lihuibin.top/archives/3449cc56/"/>
     <id>https://www.lihuibin.top/archives/3449cc56/</id>
     <published>2021-10-21T13:27:45.000Z</published>
-    <updated>2021-10-22T13:32:24.344Z</updated>
+    <updated>2021-11-06T04:11:06.585Z</updated>
     
     
       
@@ -342,183 +524,6 @@
     
     
     <category term="Redis" scheme="https://www.lihuibin.top/tags/Redis/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Redis哨兵架构搭建</title>
-    <link href="https://www.lihuibin.top/archives/8bd0f0fd/"/>
-    <id>https://www.lihuibin.top/archives/8bd0f0fd/</id>
-    <published>2021-09-14T09:02:23.000Z</published>
-    <updated>2021-10-01T13:46:40.110Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;h1 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h1&gt;&lt;p&gt;安装Redis教程这里就不说了，我们在之前搭建的&lt;a</summary>
-        
-      
-    
-    
-    
-    <category term="Redis" scheme="https://www.lihuibin.top/categories/Redis/"/>
-    
-    
-    <category term="Redis" scheme="https://www.lihuibin.top/tags/Redis/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Redis主从工作原理</title>
-    <link href="https://www.lihuibin.top/archives/1b578af4/"/>
-    <id>https://www.lihuibin.top/archives/1b578af4/</id>
-    <published>2021-09-14T07:24:58.000Z</published>
-    <updated>2021-10-01T13:46:40.075Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;h1 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h1&gt;&lt;p&gt;接前面讲到的&lt;a</summary>
-        
-      
-    
-    
-    
-    <category term="Redis" scheme="https://www.lihuibin.top/categories/Redis/"/>
-    
-    
-    <category term="Redis" scheme="https://www.lihuibin.top/tags/Redis/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Linux安装配置Redis</title>
-    <link href="https://www.lihuibin.top/archives/a813391e/"/>
-    <id>https://www.lihuibin.top/archives/a813391e/</id>
-    <published>2021-09-14T04:33:19.000Z</published>
-    <updated>2021-10-01T13:46:40.059Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;h2 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h2&gt;&lt;ul&gt;
-&lt;li&gt;Redis版本 6.2.5&lt;/li&gt;
-&lt;li&gt;服务器版本 Linux Centos 7.6</summary>
-        
-      
-    
-    
-    
-    <category term="Redis" scheme="https://www.lihuibin.top/categories/Redis/"/>
-    
-    
-    <category term="Redis" scheme="https://www.lihuibin.top/tags/Redis/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>redis主从架构搭建</title>
-    <link href="https://www.lihuibin.top/archives/ba77e58/"/>
-    <id>https://www.lihuibin.top/archives/ba77e58/</id>
-    <published>2021-09-14T03:15:37.000Z</published>
-    <updated>2021-10-01T13:46:40.199Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;h2 id=&quot;一、环境准备&quot;&gt;&lt;a href=&quot;#一、环境准备&quot; class=&quot;headerlink&quot;</summary>
-        
-      
-    
-    
-    
-    <category term="Redis" scheme="https://www.lihuibin.top/categories/Redis/"/>
-    
-    
-    <category term="Redis" scheme="https://www.lihuibin.top/tags/Redis/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>vmare_workstation16许可证秘钥</title>
-    <link href="https://www.lihuibin.top/archives/59b9c4e6/"/>
-    <id>https://www.lihuibin.top/archives/59b9c4e6/</id>
-    <published>2021-09-13T09:11:18.000Z</published>
-    <updated>2021-10-01T13:46:40.206Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;p&gt;&lt;code&gt;vmare workstation16</summary>
-        
-      
-    
-    
-    
-    <category term="软件破解" scheme="https://www.lihuibin.top/categories/%E8%BD%AF%E4%BB%B6%E7%A0%B4%E8%A7%A3/"/>
-    
-    
-    <category term="软件破解" scheme="https://www.lihuibin.top/tags/%E8%BD%AF%E4%BB%B6%E7%A0%B4%E8%A7%A3/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>invokeBeanDefinitionRegistryPostProcessors方法解析</title>
-    <link href="https://www.lihuibin.top/archives/79103379/"/>
-    <id>https://www.lihuibin.top/archives/79103379/</id>
-    <published>2021-08-28T06:29:17.000Z</published>
-    <updated>2021-10-01T13:46:40.175Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;h2 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot;</summary>
-        
-      
-    
-    
-    
-    <category term="Spring源码" scheme="https://www.lihuibin.top/categories/Spring%E6%BA%90%E7%A0%81/"/>
-    
-    
-    <category term="Spring源码" scheme="https://www.lihuibin.top/tags/Spring%E6%BA%90%E7%A0%81/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>invokeBeanDefinitionRegistryPostProcessors方法解析</title>
-    <link href="https://www.lihuibin.top/archives/8d05e930/"/>
-    <id>https://www.lihuibin.top/archives/8d05e930/</id>
-    <published>2021-08-27T12:19:41.000Z</published>
-    <updated>2021-09-03T13:51:21.388Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;p&gt;在上一篇&lt;a</summary>
-        
-      
-    
-    
-    
-    <category term="Spring源码" scheme="https://www.lihuibin.top/categories/Spring%E6%BA%90%E7%A0%81/"/>
-    
-    
-    <category term="Spring源码" scheme="https://www.lihuibin.top/tags/Spring%E6%BA%90%E7%A0%81/"/>
     
   </entry>
   

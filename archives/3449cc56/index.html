@@ -95,7 +95,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">1.7k</span>
+            <span class="post-count">2.9k</span>
         </span>
     </span>
 
@@ -104,7 +104,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-book-open-line"></i>
             <span class="post-meta-item-text"> 阅读时长≈</span>
-            <span class="post-count">7 分钟</span>
+            <span class="post-count">12 分钟</span>
         </span>
     </span>
 </div>
@@ -167,6 +167,200 @@
 <p>NIOSelectorServer代码里如下几个方法非常重要，我们从HotSpot与Linux内核函数级别来理解一下</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Selector.open();  <span class="comment">//创建多路复用器</span></span><br><span class="line">socketChannel.register(selector,SelectionKey.OP_READ);  <span class="comment">//将channel注册到多路复用器上</span></span><br><span class="line">selector.select();  <span class="comment">//阻塞等待需要处理的事件发生</span></span><br></pre></td></tr></table></figure>
 
+<p><img src="/archives/3449cc56/NIO%E5%BA%95%E5%B1%82%E6%BA%90%E7%A0%81.png" alt="NIO底层源码"></p>
+<blockquote>
+<p>总结：NIO整个调用流程就是Java调用了操作系统的内核函数来创建Socket，获取Socket的文件描述符，再创建一个Selector对象，对应操作系统的Epoll描述符，将获取到的Socket连接的文件描述符的事件绑定到Selector对应的Epoll文件描述符上，进行事件的异步通知，这样就实现了使用一条线程，并且不需要太多的无效遍历，将事件处理交给了操作系统内核(操作系统中断程序实现)，大大提高了效率。</p>
+</blockquote>
+<h2 id="Epoll函数详解"><a href="#Epoll函数详解" class="headerlink" title="Epoll函数详解"></a>Epoll函数详解</h2><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">epoll_create</span><span class="params">(<span class="keyword">int</span> size)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<p>创建一个epoll实例，并返回一个非负数作为文件描述符，用于对epoll接口的所有后续调用。参数size代表可能会容纳size个描述符，但size不是一个最大值，只是提示操作系统他的数量级，现在这个参数基本已经废弃。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">epoll_ctl</span><span class="params">(<span class="keyword">int</span> epfd,<span class="keyword">int</span> op,<span class="keyword">int</span> fd,struct epoll_event *event)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<p>使用文件描述符epfd引用的epoll实例，对目标文件描述符fd执行op操作。</p>
+<p>参数epfd表示epoll对应的文件描述符，参数fd表示socket对应的文件描述符。</p>
+<blockquote>
+<p>参数op有以下几个值：</p>
+<p>EPOLL_CTL_ADD: 注册新的fd到epfd中，并关联事件event； </p>
+<p>EPOLL_CTL_MOD: 修改已经注册的fd的监听事件</p>
+<p>EPOLL_CTL_DEL: 从epfd中移除fd，并且忽略掉绑定的event，这时event可以为null</p>
+</blockquote>
+<p>参数event是一个结构体</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">epoll_event</span> &#123;</span></span><br><span class="line">  <span class="keyword">__unit32_t</span> events; <span class="comment">/* Epoll events */</span></span><br><span class="line">  <span class="keyword">epoll_data_t</span> data; <span class="comment">/* User data variable */</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">union</span> <span class="title">epoll_data</span> &#123;</span></span><br><span class="line">  <span class="keyword">void</span> *ptr;</span><br><span class="line">  <span class="keyword">int</span> fd;</span><br><span class="line">  <span class="keyword">__unit32_t</span> u32;</span><br><span class="line">  <span class="keyword">__unit64_t</span> u64;</span><br><span class="line">&#125; <span class="keyword">epoll_data_t</span>;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>events有很多可选值，这里列举几个常用的:</p>
+<p>EPOLLIN: 表示对应的文件描述符是可读的</p>
+<p>EPOLLOUT: 表示对应的文件描述符是可写的</p>
+<p>EPOLLERR: 表示对应的文件描述符发生了错误；</p>
+<p>成功返回0，失败返回-1</p>
+</blockquote>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">epoll_wait</span><span class="params">(<span class="keyword">int</span> epfd,struct epoll_event *events,<span class="keyword">int</span> maxevents,<span class="keyword">int</span> timeout)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<p>等待文件描述符epfd上的事件。</p>
+<p>epfd是Epoll对应的文件描述符，events表示调用者有可能用事件的集合，maxevents表示最多等到多少个事件就返回，timeout是超时时间。</p>
+<p>I/O多路复用底层主要用的Linux内核函数(select,poll,epoll)来实现，windows不支持epoll实现，windows底层是基于winsock2的select函数实现的(不开源)</p>
+<table style="width:100%;" cellpadding="2" cellspacing="0" align="center" border="1" bordercolor="#000000">
+  <tbody>
+      <tr bgcolor="#71bff6">
+          <td style="text-align:center;">
+         &emsp;
+      </td>
+        <td style="text-align:center;">
+        <b>select</b>
+      </td>
+        <td style="text-align:center;">
+        <b>poll</b>
+      </td> 
+        <td style="text-align:center;">
+        <b>epoll(jdk 1.5及以上)</b>
+      </td>
+    </tr>
+      <tr>
+          <td bgcolor="#71bff6" style="text-align:center;">
+         <b>操作方式</b>
+      </td>
+        <td style="text-align:center;">
+        遍历
+      </td>
+        <td style="text-align:center;">
+        遍历
+      </td> 
+        <td style="text-align:center;">
+        回调
+      </td>
+    </tr>
+      <tr>
+          <td bgcolor="#71bff6" style="text-align:center;">
+         <b>底层实现</b>
+      </td>
+        <td style="text-align:center;">
+        数组
+      </td>
+        <td style="text-align:center;">
+        链表
+      </td> 
+        <td style="text-align:center;">
+        哈希表
+      </td>
+    </tr>
+      <tr>
+          <td bgcolor="#71bff6" style="text-align:center;">
+         <b>IO效率</b>
+      </td>
+        <td style="text-align:center;">
+        每次调用都进行线性遍历，时间复杂度为O(n)
+      </td>
+        <td style="text-align:center;">
+        每次调用都进行线性遍历，时间复杂度为O(n)
+      </td> 
+        <td style="text-align:center;">
+        事件通知方式，每当有IO事件就绪，系统注册的回调函数就会被调用，时间复杂度O(1)
+      </td>
+    </tr>
+      <tr>
+          <td bgcolor="#71bff6" style="text-align:center;">
+         <b>最大连接</b>
+      </td>
+        <td style="text-align:center;">
+        有上限
+      </td>
+        <td style="text-align:center;">
+        无上限
+      </td> 
+        <td style="text-align:center;">
+        无上限
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="AIO-NIO-2-0"><a href="#AIO-NIO-2-0" class="headerlink" title="AIO(NIO 2.0)"></a>AIO(NIO 2.0)</h2><p>异步非阻塞，由操作系统完成后回调通知服务端程序启动线程去处理，一般适用于连接数较多且连接时间较长的应用</p>
+<p><strong>应用场景：</strong> AIO方式适用于链接数目多且连接较长(重操作)的架构，JDK7开始支持</p>
+<p>AIO代码示例:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lhb.aio;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.io.IOException;</span><br><span class="line"><span class="keyword">import</span> java.net.InetSocketAddress;</span><br><span class="line"><span class="keyword">import</span> java.nio.ByteBuffer;</span><br><span class="line"><span class="keyword">import</span> java.nio.channels.AsynchronousServerSocketChannel;</span><br><span class="line"><span class="keyword">import</span> java.nio.channels.AsynchronousSocketChannel;</span><br><span class="line"><span class="keyword">import</span> java.nio.channels.CompletionHandler;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">AIOServer</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        <span class="keyword">final</span> AsynchronousServerSocketChannel serverChannel =</span><br><span class="line">                AsynchronousServerSocketChannel.open().bind(<span class="keyword">new</span> InetSocketAddress(<span class="number">9000</span>));</span><br><span class="line"></span><br><span class="line">        serverChannel.accept(<span class="keyword">null</span>, <span class="keyword">new</span> CompletionHandler&lt;AsynchronousSocketChannel, Object&gt;() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">completed</span><span class="params">(AsynchronousSocketChannel socketChannel, Object attachment)</span> </span>&#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    System.out.println(<span class="string">&quot;2--&quot;</span>+Thread.currentThread().getName());</span><br><span class="line">                    <span class="comment">// 再此接收客户端连接，如果不写这行代码后面的客户端连接连不上服务端</span></span><br><span class="line">                    serverChannel.accept(attachment, <span class="keyword">this</span>);</span><br><span class="line">                    System.out.println(socketChannel.getRemoteAddress());</span><br><span class="line">                    ByteBuffer buffer = ByteBuffer.allocate(<span class="number">1024</span>);</span><br><span class="line">                    socketChannel.read(buffer, buffer, <span class="keyword">new</span> CompletionHandler&lt;Integer, ByteBuffer&gt;() &#123;</span><br><span class="line">                        <span class="meta">@Override</span></span><br><span class="line">                        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">completed</span><span class="params">(Integer result, ByteBuffer buffer)</span> </span>&#123;</span><br><span class="line">                            System.out.println(<span class="string">&quot;3--&quot;</span>+Thread.currentThread().getName());</span><br><span class="line">                            buffer.flip();</span><br><span class="line">                            System.out.println(<span class="keyword">new</span> String(buffer.array(), <span class="number">0</span>, result));</span><br><span class="line">                            socketChannel.write(ByteBuffer.wrap(<span class="string">&quot;HelloClient&quot;</span>.getBytes()));</span><br><span class="line">                        &#125;</span><br><span class="line"></span><br><span class="line">                        <span class="meta">@Override</span></span><br><span class="line">                        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">failed</span><span class="params">(Throwable exc, ByteBuffer buffer)</span> </span>&#123;</span><br><span class="line">                            exc.printStackTrace();</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;);</span><br><span class="line">                &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">                    e.printStackTrace();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">failed</span><span class="params">(Throwable exc, Object attachment)</span> </span>&#123;</span><br><span class="line">                exc.printStackTrace();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line"></span><br><span class="line">        System.out.println(<span class="string">&quot;1--&quot;</span>+Thread.currentThread().getName());</span><br><span class="line">        Thread.sleep(Integer.MAX_VALUE);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lhb.aio;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.net.InetSocketAddress;</span><br><span class="line"><span class="keyword">import</span> java.nio.ByteBuffer;</span><br><span class="line"><span class="keyword">import</span> java.nio.channels.AsynchronousSocketChannel;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">AIOClient</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String... args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        AsynchronousSocketChannel socketChannel = AsynchronousSocketChannel.open();</span><br><span class="line">        socketChannel.connect(<span class="keyword">new</span> InetSocketAddress(<span class="string">&quot;127.0.0.1&quot;</span>, <span class="number">9000</span>)).get();</span><br><span class="line">        socketChannel.write(ByteBuffer.wrap(<span class="string">&quot;HelloServer&quot;</span>.getBytes()));</span><br><span class="line">        ByteBuffer buffer = ByteBuffer.allocate(<span class="number">512</span>);</span><br><span class="line">        Integer len = socketChannel.read(buffer).get();</span><br><span class="line">        <span class="keyword">if</span> (len != -<span class="number">1</span>) &#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;客户端收到信息：&quot;</span> + <span class="keyword">new</span> String(buffer.array(), <span class="number">0</span>, len));</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>**BIO、NIO、AIO对比: ** </p>
+<table style="width:100%;" cellpadding="2" cellspacing="0" align="center" border="1" bordercolor="#000000">
+  <tbody>
+      <tr>
+          <td style="text-align:center;">
+         <b>对比项</b>
+      </td>
+        <td style="text-align:center;">
+        <b>BIO</b>
+      </td>
+        <td style="text-align:center;">
+        <b>NIO</b>
+      </td> 
+        <td style="text-align:center;">
+        <b>AIO</b>
+      </td>
+    </tr>
+      <tr>
+          <td style="text-align:center;">
+         <b>IO模型</b>
+      </td>
+        <td style="text-align:center;">
+        同步阻塞
+      </td>
+        <td style="text-align:center;">
+        同步非阻塞(多路复用)
+      </td> 
+        <td style="text-align:center;">
+        异步非阻塞
+      </td>
+    </tr>
+      <tr>
+          <td style="text-align:center;">
+         <b>编程难度</b>
+      </td>
+        <td style="text-align:center;">
+        简单
+      </td>
+        <td style="text-align:center;">
+        复杂
+      </td> 
+        <td style="text-align:center;">
+        复杂
+      </td>
+    </tr>
+      <tr>
+          <td style="text-align:center;">
+         <b>可靠性</b>
+      </td>
+        <td style="text-align:center;">
+        差
+      </td>
+        <td style="text-align:center;">
+        好
+      </td> 
+        <td style="text-align:center;">
+        好
+      </td>
+    </tr>
+      <tr>
+          <td style="text-align:center;">
+         <b>吞吐量</b>
+      </td>
+        <td style="text-align:center;">
+        低
+      </td>
+        <td style="text-align:center;">
+        高
+      </td> 
+        <td style="text-align:center;">
+        高
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<blockquote>
+<p><strong>为什么Netty使用NIO而不使用AIO？</strong></p>
+<p>在Linux系统上，AIO的底层实现任然使用Epoll，没有很好实现AIO，因此在性能上没有明显的优势，而且被JDK封装了一层不容易深度优化，Linux上AIO还不够成熟。Netty是<strong>异步非阻塞</strong>框架，Netty在NIO上做了很多异步的封装。</p>
+</blockquote>
  
       <!-- reward -->
       
