@@ -6,7 +6,7 @@
   <link href="https://www.lihuibin.top/atom.xml" rel="self"/>
   
   <link href="https://www.lihuibin.top/"/>
-  <updated>2021-11-07T04:23:08.918Z</updated>
+  <updated>2021-11-07T06:19:34.472Z</updated>
   <id>https://www.lihuibin.top/</id>
   
   <author>
@@ -15,6 +15,31 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>排序算法——冒泡排序</title>
+    <link href="https://www.lihuibin.top/archives/4fe6adbb/"/>
+    <id>https://www.lihuibin.top/archives/4fe6adbb/</id>
+    <published>2021-11-07T04:53:44.000Z</published>
+    <updated>2021-11-07T06:19:34.472Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h2 id=&quot;基本原理&quot;&gt;&lt;a href=&quot;#基本原理&quot; class=&quot;headerlink&quot;</summary>
+        
+      
+    
+    
+    
+    <category term="算法" scheme="https://www.lihuibin.top/categories/%E7%AE%97%E6%B3%95/"/>
+    
+    
+    <category term="冒泡排序" scheme="https://www.lihuibin.top/tags/%E5%86%92%E6%B3%A1%E6%8E%92%E5%BA%8F/"/>
+    
+  </entry>
   
   <entry>
     <title>排序算法——选择排序</title>
@@ -490,31 +515,6 @@
         
         
     <summary type="html">&lt;h2 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h2&gt;&lt;p&gt;Redis</summary>
-        
-      
-    
-    
-    
-    <category term="Redis" scheme="https://www.lihuibin.top/categories/Redis/"/>
-    
-    
-    <category term="Redis" scheme="https://www.lihuibin.top/tags/Redis/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Redis高可用集群部署</title>
-    <link href="https://www.lihuibin.top/archives/1d883d6c/"/>
-    <id>https://www.lihuibin.top/archives/1d883d6c/</id>
-    <published>2021-09-18T04:24:13.000Z</published>
-    <updated>2021-10-01T13:46:40.172Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;h2 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h2&gt;&lt;p&gt;在&lt;a</summary>
         
       
     

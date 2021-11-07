@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://www.lihuibin.top/archives/4fe6adbb/</loc>
+    
+    <lastmod>2021-11-07</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>https://www.lihuibin.top/archives/18d056c9/</loc>
     
     <lastmod>2021-11-07</lastmod>
@@ -282,14 +289,14 @@
   </url>
   
   <url>
-    <loc>https://www.lihuibin.top/friends/index.html</loc>
+    <loc>https://www.lihuibin.top/categories/index.html</loc>
     
     <lastmod>2021-07-29</lastmod>
     
   </url>
   
   <url>
-    <loc>https://www.lihuibin.top/categories/index.html</loc>
+    <loc>https://www.lihuibin.top/friends/index.html</loc>
     
     <lastmod>2021-07-29</lastmod>
     
@@ -340,14 +347,14 @@
   </url>
   
   <url>
-    <loc>https://www.lihuibin.top/tags/%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA/</loc>
+    <loc>https://www.lihuibin.top/tags/%E9%97%AE%E9%A2%98%E8%A7%A3%E5%86%B3/</loc>
     <lastmod>2021-11-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.lihuibin.top/tags/%E9%97%AE%E9%A2%98%E8%A7%A3%E5%86%B3/</loc>
+    <loc>https://www.lihuibin.top/tags/%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA/</loc>
     <lastmod>2021-11-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
@@ -390,6 +397,13 @@
   
   <url>
     <loc>https://www.lihuibin.top/tags/%E9%93%BE%E8%A1%A8/</loc>
+    <lastmod>2021-11-07</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.lihuibin.top/tags/%E5%86%92%E6%B3%A1%E6%8E%92%E5%BA%8F/</loc>
     <lastmod>2021-11-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
