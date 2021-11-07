@@ -48,27 +48,6 @@
       </tags>
   </entry>
   <entry>
-    <title>Redis主从工作原理</title>
-    <url>/archives/1b578af4/</url>
-    <content><![CDATA[<h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>接前面讲到的<a href="/archives/ba77e58/">《redis主从架构搭建》</a>，来讲一下Redis主从架构的工作原理到底是怎么运作的</p>
-<h2 id="Redis工作原理"><a href="#Redis工作原理" class="headerlink" title="Redis工作原理"></a>Redis工作原理</h2><p>在上个博客中我们搭建了Redis主从架构；在过程中我们为master主节点配置了三个slave从节点。在这三个slave从节点启动的时候，不管是否第一次连接上master主节点，他们都会发送改一个<code>PSYNC</code>命令给master请求同步数据。</p>
-<p>master主节点接收到<code>PSYNC</code>命令后，会在后台进行数据持久化，通过<code>bgsave</code>生成最新的快照文件；在持久化期间，master主节点还会继续接受客户端的请求，并且他会把这些可能修改数据的请求命令缓存在一块内存中。当持久化进行完毕之后，master会把这份rdb文件数据集发送给slave从节点，slave从节点会把接收到的数据进行持久化生成rdb，然后再加载到内存中。然后master主节点再将之前缓存在内存中的命令发送给slave从节点，从节点根据这些请求指令重放数据到redis中。</p>
-<p>当master主节点和slave从节点之间的连接由于一些原因断开时，slave从节点能够自动重连master主节点，如果master收到了多个slave从节点并发连接的请求时，他会进行一次持久化，而不是一个一个连接一次，然后把这份持久化的数据发送给多个并发连接的slave从节点。以上整个流程可以用下图来表示</p>
-<p><img src="/archives/1b578af4/image-20210914160847756.png" alt="主从复制(全量复制)流程图"></p>
-<h3 id="主从部分数据复制"><a href="#主从部分数据复制" class="headerlink" title="主从部分数据复制"></a>主从部分数据复制</h3><p>当master和slave断开重连后，一般都会对整份数据进行复制。但是从<code>redis2.8</code>版本开始，redis改用可以支持部分数据复制的命令<code>PSYNC</code>去master同步数据，slave与master能够在网络连接断开重连后只进行部分数据复制(<strong>端点续传</strong>)。</p>
-<p>master会在其内存中创建一个复制数据用的缓存队列，缓存最近一段时间的数据，master和他所有的slave都维护了复制的数据下标offset和master的进程id，因此，当网络连接断开后，slave会请求master继续进行未完成的复制，从所记录的数据下标开始，如果master进程id变化了，或者从节点数据下标offset太旧，已经不再master的缓存队里中，那么将会进行一次全量数据的复制</p>
-<p><img src="/archives/1b578af4/image-20210914161725948.png" alt="主从复制(部分复制，端点续传)流程图"></p>
-<p>如果有很多从节点，为了缓解<strong>主从复制风暴</strong>(多个从节点同时复制主节点数据导致主节点压力过大)，可以做如下结构调整，让部分从节点与从节点(与主节点同步)同步数据</p>
-<p><img src="/archives/1b578af4/image-20210914162422875.png" alt="主从复制风暴架构解决方案"></p>
-]]></content>
-      <categories>
-        <category>Redis</category>
-      </categories>
-      <tags>
-        <tag>Redis</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Netty核心源码解析</title>
     <url>/archives/b4dafe2/</url>
     <content><![CDATA[<h2 id="Netty线程模型图"><a href="#Netty线程模型图" class="headerlink" title="Netty线程模型图"></a>Netty线程模型图</h2><p><img src="/archives/b4dafe2/Netty%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B%E5%9B%BE.png" alt="Netty线程模型图"></p>
@@ -175,6 +154,27 @@
       </categories>
       <tags>
         <tag>Netty</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Redis主从工作原理</title>
+    <url>/archives/1b578af4/</url>
+    <content><![CDATA[<h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>接前面讲到的<a href="/archives/ba77e58/">《redis主从架构搭建》</a>，来讲一下Redis主从架构的工作原理到底是怎么运作的</p>
+<h2 id="Redis工作原理"><a href="#Redis工作原理" class="headerlink" title="Redis工作原理"></a>Redis工作原理</h2><p>在上个博客中我们搭建了Redis主从架构；在过程中我们为master主节点配置了三个slave从节点。在这三个slave从节点启动的时候，不管是否第一次连接上master主节点，他们都会发送改一个<code>PSYNC</code>命令给master请求同步数据。</p>
+<p>master主节点接收到<code>PSYNC</code>命令后，会在后台进行数据持久化，通过<code>bgsave</code>生成最新的快照文件；在持久化期间，master主节点还会继续接受客户端的请求，并且他会把这些可能修改数据的请求命令缓存在一块内存中。当持久化进行完毕之后，master会把这份rdb文件数据集发送给slave从节点，slave从节点会把接收到的数据进行持久化生成rdb，然后再加载到内存中。然后master主节点再将之前缓存在内存中的命令发送给slave从节点，从节点根据这些请求指令重放数据到redis中。</p>
+<p>当master主节点和slave从节点之间的连接由于一些原因断开时，slave从节点能够自动重连master主节点，如果master收到了多个slave从节点并发连接的请求时，他会进行一次持久化，而不是一个一个连接一次，然后把这份持久化的数据发送给多个并发连接的slave从节点。以上整个流程可以用下图来表示</p>
+<p><img src="/archives/1b578af4/image-20210914160847756.png" alt="主从复制(全量复制)流程图"></p>
+<h3 id="主从部分数据复制"><a href="#主从部分数据复制" class="headerlink" title="主从部分数据复制"></a>主从部分数据复制</h3><p>当master和slave断开重连后，一般都会对整份数据进行复制。但是从<code>redis2.8</code>版本开始，redis改用可以支持部分数据复制的命令<code>PSYNC</code>去master同步数据，slave与master能够在网络连接断开重连后只进行部分数据复制(<strong>端点续传</strong>)。</p>
+<p>master会在其内存中创建一个复制数据用的缓存队列，缓存最近一段时间的数据，master和他所有的slave都维护了复制的数据下标offset和master的进程id，因此，当网络连接断开后，slave会请求master继续进行未完成的复制，从所记录的数据下标开始，如果master进程id变化了，或者从节点数据下标offset太旧，已经不再master的缓存队里中，那么将会进行一次全量数据的复制</p>
+<p><img src="/archives/1b578af4/image-20210914161725948.png" alt="主从复制(部分复制，端点续传)流程图"></p>
+<p>如果有很多从节点，为了缓解<strong>主从复制风暴</strong>(多个从节点同时复制主节点数据导致主节点压力过大)，可以做如下结构调整，让部分从节点与从节点(与主节点同步)同步数据</p>
+<p><img src="/archives/1b578af4/image-20210914162422875.png" alt="主从复制风暴架构解决方案"></p>
+]]></content>
+      <categories>
+        <category>Redis</category>
+      </categories>
+      <tags>
+        <tag>Redis</tag>
       </tags>
   </entry>
   <entry>
@@ -429,47 +429,6 @@
       </tags>
   </entry>
   <entry>
-    <title>Redis缓存穿透</title>
-    <url>/archives/f435d36e/</url>
-    <content><![CDATA[<p>缓存穿透是指查询一个根本不存在的数据，缓存层和存储层都不会命中，通常处于容错的考虑，如果从存储层查不到数据则不写入缓存层。<br>缓存层将导致不存在的数据每次请求都要存储层去查询，失去了缓存保护后端存储的意义。<br>造成缓存穿透的基本原因有两个：</p>
-<ol>
-<li>自身业务代码或者数据出现问题。</li>
-<li>一些恶意攻击、爬虫等造成大量空命中。</li>
-</ol>
-<h2 id="缓存穿透问题解决方案"><a href="#缓存穿透问题解决方案" class="headerlink" title="缓存穿透问题解决方案"></a>缓存穿透问题解决方案</h2><ol>
-<li><p><strong>缓冲空对象</strong> </p>
-<p>下面是伪代码</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function">String <span class="title">get</span><span class="params">(String key)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 从缓存中获取数据</span></span><br><span class="line">    String cacheValue = cache.get(key);</span><br><span class="line">    <span class="comment">// 缓存为空</span></span><br><span class="line">    <span class="keyword">if</span> (StringUtils.isBlank(cacheValue)) &#123;</span><br><span class="line">        <span class="comment">// 从存储中获取</span></span><br><span class="line">        String storageValue = storage.get(key);</span><br><span class="line">        cache.set(key, storageValue);</span><br><span class="line">        <span class="comment">// 如果存储数据为空， 需要设置一个过期时间(300秒)</span></span><br><span class="line">        <span class="keyword">if</span> (storageValue == <span class="keyword">null</span>) &#123;</span><br><span class="line">            cache.expire(key, <span class="number">60</span> * <span class="number">5</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> storageValue;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// 缓存非空</span></span><br><span class="line">        <span class="keyword">return</span> cacheValue;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
-<li><p>布隆过滤器</p>
-<p>对于恶意攻击，向服务器请求大量不存在的数据造成的缓存穿透，还可以用布隆过滤器先做一次过滤，对于不存在的数据布隆过滤器一般都能够过滤掉，不让请求再往后端发送。当布隆过滤器说<strong>某个值存在时，这个值可能不存在；当他说不存在时，那就肯定不存在。</strong><br><img src="/archives/f435d36e/image-20210930100804245.png" alt="布隆过滤器原理图"></p>
-<blockquote>
-<p>布隆过滤器就是一个<strong>大型的位数组和几个不一样的无偏hash函数</strong>。所谓无偏就是能够把元素的hash值算的比较均匀。  </p>
-</blockquote>
-<p>向布隆过滤器中添加key时，会使用多个hash函数对key进行hash算的一个整数索引值，然后对位数组长度进行取模算的一个位置，每个hash函数都会算得一个不同的位置。再把位数组的这几个位置都置为1就完成了add操作。    向布隆过滤器询问key是否存在时，跟add一样，也会把hash的几个位置都算出来，看看位数组中几个位置是否都为1，只要有一个为0，那么说明布隆过滤器中这个key不存在。如果都是1，这并不能说明这个key就一定存在，只是极有可能存在，因为这些位置为1可能是因为其他的key存在导致的。如果这个位数组比较稀疏，这个概率就会很大，如果这个位数组比较拥挤，这个概率就会降低。</p>
-<p>这种方法适用于数据命中不高、数据相对固定、实时性低（通常是数据集较大）的应用场景，代码维护较为复杂，但是<strong>缓存空间占用很少</strong>。</p>
-<h3 id="布隆过滤器的实现"><a href="#布隆过滤器的实现" class="headerlink" title="布隆过滤器的实现"></a>布隆过滤器的实现</h3><p>可以用<code>redission</code>实现布隆过滤器，引入依赖：</p>
-<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">   <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.redisson<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">   <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>redisson<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">   <span class="tag">&lt;<span class="name">version</span>&gt;</span>3.6.5<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
-
-<p>示例伪代码：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.redisson;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.redisson.Redisson;</span><br><span class="line"><span class="keyword">import</span> org.redisson.api.RBloomFilter;</span><br><span class="line"><span class="keyword">import</span> org.redisson.api.RedissonClient;</span><br><span class="line"><span class="keyword">import</span> org.redisson.config.Config;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">RedissonBloomFilter</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Config config = <span class="keyword">new</span> Config();</span><br><span class="line">        config.useSingleServer().setAddress(<span class="string">&quot;redis://localhost:6379&quot;</span>);</span><br><span class="line">        <span class="comment">//构造Redisson</span></span><br><span class="line">        RedissonClient redisson = Redisson.create(config);</span><br><span class="line"></span><br><span class="line">        RBloomFilter&lt;String&gt; bloomFilter = redisson.getBloomFilter(<span class="string">&quot;nameList&quot;</span>);</span><br><span class="line">        <span class="comment">//初始化布隆过滤器：预计元素为100000000L,误差率为3%,根据这两个参数会计算出底层的bit数组大小</span></span><br><span class="line">        bloomFilter.tryInit(<span class="number">100000000L</span>,<span class="number">0.03</span>);</span><br><span class="line">        <span class="comment">//将zhuge插入到布隆过滤器中</span></span><br><span class="line">        bloomFilter.add(<span class="string">&quot;zhangsan&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//判断下面号码是否在布隆过滤器中</span></span><br><span class="line">        System.out.println(bloomFilter.contains(<span class="string">&quot;lisi&quot;</span>));<span class="comment">//false</span></span><br><span class="line">        System.out.println(bloomFilter.contains(<span class="string">&quot;wangwu&quot;</span>));<span class="comment">//false</span></span><br><span class="line">        System.out.println(bloomFilter.contains(<span class="string">&quot;zhangsan&quot;</span>));<span class="comment">//true</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>使用布隆过滤器需要把所有数据提前放入布隆过滤器，并且在增加数据时也要往布隆过滤器里放，布隆过滤器缓存过滤伪代码：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">//初始化布隆过滤器</span></span><br><span class="line">RBloomFilter&lt;String&gt; bloomFilter = redisson.getBloomFilter(<span class="string">&quot;nameList&quot;</span>);</span><br><span class="line"><span class="comment">//初始化布隆过滤器：预计元素为100000000L,误差率为3%</span></span><br><span class="line">bloomFilter.tryInit(<span class="number">100000000L</span>,<span class="number">0.03</span>);</span><br><span class="line">        </span><br><span class="line"><span class="comment">//把所有数据存入布隆过滤器</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">init</span><span class="params">()</span></span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (String key: keys) &#123;</span><br><span class="line">        bloomFilter.put(key);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function">String <span class="title">get</span><span class="params">(String key)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 从布隆过滤器这一级缓存判断下key是否存在</span></span><br><span class="line">    Boolean exist = bloomFilter.contains(key);</span><br><span class="line">    <span class="keyword">if</span>(!exist)&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 从缓存中获取数据</span></span><br><span class="line">    String cacheValue = cache.get(key);</span><br><span class="line">    <span class="comment">// 缓存为空</span></span><br><span class="line">    <span class="keyword">if</span> (StringUtils.isBlank(cacheValue)) &#123;</span><br><span class="line">        <span class="comment">// 从存储中获取</span></span><br><span class="line">        String storageValue = storage.get(key);</span><br><span class="line">        cache.set(key, storageValue);</span><br><span class="line">        <span class="comment">// 如果存储数据为空， 需要设置一个过期时间(300秒)</span></span><br><span class="line">        <span class="keyword">if</span> (storageValue == <span class="keyword">null</span>) &#123;</span><br><span class="line">            cache.expire(key, <span class="number">60</span> * <span class="number">5</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> storageValue;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// 缓存非空</span></span><br><span class="line">        <span class="keyword">return</span> cacheValue;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<p><strong>注意：布隆过滤器不能删除数据，如果要删除得重新初始化数据。</strong></p>
-</blockquote>
-</li>
-</ol>
-]]></content>
-      <categories>
-        <category>Redis</category>
-      </categories>
-      <tags>
-        <tag>Redis</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Redis缓存失效和缓存雪崩以及热点缓存key重建优化</title>
     <url>/archives/134045b4/</url>
     <content><![CDATA[<h2 id="缓存失效-击穿"><a href="#缓存失效-击穿" class="headerlink" title="缓存失效(击穿)"></a>缓存失效(击穿)</h2><p>缓存失效也称缓存击穿，是由于大批量缓存在同一时间失效可能导致大量请求同时穿透缓存直达数据库，可能造成数据库瞬间压力过大甚至挂掉，对于这种情况我们在批量增加缓存时最好将这一批数据的缓存过期时间设置为一个时间段内的不同时间。</p>
@@ -522,6 +481,47 @@
 </ol>
 <p><strong>总结：</strong></p>
 <p>以上针对的都是<strong>读多写少</strong>的情况加入缓存提高性能，如果是<strong>写多读多</strong>的情况又不能容忍缓存数据不一致，那就没有必要加缓存了，可以直接操作数据库。放入缓存的数据应该是对实时性、一致性要求不是很高的数据。切记不要为了用缓存，同时又要保证绝对的一致性做大量的过度设计和控制，增加系统的复杂性！</p>
+]]></content>
+      <categories>
+        <category>Redis</category>
+      </categories>
+      <tags>
+        <tag>Redis</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Redis缓存穿透</title>
+    <url>/archives/f435d36e/</url>
+    <content><![CDATA[<p>缓存穿透是指查询一个根本不存在的数据，缓存层和存储层都不会命中，通常处于容错的考虑，如果从存储层查不到数据则不写入缓存层。<br>缓存层将导致不存在的数据每次请求都要存储层去查询，失去了缓存保护后端存储的意义。<br>造成缓存穿透的基本原因有两个：</p>
+<ol>
+<li>自身业务代码或者数据出现问题。</li>
+<li>一些恶意攻击、爬虫等造成大量空命中。</li>
+</ol>
+<h2 id="缓存穿透问题解决方案"><a href="#缓存穿透问题解决方案" class="headerlink" title="缓存穿透问题解决方案"></a>缓存穿透问题解决方案</h2><ol>
+<li><p><strong>缓冲空对象</strong> </p>
+<p>下面是伪代码</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function">String <span class="title">get</span><span class="params">(String key)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 从缓存中获取数据</span></span><br><span class="line">    String cacheValue = cache.get(key);</span><br><span class="line">    <span class="comment">// 缓存为空</span></span><br><span class="line">    <span class="keyword">if</span> (StringUtils.isBlank(cacheValue)) &#123;</span><br><span class="line">        <span class="comment">// 从存储中获取</span></span><br><span class="line">        String storageValue = storage.get(key);</span><br><span class="line">        cache.set(key, storageValue);</span><br><span class="line">        <span class="comment">// 如果存储数据为空， 需要设置一个过期时间(300秒)</span></span><br><span class="line">        <span class="keyword">if</span> (storageValue == <span class="keyword">null</span>) &#123;</span><br><span class="line">            cache.expire(key, <span class="number">60</span> * <span class="number">5</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> storageValue;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// 缓存非空</span></span><br><span class="line">        <span class="keyword">return</span> cacheValue;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li><p>布隆过滤器</p>
+<p>对于恶意攻击，向服务器请求大量不存在的数据造成的缓存穿透，还可以用布隆过滤器先做一次过滤，对于不存在的数据布隆过滤器一般都能够过滤掉，不让请求再往后端发送。当布隆过滤器说<strong>某个值存在时，这个值可能不存在；当他说不存在时，那就肯定不存在。</strong><br><img src="/archives/f435d36e/image-20210930100804245.png" alt="布隆过滤器原理图"></p>
+<blockquote>
+<p>布隆过滤器就是一个<strong>大型的位数组和几个不一样的无偏hash函数</strong>。所谓无偏就是能够把元素的hash值算的比较均匀。  </p>
+</blockquote>
+<p>向布隆过滤器中添加key时，会使用多个hash函数对key进行hash算的一个整数索引值，然后对位数组长度进行取模算的一个位置，每个hash函数都会算得一个不同的位置。再把位数组的这几个位置都置为1就完成了add操作。    向布隆过滤器询问key是否存在时，跟add一样，也会把hash的几个位置都算出来，看看位数组中几个位置是否都为1，只要有一个为0，那么说明布隆过滤器中这个key不存在。如果都是1，这并不能说明这个key就一定存在，只是极有可能存在，因为这些位置为1可能是因为其他的key存在导致的。如果这个位数组比较稀疏，这个概率就会很大，如果这个位数组比较拥挤，这个概率就会降低。</p>
+<p>这种方法适用于数据命中不高、数据相对固定、实时性低（通常是数据集较大）的应用场景，代码维护较为复杂，但是<strong>缓存空间占用很少</strong>。</p>
+<h3 id="布隆过滤器的实现"><a href="#布隆过滤器的实现" class="headerlink" title="布隆过滤器的实现"></a>布隆过滤器的实现</h3><p>可以用<code>redission</code>实现布隆过滤器，引入依赖：</p>
+<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">   <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.redisson<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">   <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>redisson<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">   <span class="tag">&lt;<span class="name">version</span>&gt;</span>3.6.5<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>示例伪代码：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.redisson;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.redisson.Redisson;</span><br><span class="line"><span class="keyword">import</span> org.redisson.api.RBloomFilter;</span><br><span class="line"><span class="keyword">import</span> org.redisson.api.RedissonClient;</span><br><span class="line"><span class="keyword">import</span> org.redisson.config.Config;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">RedissonBloomFilter</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Config config = <span class="keyword">new</span> Config();</span><br><span class="line">        config.useSingleServer().setAddress(<span class="string">&quot;redis://localhost:6379&quot;</span>);</span><br><span class="line">        <span class="comment">//构造Redisson</span></span><br><span class="line">        RedissonClient redisson = Redisson.create(config);</span><br><span class="line"></span><br><span class="line">        RBloomFilter&lt;String&gt; bloomFilter = redisson.getBloomFilter(<span class="string">&quot;nameList&quot;</span>);</span><br><span class="line">        <span class="comment">//初始化布隆过滤器：预计元素为100000000L,误差率为3%,根据这两个参数会计算出底层的bit数组大小</span></span><br><span class="line">        bloomFilter.tryInit(<span class="number">100000000L</span>,<span class="number">0.03</span>);</span><br><span class="line">        <span class="comment">//将zhuge插入到布隆过滤器中</span></span><br><span class="line">        bloomFilter.add(<span class="string">&quot;zhangsan&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//判断下面号码是否在布隆过滤器中</span></span><br><span class="line">        System.out.println(bloomFilter.contains(<span class="string">&quot;lisi&quot;</span>));<span class="comment">//false</span></span><br><span class="line">        System.out.println(bloomFilter.contains(<span class="string">&quot;wangwu&quot;</span>));<span class="comment">//false</span></span><br><span class="line">        System.out.println(bloomFilter.contains(<span class="string">&quot;zhangsan&quot;</span>));<span class="comment">//true</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>使用布隆过滤器需要把所有数据提前放入布隆过滤器，并且在增加数据时也要往布隆过滤器里放，布隆过滤器缓存过滤伪代码：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">//初始化布隆过滤器</span></span><br><span class="line">RBloomFilter&lt;String&gt; bloomFilter = redisson.getBloomFilter(<span class="string">&quot;nameList&quot;</span>);</span><br><span class="line"><span class="comment">//初始化布隆过滤器：预计元素为100000000L,误差率为3%</span></span><br><span class="line">bloomFilter.tryInit(<span class="number">100000000L</span>,<span class="number">0.03</span>);</span><br><span class="line">        </span><br><span class="line"><span class="comment">//把所有数据存入布隆过滤器</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">init</span><span class="params">()</span></span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (String key: keys) &#123;</span><br><span class="line">        bloomFilter.put(key);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function">String <span class="title">get</span><span class="params">(String key)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 从布隆过滤器这一级缓存判断下key是否存在</span></span><br><span class="line">    Boolean exist = bloomFilter.contains(key);</span><br><span class="line">    <span class="keyword">if</span>(!exist)&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 从缓存中获取数据</span></span><br><span class="line">    String cacheValue = cache.get(key);</span><br><span class="line">    <span class="comment">// 缓存为空</span></span><br><span class="line">    <span class="keyword">if</span> (StringUtils.isBlank(cacheValue)) &#123;</span><br><span class="line">        <span class="comment">// 从存储中获取</span></span><br><span class="line">        String storageValue = storage.get(key);</span><br><span class="line">        cache.set(key, storageValue);</span><br><span class="line">        <span class="comment">// 如果存储数据为空， 需要设置一个过期时间(300秒)</span></span><br><span class="line">        <span class="keyword">if</span> (storageValue == <span class="keyword">null</span>) &#123;</span><br><span class="line">            cache.expire(key, <span class="number">60</span> * <span class="number">5</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> storageValue;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// 缓存非空</span></span><br><span class="line">        <span class="keyword">return</span> cacheValue;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>注意：布隆过滤器不能删除数据，如果要删除得重新初始化数据。</strong></p>
+</blockquote>
+</li>
+</ol>
 ]]></content>
       <categories>
         <category>Redis</category>
@@ -938,6 +938,85 @@
       </tags>
   </entry>
   <entry>
+    <title>Redis集群原理分析</title>
+    <url>/archives/c0af2eb/</url>
+    <content><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>Redis Cluster将所有数据划分为16384个slots(槽位)，每个节点负责其中一部分槽位。槽位的信息存储于每个节点中；当Redis Cluster的客户端连接集群时，它也会得到一份槽位配置信息并将其缓存在客户端本地。这样当客户端要查找某个key时，可以直接定位到目标节点。同时也会带来一个问题”槽位信息在客户端和服务器不一致的情况，这就需要纠正机制来实现槽位信息的纠正”。</p>
+<h3 id="槽位定位算法"><a href="#槽位定位算法" class="headerlink" title="槽位定位算法"></a>槽位定位算法</h3><p>Cluster默认会对key使用CRC16算法进行hash得到一个整数值，然后用这个整数值对16384进行取模得到具体的槽位。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">HASH_SLOT = CRC16(key) mod 16384</span><br></pre></td></tr></table></figure>
+
+<h3 id="跳转重定位"><a href="#跳转重定位" class="headerlink" title="跳转重定位"></a>跳转重定位</h3><p>当客户端向一个错误的节点发出了指令，该节点会发现指令的key所在的槽位不是自己管理的，这时它会像客户端发送一个特殊的跳转指令携带目标操作的节点地址，告诉客户端去连接这个指定的节点去获取数据。客户端收到指令之后跳转到正确的节点上去操作，还会同步更新纠正本地的槽位映射表缓存，后续所有key将使用新的槽位映射表。</p>
+<p><img src="/archives/c0af2eb/image-20210922092847540.png" alt="跳转重定向"></p>
+<h3 id="Redis集群节点间的通信机制"><a href="#Redis集群节点间的通信机制" class="headerlink" title="Redis集群节点间的通信机制"></a>Redis集群节点间的通信机制</h3><p>Redis Cluster节点间采用gossip协议进行通信，来<strong>维护集群的元数据(集群节点信息、主从角色、节点数量、各节点共享的数据等)</strong> 。</p>
+<p>维护集群元数据的方式有两种：</p>
+<ol>
+<li>集中式</li>
+<li>gossip</li>
+</ol>
+<h4 id="集中式"><a href="#集中式" class="headerlink" title="集中式"></a>集中式</h4><p>优点：在于元数据的更新和读取时效性非常好，一旦元数据出现变更就会立即同步到集中式存储中，其他节点读取的时候就会立即感知到数据的变化；</p>
+<p>缺点：在于所有的元数据的更新压力全部会集中在一个地方，可能导致元数据的存储压力。很多中间件会借助zookeeper集中式存储元数据。</p>
+<h4 id="gossip协议"><a href="#gossip协议" class="headerlink" title="gossip协议"></a>gossip协议</h4><p><img src="/archives/c0af2eb/gossip%E5%8D%8F%E8%AE%AE%E9%80%9A%E4%BF%A1.gif" alt="gossip协议通信"></p>
+<p>gossip协议包含多种信息，包括<code>ping</code>、<code>pong</code>、<code>meet</code>、<code>fail</code>等。</p>
+<blockquote>
+<p><code>meet</code>：某个节点发送<code>meet</code>给新加入的节点，让新节点加入集群中，然后新节点就会开始和其他节点开始通信；</p>
+<p><code>ping</code>：每个节点都会频繁的给其他节点发送<code>ping</code>，其中包含自己的状态还有自己维护的集群元数据，互相通过<code>ping</code>交换元数据(类似感知到集群节点增加和删除，hash slot信息等)；</p>
+<p><code>pong</code>：对<code>ping</code>和<code>meet</code>信息的返回，包含自己的状态和其他信息，也可以用于广播和更新；</p>
+<p><code>fail</code>：某个节点判断另一个节点<code>fail</code>之后，就会发送<code>fail</code>给其他节点，通知其他节点，指定节点宕机了；</p>
+</blockquote>
+<p><strong>优点：</strong> 在于元数据的更新比较分散，不是集中在一个地方，更新请求会陆陆续续打到所有节点上去更新，有一定的延时，降低了压力；</p>
+<p><strong>缺点：</strong> 在于数据更新有一定的延时，可能导致集群的一些操作会有些滞后；</p>
+<h4 id="gossip协议通信端口"><a href="#gossip协议通信端口" class="headerlink" title="gossip协议通信端口"></a>gossip协议通信端口</h4><p>每个节点都有一个专门用于节点之间gossip通信的端口，就是自己提供服务的端口号+10000，比如：节点端口是7001，那么用于节点通信的端口就是17001。</p>
+<p>每个节点每隔一段时间都会往另外几个节点发送<code>ping</code>消息，同时其他几个接收到<code>ping</code>消息之后返回<code>pong</code>消息。</p>
+<h3 id="网络抖动问题"><a href="#网络抖动问题" class="headerlink" title="网络抖动问题"></a>网络抖动问题</h3><p>在正常生产环境中，经常会出现突然部分连接不可访问，过一会之后又恢复正常。对于这样的问题Redis集群模式也提供了解决方案；可以配置选项<code>cluster-node-timeout</code>，表示当某个节点持续timeout的时间失联时，才可以认定该节点出现故障，需要进行主从机器换。如果没有这个选项，网络抖动导致主从频繁切换，数据重复复制。</p>
+<h3 id="Redis集群选举原理"><a href="#Redis集群选举原理" class="headerlink" title="Redis集群选举原理"></a>Redis集群选举原理</h3><p>当slave发现自己的master变为fail状态时，便会尝试进行<code>Failover</code>，让其成为新的master。由于挂掉了master可能会有多个slave，从而存在多个slave竞争成为master节点的过程，过程如下：</p>
+<ol>
+<li><p>slave发现自己的master变为FAIL；</p>
+</li>
+<li><p>将自己记录的集群<code>currentEpoch</code>加1，并广播<code>FAILOVER_AUTH_RERQUEST</code>信息；</p>
+</li>
+<li><p>其他节点接收到该信息，只有master响应，判断请求者的合法性，并发送<code>FAILOVER_AUTH_ACK</code>，对每一个<code>epoch</code>只发送一次<code>ack</code>；</p>
+</li>
+<li><p>尝试<code>failover</code>的slave收集master返回的<code>FAILOVER_AUTH_ACK</code>；</p>
+</li>
+<li><p>slave收到<strong>超过半数master的ack</strong>后变成新的master</p>
+<blockquote>
+<p>这里解释了集群为什么至少需要三个主节点，如果只有两个，当其中一个挂了，只剩下一个主节点是不能选举成功的。</p>
+</blockquote>
+</li>
+<li><p>slave广播<code>pong</code>消息通知其他集群节点</p>
+</li>
+</ol>
+<p>从节点并不是在主节点已进入<code>FAIL</code>状态就马上尝试发起选举，而是有一定的延时，这个延时确保我们等待<code>FAIL</code>状态在集群中传播，slave如果立即尝试选举，其他masters或许没有意识到<code>FAIL</code>状态，可能会拒绝投票。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">延时计算公式：`DELAY = 500ms + random(0~500ms) + SLAVE_RANK * 1000ms`</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><code>SLAVE_RANK</code>表示此slave已经从master复制数据的总量的rank。Rank越小表示已经复制的数据越新。这种方式下，持有最新数据的slave将会首先发起选举。</p>
+</blockquote>
+<h3 id="集群脑裂数据丢失问题"><a href="#集群脑裂数据丢失问题" class="headerlink" title="集群脑裂数据丢失问题"></a>集群脑裂数据丢失问题</h3><p>redis集群没有过半机制会有脑裂问题，网络分区导致脑裂后多个主节点对外提供写服务，一旦网络分区恢复，会将其中一个主节点变为从节点，这时会有大量数据丢失。</p>
+<p>规避方法可以在redis配置里加上参数(这种方法不可能百分之百避免数据丢失，参考集群leader选举机制)：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">min-replicas-to-write 1 # 写数据成功最少同步的slave数量，这个数量可以模仿大于半数机制配置，比如集群总共三个节点可以配置1，加上leader就是2，超过了半数</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>注意：</strong></p>
+<p>这个配置在一定程度上影响集群的可用性，比如slave要是少于1个，这个集群就算leader正常也不能提供服务了，需要具体场景权衡选择。</p>
+</blockquote>
+<h3 id="集群是否完整才能对外提供服务？"><a href="#集群是否完整才能对外提供服务？" class="headerlink" title="集群是否完整才能对外提供服务？"></a>集群是否完整才能对外提供服务？</h3><p>当<code>redis.conf</code>的配置<code>cluster-require-full-coverage</code>为no时，表示负责一个插槽的主库下线且没有相应的从库进行故障恢复时，集群任然可用，如果为yes则集群不可用。</p>
+<h3 id="Redis集群为什么至少需要三个master节点，且推荐节点数为奇数？"><a href="#Redis集群为什么至少需要三个master节点，且推荐节点数为奇数？" class="headerlink" title="Redis集群为什么至少需要三个master节点，且推荐节点数为奇数？"></a>Redis集群为什么至少需要三个master节点，且推荐节点数为奇数？</h3><p>因为新master的选举需要大于半数的集群master同意才能选举成功，如果只有两个master节点，当其中一个挂了，是达不到选举新master的条件的。  </p>
+<p>奇数个master节点可以在满足选举该条件的基础上节省一个节点，比如三个master节点和四个master节点的集群相比，大家如果都挂了一个master节点都能选举新master节点，如果都挂了两个master节点都没有办法选举新master节点了，所以奇数的master节点更多的是从<strong>节省机器资源角度出发</strong>的。</p>
+<h3 id="Redis集群对批量操作指令的支持"><a href="#Redis集群对批量操作指令的支持" class="headerlink" title="Redis集群对批量操作指令的支持"></a>Redis集群对批量操作指令的支持</h3><p>对于类似<code>mset</code>，这样的多个key的原生批量操作指令，redis集群只支持所有key落在同一slot的情况，如果有多个key一定要使用<code>mset</code>命令在redis集群上操作，则可以在可以的前面加上<code>&#123;XXX&#125;</code>，这样参数数据分片hash计算的只会是大括号中的值，这样能确保不同的key能落在同一slot中，示例如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mset &#123;user1&#125;:1:name zhangsan &#123;user1&#125;:1:age 20</span><br></pre></td></tr></table></figure>
+
+<p>假如name和age计算的hash slot值不一样，但是这条命令在集群下执行，redis只会用大括号里的<code>user1</code>做hash slot计算，所以算出来的slot值肯定相同，最后能落在同一slot。</p>
+<h3 id="哨兵leader选举流程"><a href="#哨兵leader选举流程" class="headerlink" title="哨兵leader选举流程"></a>哨兵leader选举流程</h3><p>当一个master服务器被某个sentinel视为下线状态后，该sentinel会与其他sentinel协商选出sentinel的leader进行故障转移工作。每个发现master服务器下线的sentinel都可以要求其他sentinel选举自己为sentinel的leader，选举是先到先得。同时每一个sentinel每次选举都会自增配置选举周期，每个选举周期只会选择一个sentinel的leader。如果所有<strong>超过一半</strong>的sentinel选举某个sentinel作为leader。之后该sentinel进行故障转移操作，从存活的slave中选举出新的master，这个选举过程和集群的master选举很类似。</p>
+<p>哨兵集群只有一个哨兵节点，redis的主从也能正常运行以及选举master，如果master挂了，那唯一的那个哨兵节点就是哨兵leader了，可以正常选举新的master。不过为了高可用一般都推荐至少部署三个哨兵节点。为什么推荐奇数个哨兵节点，原理和集群奇数个master节点类似。</p>
+]]></content>
+      <categories>
+        <category>Redis</category>
+      </categories>
+      <tags>
+        <tag>Redis</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Redis高可用集群水平扩展</title>
     <url>/archives/c709d40a/</url>
     <content><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在<a href="/archives/1d883d6c/">《Redis高可用集群部署》</a>中我们部署了Redis高可用架构。整个集群由6个节点组成，这6个节点分布在三台机器上，采用了三主三从模式。</p>
@@ -1047,85 +1126,6 @@
 <p><img src="/archives/c709d40a/image-20210924174816518.png" alt="删除8007主节点"></p>
 <p>在查看集群状态，还原到了原来的状态：</p>
 <p><img src="/archives/c709d40a/image-20210924174859543.png" alt="集群状态"></p>
-]]></content>
-      <categories>
-        <category>Redis</category>
-      </categories>
-      <tags>
-        <tag>Redis</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Redis集群原理分析</title>
-    <url>/archives/c0af2eb/</url>
-    <content><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>Redis Cluster将所有数据划分为16384个slots(槽位)，每个节点负责其中一部分槽位。槽位的信息存储于每个节点中；当Redis Cluster的客户端连接集群时，它也会得到一份槽位配置信息并将其缓存在客户端本地。这样当客户端要查找某个key时，可以直接定位到目标节点。同时也会带来一个问题”槽位信息在客户端和服务器不一致的情况，这就需要纠正机制来实现槽位信息的纠正”。</p>
-<h3 id="槽位定位算法"><a href="#槽位定位算法" class="headerlink" title="槽位定位算法"></a>槽位定位算法</h3><p>Cluster默认会对key使用CRC16算法进行hash得到一个整数值，然后用这个整数值对16384进行取模得到具体的槽位。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">HASH_SLOT = CRC16(key) mod 16384</span><br></pre></td></tr></table></figure>
-
-<h3 id="跳转重定位"><a href="#跳转重定位" class="headerlink" title="跳转重定位"></a>跳转重定位</h3><p>当客户端向一个错误的节点发出了指令，该节点会发现指令的key所在的槽位不是自己管理的，这时它会像客户端发送一个特殊的跳转指令携带目标操作的节点地址，告诉客户端去连接这个指定的节点去获取数据。客户端收到指令之后跳转到正确的节点上去操作，还会同步更新纠正本地的槽位映射表缓存，后续所有key将使用新的槽位映射表。</p>
-<p><img src="/archives/c0af2eb/image-20210922092847540.png" alt="跳转重定向"></p>
-<h3 id="Redis集群节点间的通信机制"><a href="#Redis集群节点间的通信机制" class="headerlink" title="Redis集群节点间的通信机制"></a>Redis集群节点间的通信机制</h3><p>Redis Cluster节点间采用gossip协议进行通信，来<strong>维护集群的元数据(集群节点信息、主从角色、节点数量、各节点共享的数据等)</strong> 。</p>
-<p>维护集群元数据的方式有两种：</p>
-<ol>
-<li>集中式</li>
-<li>gossip</li>
-</ol>
-<h4 id="集中式"><a href="#集中式" class="headerlink" title="集中式"></a>集中式</h4><p>优点：在于元数据的更新和读取时效性非常好，一旦元数据出现变更就会立即同步到集中式存储中，其他节点读取的时候就会立即感知到数据的变化；</p>
-<p>缺点：在于所有的元数据的更新压力全部会集中在一个地方，可能导致元数据的存储压力。很多中间件会借助zookeeper集中式存储元数据。</p>
-<h4 id="gossip协议"><a href="#gossip协议" class="headerlink" title="gossip协议"></a>gossip协议</h4><p><img src="/archives/c0af2eb/gossip%E5%8D%8F%E8%AE%AE%E9%80%9A%E4%BF%A1.gif" alt="gossip协议通信"></p>
-<p>gossip协议包含多种信息，包括<code>ping</code>、<code>pong</code>、<code>meet</code>、<code>fail</code>等。</p>
-<blockquote>
-<p><code>meet</code>：某个节点发送<code>meet</code>给新加入的节点，让新节点加入集群中，然后新节点就会开始和其他节点开始通信；</p>
-<p><code>ping</code>：每个节点都会频繁的给其他节点发送<code>ping</code>，其中包含自己的状态还有自己维护的集群元数据，互相通过<code>ping</code>交换元数据(类似感知到集群节点增加和删除，hash slot信息等)；</p>
-<p><code>pong</code>：对<code>ping</code>和<code>meet</code>信息的返回，包含自己的状态和其他信息，也可以用于广播和更新；</p>
-<p><code>fail</code>：某个节点判断另一个节点<code>fail</code>之后，就会发送<code>fail</code>给其他节点，通知其他节点，指定节点宕机了；</p>
-</blockquote>
-<p><strong>优点：</strong> 在于元数据的更新比较分散，不是集中在一个地方，更新请求会陆陆续续打到所有节点上去更新，有一定的延时，降低了压力；</p>
-<p><strong>缺点：</strong> 在于数据更新有一定的延时，可能导致集群的一些操作会有些滞后；</p>
-<h4 id="gossip协议通信端口"><a href="#gossip协议通信端口" class="headerlink" title="gossip协议通信端口"></a>gossip协议通信端口</h4><p>每个节点都有一个专门用于节点之间gossip通信的端口，就是自己提供服务的端口号+10000，比如：节点端口是7001，那么用于节点通信的端口就是17001。</p>
-<p>每个节点每隔一段时间都会往另外几个节点发送<code>ping</code>消息，同时其他几个接收到<code>ping</code>消息之后返回<code>pong</code>消息。</p>
-<h3 id="网络抖动问题"><a href="#网络抖动问题" class="headerlink" title="网络抖动问题"></a>网络抖动问题</h3><p>在正常生产环境中，经常会出现突然部分连接不可访问，过一会之后又恢复正常。对于这样的问题Redis集群模式也提供了解决方案；可以配置选项<code>cluster-node-timeout</code>，表示当某个节点持续timeout的时间失联时，才可以认定该节点出现故障，需要进行主从机器换。如果没有这个选项，网络抖动导致主从频繁切换，数据重复复制。</p>
-<h3 id="Redis集群选举原理"><a href="#Redis集群选举原理" class="headerlink" title="Redis集群选举原理"></a>Redis集群选举原理</h3><p>当slave发现自己的master变为fail状态时，便会尝试进行<code>Failover</code>，让其成为新的master。由于挂掉了master可能会有多个slave，从而存在多个slave竞争成为master节点的过程，过程如下：</p>
-<ol>
-<li><p>slave发现自己的master变为FAIL；</p>
-</li>
-<li><p>将自己记录的集群<code>currentEpoch</code>加1，并广播<code>FAILOVER_AUTH_RERQUEST</code>信息；</p>
-</li>
-<li><p>其他节点接收到该信息，只有master响应，判断请求者的合法性，并发送<code>FAILOVER_AUTH_ACK</code>，对每一个<code>epoch</code>只发送一次<code>ack</code>；</p>
-</li>
-<li><p>尝试<code>failover</code>的slave收集master返回的<code>FAILOVER_AUTH_ACK</code>；</p>
-</li>
-<li><p>slave收到<strong>超过半数master的ack</strong>后变成新的master</p>
-<blockquote>
-<p>这里解释了集群为什么至少需要三个主节点，如果只有两个，当其中一个挂了，只剩下一个主节点是不能选举成功的。</p>
-</blockquote>
-</li>
-<li><p>slave广播<code>pong</code>消息通知其他集群节点</p>
-</li>
-</ol>
-<p>从节点并不是在主节点已进入<code>FAIL</code>状态就马上尝试发起选举，而是有一定的延时，这个延时确保我们等待<code>FAIL</code>状态在集群中传播，slave如果立即尝试选举，其他masters或许没有意识到<code>FAIL</code>状态，可能会拒绝投票。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">延时计算公式：`DELAY = 500ms + random(0~500ms) + SLAVE_RANK * 1000ms`</span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<p><code>SLAVE_RANK</code>表示此slave已经从master复制数据的总量的rank。Rank越小表示已经复制的数据越新。这种方式下，持有最新数据的slave将会首先发起选举。</p>
-</blockquote>
-<h3 id="集群脑裂数据丢失问题"><a href="#集群脑裂数据丢失问题" class="headerlink" title="集群脑裂数据丢失问题"></a>集群脑裂数据丢失问题</h3><p>redis集群没有过半机制会有脑裂问题，网络分区导致脑裂后多个主节点对外提供写服务，一旦网络分区恢复，会将其中一个主节点变为从节点，这时会有大量数据丢失。</p>
-<p>规避方法可以在redis配置里加上参数(这种方法不可能百分之百避免数据丢失，参考集群leader选举机制)：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">min-replicas-to-write 1 # 写数据成功最少同步的slave数量，这个数量可以模仿大于半数机制配置，比如集群总共三个节点可以配置1，加上leader就是2，超过了半数</span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<p><strong>注意：</strong></p>
-<p>这个配置在一定程度上影响集群的可用性，比如slave要是少于1个，这个集群就算leader正常也不能提供服务了，需要具体场景权衡选择。</p>
-</blockquote>
-<h3 id="集群是否完整才能对外提供服务？"><a href="#集群是否完整才能对外提供服务？" class="headerlink" title="集群是否完整才能对外提供服务？"></a>集群是否完整才能对外提供服务？</h3><p>当<code>redis.conf</code>的配置<code>cluster-require-full-coverage</code>为no时，表示负责一个插槽的主库下线且没有相应的从库进行故障恢复时，集群任然可用，如果为yes则集群不可用。</p>
-<h3 id="Redis集群为什么至少需要三个master节点，且推荐节点数为奇数？"><a href="#Redis集群为什么至少需要三个master节点，且推荐节点数为奇数？" class="headerlink" title="Redis集群为什么至少需要三个master节点，且推荐节点数为奇数？"></a>Redis集群为什么至少需要三个master节点，且推荐节点数为奇数？</h3><p>因为新master的选举需要大于半数的集群master同意才能选举成功，如果只有两个master节点，当其中一个挂了，是达不到选举新master的条件的。  </p>
-<p>奇数个master节点可以在满足选举该条件的基础上节省一个节点，比如三个master节点和四个master节点的集群相比，大家如果都挂了一个master节点都能选举新master节点，如果都挂了两个master节点都没有办法选举新master节点了，所以奇数的master节点更多的是从<strong>节省机器资源角度出发</strong>的。</p>
-<h3 id="Redis集群对批量操作指令的支持"><a href="#Redis集群对批量操作指令的支持" class="headerlink" title="Redis集群对批量操作指令的支持"></a>Redis集群对批量操作指令的支持</h3><p>对于类似<code>mset</code>，这样的多个key的原生批量操作指令，redis集群只支持所有key落在同一slot的情况，如果有多个key一定要使用<code>mset</code>命令在redis集群上操作，则可以在可以的前面加上<code>&#123;XXX&#125;</code>，这样参数数据分片hash计算的只会是大括号中的值，这样能确保不同的key能落在同一slot中，示例如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mset &#123;user1&#125;:1:name zhangsan &#123;user1&#125;:1:age 20</span><br></pre></td></tr></table></figure>
-
-<p>假如name和age计算的hash slot值不一样，但是这条命令在集群下执行，redis只会用大括号里的<code>user1</code>做hash slot计算，所以算出来的slot值肯定相同，最后能落在同一slot。</p>
-<h3 id="哨兵leader选举流程"><a href="#哨兵leader选举流程" class="headerlink" title="哨兵leader选举流程"></a>哨兵leader选举流程</h3><p>当一个master服务器被某个sentinel视为下线状态后，该sentinel会与其他sentinel协商选出sentinel的leader进行故障转移工作。每个发现master服务器下线的sentinel都可以要求其他sentinel选举自己为sentinel的leader，选举是先到先得。同时每一个sentinel每次选举都会自增配置选举周期，每个选举周期只会选择一个sentinel的leader。如果所有<strong>超过一半</strong>的sentinel选举某个sentinel作为leader。之后该sentinel进行故障转移操作，从存活的slave中选举出新的master，这个选举过程和集群的master选举很类似。</p>
-<p>哨兵集群只有一个哨兵节点，redis的主从也能正常运行以及选举master，如果master挂了，那唯一的那个哨兵节点就是哨兵leader了，可以正常选举新的master。不过为了高可用一般都推荐至少部署三个哨兵节点。为什么推荐奇数个哨兵节点，原理和集群奇数个master节点类似。</p>
 ]]></content>
       <categories>
         <category>Redis</category>
@@ -1331,24 +1331,6 @@
       </tags>
   </entry>
   <entry>
-    <title>maven打包main可运行jar包</title>
-    <url>/archives/15bfa942/</url>
-    <content><![CDATA[<p>在pom.xml文件中加入以下代码：</p>
-<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">build</span>&gt;</span></span><br><span class="line">	<span class="tag">&lt;<span class="name">plugins</span>&gt;</span></span><br><span class="line">		<span class="tag">&lt;<span class="name">plugin</span>&gt;</span></span><br><span class="line">			<span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>maven-assembly-plugin<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">			<span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line">				<span class="tag">&lt;<span class="name">appendAssemblyId</span>&gt;</span>false<span class="tag">&lt;/<span class="name">appendAssemblyId</span>&gt;</span></span><br><span class="line">				<span class="tag">&lt;<span class="name">descriptorRefs</span>&gt;</span></span><br><span class="line">					<span class="tag">&lt;<span class="name">descriptorRef</span>&gt;</span>jar-with-dependencies<span class="tag">&lt;/<span class="name">descriptorRef</span>&gt;</span></span><br><span class="line">				<span class="tag">&lt;/<span class="name">descriptorRefs</span>&gt;</span></span><br><span class="line">				<span class="tag">&lt;<span class="name">archive</span>&gt;</span></span><br><span class="line">					<span class="tag">&lt;<span class="name">manifest</span>&gt;</span></span><br><span class="line">						<span class="tag">&lt;<span class="name">mainClass</span>&gt;</span>com.chat.client.ServerStarter<span class="tag">&lt;/<span class="name">mainClass</span>&gt;</span>  <span class="comment">&lt;!--修改这里面为main的全限定类名--&gt;</span></span><br><span class="line">					<span class="tag">&lt;/<span class="name">manifest</span>&gt;</span></span><br><span class="line">				<span class="tag">&lt;/<span class="name">archive</span>&gt;</span></span><br><span class="line">			<span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br><span class="line">			<span class="tag">&lt;<span class="name">executions</span>&gt;</span></span><br><span class="line">				<span class="tag">&lt;<span class="name">execution</span>&gt;</span></span><br><span class="line">					<span class="tag">&lt;<span class="name">id</span>&gt;</span>make-assembly<span class="tag">&lt;/<span class="name">id</span>&gt;</span></span><br><span class="line">					<span class="tag">&lt;<span class="name">phase</span>&gt;</span>package<span class="tag">&lt;/<span class="name">phase</span>&gt;</span></span><br><span class="line">					<span class="tag">&lt;<span class="name">goals</span>&gt;</span></span><br><span class="line">						<span class="tag">&lt;<span class="name">goal</span>&gt;</span>assembly<span class="tag">&lt;/<span class="name">goal</span>&gt;</span></span><br><span class="line">					<span class="tag">&lt;/<span class="name">goals</span>&gt;</span></span><br><span class="line">				<span class="tag">&lt;/<span class="name">execution</span>&gt;</span></span><br><span class="line">			<span class="tag">&lt;/<span class="name">executions</span>&gt;</span></span><br><span class="line">		<span class="tag">&lt;/<span class="name">plugin</span>&gt;</span></span><br><span class="line">	<span class="tag">&lt;/<span class="name">plugins</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">build</span>&gt;</span></span><br></pre></td></tr></table></figure>
-
-<p><img src="/archives/15bfa942/image-20211011142322612.png" alt="打包"></p>
-<p>运行时cd到jar包所在位置执行如下命令，即可运行:</p>
-<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">java -jar Server-1.0-SNAPSHOT.jar</span><br></pre></td></tr></table></figure>
-
-]]></content>
-      <categories>
-        <category>解决方案</category>
-      </categories>
-      <tags>
-        <tag>解决方案</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>html播放.m3u8格式视频</title>
     <url>/archives/e6ea49db/</url>
     <content><![CDATA[<p>播放<code>.m3u8</code>格式视频时需要借助<code>hls.js</code>，为了下载速度快点，我们直接通过国内的cdn访问<a href="https://www.bootcdn.cn/hls.js/">https://www.bootcdn.cn/hls.js/</a></p>
@@ -1402,6 +1384,24 @@
       </categories>
       <tags>
         <tag>html</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>maven打包main可运行jar包</title>
+    <url>/archives/15bfa942/</url>
+    <content><![CDATA[<p>在pom.xml文件中加入以下代码：</p>
+<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">build</span>&gt;</span></span><br><span class="line">	<span class="tag">&lt;<span class="name">plugins</span>&gt;</span></span><br><span class="line">		<span class="tag">&lt;<span class="name">plugin</span>&gt;</span></span><br><span class="line">			<span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>maven-assembly-plugin<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">			<span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line">				<span class="tag">&lt;<span class="name">appendAssemblyId</span>&gt;</span>false<span class="tag">&lt;/<span class="name">appendAssemblyId</span>&gt;</span></span><br><span class="line">				<span class="tag">&lt;<span class="name">descriptorRefs</span>&gt;</span></span><br><span class="line">					<span class="tag">&lt;<span class="name">descriptorRef</span>&gt;</span>jar-with-dependencies<span class="tag">&lt;/<span class="name">descriptorRef</span>&gt;</span></span><br><span class="line">				<span class="tag">&lt;/<span class="name">descriptorRefs</span>&gt;</span></span><br><span class="line">				<span class="tag">&lt;<span class="name">archive</span>&gt;</span></span><br><span class="line">					<span class="tag">&lt;<span class="name">manifest</span>&gt;</span></span><br><span class="line">						<span class="tag">&lt;<span class="name">mainClass</span>&gt;</span>com.chat.client.ServerStarter<span class="tag">&lt;/<span class="name">mainClass</span>&gt;</span>  <span class="comment">&lt;!--修改这里面为main的全限定类名--&gt;</span></span><br><span class="line">					<span class="tag">&lt;/<span class="name">manifest</span>&gt;</span></span><br><span class="line">				<span class="tag">&lt;/<span class="name">archive</span>&gt;</span></span><br><span class="line">			<span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br><span class="line">			<span class="tag">&lt;<span class="name">executions</span>&gt;</span></span><br><span class="line">				<span class="tag">&lt;<span class="name">execution</span>&gt;</span></span><br><span class="line">					<span class="tag">&lt;<span class="name">id</span>&gt;</span>make-assembly<span class="tag">&lt;/<span class="name">id</span>&gt;</span></span><br><span class="line">					<span class="tag">&lt;<span class="name">phase</span>&gt;</span>package<span class="tag">&lt;/<span class="name">phase</span>&gt;</span></span><br><span class="line">					<span class="tag">&lt;<span class="name">goals</span>&gt;</span></span><br><span class="line">						<span class="tag">&lt;<span class="name">goal</span>&gt;</span>assembly<span class="tag">&lt;/<span class="name">goal</span>&gt;</span></span><br><span class="line">					<span class="tag">&lt;/<span class="name">goals</span>&gt;</span></span><br><span class="line">				<span class="tag">&lt;/<span class="name">execution</span>&gt;</span></span><br><span class="line">			<span class="tag">&lt;/<span class="name">executions</span>&gt;</span></span><br><span class="line">		<span class="tag">&lt;/<span class="name">plugin</span>&gt;</span></span><br><span class="line">	<span class="tag">&lt;/<span class="name">plugins</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">build</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/15bfa942/image-20211011142322612.png" alt="打包"></p>
+<p>运行时cd到jar包所在位置执行如下命令，即可运行:</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">java -jar Server-1.0-SNAPSHOT.jar</span><br></pre></td></tr></table></figure>
+
+]]></content>
+      <categories>
+        <category>解决方案</category>
+      </categories>
+      <tags>
+        <tag>解决方案</tag>
       </tags>
   </entry>
   <entry>
@@ -1552,6 +1552,23 @@
       </tags>
   </entry>
   <entry>
+    <title>使用栈数据结构实现简易计算器算法</title>
+    <url>/archives/12e6bc0/</url>
+    <content><![CDATA[<p>首先看一下设计思路：</p>
+<p><img src="/archives/12e6bc0/%E6%A0%88%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%AE%9E%E7%8E%B0%E8%AE%A1%E7%AE%97%E5%99%A8.png" alt="栈数据结构实现简易计算器"></p>
+<p>具体代码实现：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lhb.test;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.util.Stack;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Program</span>: netty-chat 数字</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Description</span>:</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Author</span>: LHB</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Version</span>: v0.0.1</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Time</span>: 2021-11-01 15:02</span></span><br><span class="line"><span class="comment"> **/</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CalculateStack</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 操作数栈</span></span><br><span class="line">    <span class="keyword">private</span> Stack&lt;Integer&gt; numberStack = <span class="keyword">new</span> Stack&lt;&gt;();</span><br><span class="line">    <span class="comment">// 符号栈</span></span><br><span class="line">    <span class="keyword">private</span> Stack&lt;Character&gt; operatorStack = <span class="keyword">new</span> Stack&lt;&gt;();</span><br><span class="line">    <span class="function"><span class="keyword">public</span> Integer <span class="title">calculate</span><span class="params">(String des)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; des.length(); i++) &#123;</span><br><span class="line">            <span class="comment">// 如果读取出来的是数字，直接将数字加入到操作数栈，否则加入的符号栈中</span></span><br><span class="line">            <span class="keyword">if</span> (Character.getType(des.charAt(i)) == <span class="number">9</span>) &#123;</span><br><span class="line">                <span class="comment">// 读取出来的是ASCII码，需要减去48才是真正是数字</span></span><br><span class="line">                numberStack.push(Integer.valueOf(des.charAt(i)-<span class="number">48</span>));</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="comment">// 如果符号栈为空，则直接加入到符号栈中</span></span><br><span class="line">                <span class="keyword">if</span> (operatorStack.isEmpty()) &#123;</span><br><span class="line">                    operatorStack.push(des.charAt(i));</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="comment">// 如果符号栈不为空，则比较符号栈栈顶符号和截取出来的符号的优先级，如果小于栈顶符号优先级，则取出栈顶符号和操作数栈中的两个数字做运算，</span></span><br><span class="line">                    <span class="comment">// 并将最后运算结果重新加入到操作数栈中，同时将此刻解析到的符号加入到符号栈中</span></span><br><span class="line">                    <span class="keyword">if</span> (priority(des.charAt(i)) &lt;= priority(operatorStack.peek())) &#123;</span><br><span class="line">                        Integer sec = numberStack.pop();</span><br><span class="line">                        Integer fir = numberStack.pop();</span><br><span class="line">                        Character operator = operatorStack.pop();</span><br><span class="line">                        <span class="keyword">int</span> result = <span class="keyword">this</span>.cal(fir, sec, operator);</span><br><span class="line">                        numberStack.push(result);</span><br><span class="line">                        operatorStack.push(des.charAt(i));</span><br><span class="line">                    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                        operatorStack.push(des.charAt(i));</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 处理符号栈中剩余的还没有做运算的符号</span></span><br><span class="line">        <span class="keyword">while</span>(<span class="keyword">true</span>) &#123;</span><br><span class="line">            <span class="keyword">if</span> (operatorStack.isEmpty()) &#123;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            Integer sec = numberStack.pop();</span><br><span class="line">            Integer fir = numberStack.pop();</span><br><span class="line">            Character operator = operatorStack.pop();</span><br><span class="line">            <span class="keyword">int</span> result = cal(fir, sec, operator);</span><br><span class="line">            numberStack.push(result);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 最后留在操作数栈中的数字，就是最后表达式的运算结果</span></span><br><span class="line">        <span class="keyword">return</span> numberStack.pop();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 获取操作数优先级</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> operator 操作数</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">priority</span><span class="params">(<span class="keyword">char</span> operator)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (operator == <span class="string">&#x27;*&#x27;</span> || operator == <span class="string">&#x27;/&#x27;</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (operator == <span class="string">&#x27;+&#x27;</span> || operator == <span class="string">&#x27;-&#x27;</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 做计算操作</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> a</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> b</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> operator</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">cal</span><span class="params">(<span class="keyword">int</span> a, <span class="keyword">int</span> b, <span class="keyword">int</span> operator)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> result = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">switch</span> (operator)&#123;</span><br><span class="line">            <span class="keyword">case</span> <span class="string">&#x27;+&#x27;</span>:</span><br><span class="line">                result = a + b;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> <span class="string">&#x27;-&#x27;</span>:</span><br><span class="line">                result = a - b;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> <span class="string">&#x27;*&#x27;</span>:</span><br><span class="line">                result = a * b;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> <span class="string">&#x27;/&#x27;</span>:</span><br><span class="line">                result = a / b;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">default</span>:</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Integer calculate = <span class="keyword">new</span> CalculateStack().calculate(<span class="string">&quot;8+4*3-6/2+1&quot;</span>);</span><br><span class="line">        System.out.println(<span class="string">&quot;8+4*3-6/2+1 = &quot;</span> + calculate);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/12e6bc0/image-20211101162442155.png" alt="运行结果"></p>
+]]></content>
+      <categories>
+        <category>数据结构</category>
+      </categories>
+      <tags>
+        <tag>栈</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>利用数组实现队列操作</title>
     <url>/archives/ace10538/</url>
     <content><![CDATA[<p>题目：利用数组来实现队列的入队，出队，队列扩容等操作，写出具体实现代码。</p>
@@ -1570,23 +1587,6 @@
       </categories>
       <tags>
         <tag>队列</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>使用栈数据结构实现简易计算器算法</title>
-    <url>/archives/12e6bc0/</url>
-    <content><![CDATA[<p>首先看一下设计思路：</p>
-<p><img src="/archives/12e6bc0/%E6%A0%88%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%AE%9E%E7%8E%B0%E8%AE%A1%E7%AE%97%E5%99%A8.png" alt="栈数据结构实现简易计算器"></p>
-<p>具体代码实现：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lhb.test;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.util.Stack;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Program</span>: netty-chat 数字</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Description</span>:</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Author</span>: LHB</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Version</span>: v0.0.1</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Time</span>: 2021-11-01 15:02</span></span><br><span class="line"><span class="comment"> **/</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CalculateStack</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 操作数栈</span></span><br><span class="line">    <span class="keyword">private</span> Stack&lt;Integer&gt; numberStack = <span class="keyword">new</span> Stack&lt;&gt;();</span><br><span class="line">    <span class="comment">// 符号栈</span></span><br><span class="line">    <span class="keyword">private</span> Stack&lt;Character&gt; operatorStack = <span class="keyword">new</span> Stack&lt;&gt;();</span><br><span class="line">    <span class="function"><span class="keyword">public</span> Integer <span class="title">calculate</span><span class="params">(String des)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; des.length(); i++) &#123;</span><br><span class="line">            <span class="comment">// 如果读取出来的是数字，直接将数字加入到操作数栈，否则加入的符号栈中</span></span><br><span class="line">            <span class="keyword">if</span> (Character.getType(des.charAt(i)) == <span class="number">9</span>) &#123;</span><br><span class="line">                <span class="comment">// 读取出来的是ASCII码，需要减去48才是真正是数字</span></span><br><span class="line">                numberStack.push(Integer.valueOf(des.charAt(i)-<span class="number">48</span>));</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="comment">// 如果符号栈为空，则直接加入到符号栈中</span></span><br><span class="line">                <span class="keyword">if</span> (operatorStack.isEmpty()) &#123;</span><br><span class="line">                    operatorStack.push(des.charAt(i));</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="comment">// 如果符号栈不为空，则比较符号栈栈顶符号和截取出来的符号的优先级，如果小于栈顶符号优先级，则取出栈顶符号和操作数栈中的两个数字做运算，</span></span><br><span class="line">                    <span class="comment">// 并将最后运算结果重新加入到操作数栈中，同时将此刻解析到的符号加入到符号栈中</span></span><br><span class="line">                    <span class="keyword">if</span> (priority(des.charAt(i)) &lt;= priority(operatorStack.peek())) &#123;</span><br><span class="line">                        Integer sec = numberStack.pop();</span><br><span class="line">                        Integer fir = numberStack.pop();</span><br><span class="line">                        Character operator = operatorStack.pop();</span><br><span class="line">                        <span class="keyword">int</span> result = <span class="keyword">this</span>.cal(fir, sec, operator);</span><br><span class="line">                        numberStack.push(result);</span><br><span class="line">                        operatorStack.push(des.charAt(i));</span><br><span class="line">                    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                        operatorStack.push(des.charAt(i));</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 处理符号栈中剩余的还没有做运算的符号</span></span><br><span class="line">        <span class="keyword">while</span>(<span class="keyword">true</span>) &#123;</span><br><span class="line">            <span class="keyword">if</span> (operatorStack.isEmpty()) &#123;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            Integer sec = numberStack.pop();</span><br><span class="line">            Integer fir = numberStack.pop();</span><br><span class="line">            Character operator = operatorStack.pop();</span><br><span class="line">            <span class="keyword">int</span> result = cal(fir, sec, operator);</span><br><span class="line">            numberStack.push(result);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 最后留在操作数栈中的数字，就是最后表达式的运算结果</span></span><br><span class="line">        <span class="keyword">return</span> numberStack.pop();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 获取操作数优先级</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> operator 操作数</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">priority</span><span class="params">(<span class="keyword">char</span> operator)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (operator == <span class="string">&#x27;*&#x27;</span> || operator == <span class="string">&#x27;/&#x27;</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (operator == <span class="string">&#x27;+&#x27;</span> || operator == <span class="string">&#x27;-&#x27;</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 做计算操作</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> a</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> b</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> operator</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">cal</span><span class="params">(<span class="keyword">int</span> a, <span class="keyword">int</span> b, <span class="keyword">int</span> operator)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> result = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">switch</span> (operator)&#123;</span><br><span class="line">            <span class="keyword">case</span> <span class="string">&#x27;+&#x27;</span>:</span><br><span class="line">                result = a + b;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> <span class="string">&#x27;-&#x27;</span>:</span><br><span class="line">                result = a - b;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> <span class="string">&#x27;*&#x27;</span>:</span><br><span class="line">                result = a * b;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> <span class="string">&#x27;/&#x27;</span>:</span><br><span class="line">                result = a / b;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">default</span>:</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Integer calculate = <span class="keyword">new</span> CalculateStack().calculate(<span class="string">&quot;8+4*3-6/2+1&quot;</span>);</span><br><span class="line">        System.out.println(<span class="string">&quot;8+4*3-6/2+1 = &quot;</span> + calculate);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<p><img src="/archives/12e6bc0/image-20211101162442155.png" alt="运行结果"></p>
-]]></content>
-      <categories>
-        <category>数据结构</category>
-      </categories>
-      <tags>
-        <tag>栈</tag>
       </tags>
   </entry>
   <entry>
