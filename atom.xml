@@ -6,7 +6,7 @@
   <link href="https://www.lihuibin.top/atom.xml" rel="self"/>
   
   <link href="https://www.lihuibin.top/"/>
-  <updated>2021-11-07T06:19:34.472Z</updated>
+  <updated>2021-11-14T07:24:46.977Z</updated>
   <id>https://www.lihuibin.top/</id>
   
   <author>
@@ -17,11 +17,111 @@
   <generator uri="https://hexo.io/">Hexo</generator>
   
   <entry>
+    <title>动态规划算法——背包问题</title>
+    <link href="https://www.lihuibin.top/archives/9e50665b/"/>
+    <id>https://www.lihuibin.top/archives/9e50665b/</id>
+    <published>2021-11-11T09:51:23.000Z</published>
+    <updated>2021-11-14T07:24:46.977Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h2 id=&quot;问题描述&quot;&gt;&lt;a href=&quot;#问题描述&quot; class=&quot;headerlink&quot;</summary>
+        
+      
+    
+    
+    
+    <category term="算法" scheme="https://www.lihuibin.top/categories/%E7%AE%97%E6%B3%95/"/>
+    
+    
+    <category term="动态规划算法" scheme="https://www.lihuibin.top/tags/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92%E7%AE%97%E6%B3%95/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>贪心算法——会议安排问题</title>
+    <link href="https://www.lihuibin.top/archives/dc110695/"/>
+    <id>https://www.lihuibin.top/archives/dc110695/</id>
+    <published>2021-11-11T09:01:16.000Z</published>
+    <updated>2021-11-14T03:29:44.746Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h2 id=&quot;问题描述&quot;&gt;&lt;a href=&quot;#问题描述&quot; class=&quot;headerlink&quot;</summary>
+        
+      
+    
+    
+    
+    <category term="算法" scheme="https://www.lihuibin.top/categories/%E7%AE%97%E6%B3%95/"/>
+    
+    
+    <category term="贪心算法" scheme="https://www.lihuibin.top/tags/%E8%B4%AA%E5%BF%83%E7%AE%97%E6%B3%95/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>排序算法——计数排序</title>
+    <link href="https://www.lihuibin.top/archives/90620757/"/>
+    <id>https://www.lihuibin.top/archives/90620757/</id>
+    <published>2021-11-11T08:00:04.000Z</published>
+    <updated>2021-11-14T03:29:44.728Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h2 id=&quot;描述&quot;&gt;&lt;a href=&quot;#描述&quot; class=&quot;headerlink&quot;</summary>
+        
+      
+    
+    
+    
+    <category term="算法" scheme="https://www.lihuibin.top/categories/%E7%AE%97%E6%B3%95/"/>
+    
+    
+    <category term="计数排序" scheme="https://www.lihuibin.top/tags/%E8%AE%A1%E6%95%B0%E6%8E%92%E5%BA%8F/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>排序算法——快速排序</title>
+    <link href="https://www.lihuibin.top/archives/a4803490/"/>
+    <id>https://www.lihuibin.top/archives/a4803490/</id>
+    <published>2021-11-10T04:09:32.000Z</published>
+    <updated>2021-11-14T03:29:44.602Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h2 id=&quot;算法思想&quot;&gt;&lt;a href=&quot;#算法思想&quot; class=&quot;headerlink&quot;</summary>
+        
+      
+    
+    
+    
+    <category term="算法" scheme="https://www.lihuibin.top/categories/%E7%AE%97%E6%B3%95/"/>
+    
+    
+    <category term="快速排序" scheme="https://www.lihuibin.top/tags/%E5%BF%AB%E9%80%9F%E6%8E%92%E5%BA%8F/"/>
+    
+  </entry>
+  
+  <entry>
     <title>排序算法——冒泡排序</title>
     <link href="https://www.lihuibin.top/archives/4fe6adbb/"/>
     <id>https://www.lihuibin.top/archives/4fe6adbb/</id>
     <published>2021-11-07T04:53:44.000Z</published>
-    <updated>2021-11-07T06:19:34.472Z</updated>
+    <updated>2021-11-14T03:29:44.594Z</updated>
     
     
       
@@ -413,108 +513,6 @@
         
         
     <summary type="html">&lt;h2 id=&quot;缓存失效-击穿&quot;&gt;&lt;a href=&quot;#缓存失效-击穿&quot; class=&quot;headerlink&quot;</summary>
-        
-      
-    
-    
-    
-    <category term="Redis" scheme="https://www.lihuibin.top/categories/Redis/"/>
-    
-    
-    <category term="Redis" scheme="https://www.lihuibin.top/tags/Redis/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Redis缓存穿透</title>
-    <link href="https://www.lihuibin.top/archives/f435d36e/"/>
-    <id>https://www.lihuibin.top/archives/f435d36e/</id>
-    <published>2021-09-29T08:06:46.000Z</published>
-    <updated>2021-10-01T13:46:40.134Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;p&gt;缓存穿透是指查询一个根本不存在的数据，缓存层和存储层都不会命中，通常处于容错的考虑，如果从存储层查不到数据则不写入缓存层。&lt;br&gt;缓存层将导致不存在的数据每次请求都要存储层去查询，失去了缓存保护后端存储的意义。&lt;br&gt;造成缓存穿透的基本原因有两个：&lt;/p&gt;
-&lt;ol&gt;
-&lt;li</summary>
-        
-      
-    
-    
-    
-    <category term="Redis" scheme="https://www.lihuibin.top/categories/Redis/"/>
-    
-    
-    <category term="Redis" scheme="https://www.lihuibin.top/tags/Redis/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>html播放.m3u8格式视频</title>
-    <link href="https://www.lihuibin.top/archives/e6ea49db/"/>
-    <id>https://www.lihuibin.top/archives/e6ea49db/</id>
-    <published>2021-09-26T09:07:22.000Z</published>
-    <updated>2021-10-01T13:46:40.174Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;p&gt;播放&lt;code&gt;.m3u8&lt;/code&gt;格式视频时需要借助&lt;code&gt;hls.js&lt;/code&gt;，为了下载速度快点，我们直接通过国内的cdn访问&lt;a</summary>
-        
-      
-    
-    
-    
-    <category term="html" scheme="https://www.lihuibin.top/categories/html/"/>
-    
-    
-    <category term="html" scheme="https://www.lihuibin.top/tags/html/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Redis高可用集群水平扩展</title>
-    <link href="https://www.lihuibin.top/archives/c709d40a/"/>
-    <id>https://www.lihuibin.top/archives/c709d40a/</id>
-    <published>2021-09-24T04:42:34.000Z</published>
-    <updated>2021-10-01T13:46:40.164Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;h2 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h2&gt;&lt;p&gt;在&lt;a</summary>
-        
-      
-    
-    
-    
-    <category term="Redis" scheme="https://www.lihuibin.top/categories/Redis/"/>
-    
-    
-    <category term="Redis" scheme="https://www.lihuibin.top/tags/Redis/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Redis集群原理分析</title>
-    <link href="https://www.lihuibin.top/archives/c0af2eb/"/>
-    <id>https://www.lihuibin.top/archives/c0af2eb/</id>
-    <published>2021-09-22T01:03:39.000Z</published>
-    <updated>2021-10-01T13:46:40.137Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;h2 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h2&gt;&lt;p&gt;Redis</summary>
         
       
     

@@ -9,7 +9,7 @@
        
       <meta
         name="keywords"
-        content="排序算法——冒泡排序,lihuibin,lhb,Java,hexo+github,spring,springboot,springcloud,nacos,jvm,mysql,k8s,docker,gateway,springcloudAlibaba"
+        content="排序算法——快速排序,lihuibin,lhb,Java,hexo+github,spring,springboot,springcloud,nacos,jvm,mysql,k8s,docker,gateway,springcloudAlibaba"
       />
        
       <meta name="description" content="学习，生活分享" />
@@ -18,7 +18,7 @@
         name="viewport"
         content="width=device-width, initial-scale=1, maximum-scale=1"
       />
-      <title>排序算法——冒泡排序 |  不忘初心</title>
+      <title>排序算法——快速排序 |  不忘初心</title>
   <meta name="generator" content="hexo-theme-ayer">
       
       <link rel="shortcut icon" href="/favicon.ico" />
@@ -64,7 +64,7 @@
     <main class="content on">
       <section class="outer">
   <article
-  id="post-排序算法——冒泡排序"
+  id="post-排序算法——快速排序"
   class="article article-type-post"
   itemscope
   itemprop="blogPost"
@@ -75,7 +75,7 @@
     <header class="article-header">
        
 <h1 class="article-title sea-center" style="border-left:0" itemprop="name">
-  排序算法——冒泡排序
+  排序算法——快速排序
 </h1>
  
 
@@ -83,8 +83,8 @@
     </header>
      
     <div class="article-meta">
-      <a href="/archives/4fe6adbb/" class="article-date">
-  <time datetime="2021-11-07T04:53:44.000Z" itemprop="datePublished">2021-11-07</time>
+      <a href="/archives/a4803490/" class="article-date">
+  <time datetime="2021-11-10T04:09:32.000Z" itemprop="datePublished">2021-11-10</time>
 </a> 
   <div class="article-category">
     <a class="article-category-link" href="/categories/%E7%AE%97%E6%B3%95/">算法</a>
@@ -95,7 +95,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">529</span>
+            <span class="post-count">660</span>
         </span>
     </span>
 
@@ -119,24 +119,24 @@
   
     <div class="article-entry" itemprop="articleBody">
        
-  <h2 id="基本原理"><a href="#基本原理" class="headerlink" title="基本原理"></a>基本原理</h2><ol>
-<li>比较相邻的元素。如果第一个比第二个大，就交换他们两个</li>
-<li>对每一对相邻元素做同样的工作，从开始第一对到结尾的最后一对。在这一点，最后的元素应该会是最大的数</li>
-<li>针对所有的元素重复以上步骤，除了最后一个</li>
-<li>持续每次对越来越少的元素重复上面的步骤，直到没有任何一对数字需要比较</li>
+  <h2 id="算法思想"><a href="#算法思想" class="headerlink" title="算法思想"></a>算法思想</h2><ol>
+<li>从数列中挑选一个元素，一般情况下我们是取的数列第一个元素。这个取到的元素成为“基准数”(pivot)；</li>
+<li>从数列尾部开始往头部找比基准数小的数，将小的数与基准数做位置调换；</li>
+<li>从数列头部开始往尾部找比基准数大的数，将大的数与基准数做位置调换；</li>
+<li>当步骤2与步骤3执行完毕之后，基准数就处于了数列的中间位置，这时基准数左边的子数列中所有元素都是小于基准数；基准数右边的子数列中的所有元素都是大于基准数；这个过程称为分区操作；</li>
+<li>递归地把基准数左边数列和基准数右边数列排序；</li>
 </ol>
-<h2 id="动态图演示"><a href="#动态图演示" class="headerlink" title="动态图演示"></a>动态图演示</h2><p><img src="/archives/4fe6adbb/bubbleSort.gif" alt="冒泡排序动态图"></p>
-<h2 id="代码实现"><a href="#代码实现" class="headerlink" title="代码实现"></a>代码实现</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.company;</span><br><span class="line"><span class="keyword">import</span> java.util.Arrays;</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span>[] data = &#123;<span class="number">3</span>,<span class="number">44</span>,<span class="number">38</span>,<span class="number">5</span>,<span class="number">47</span>,<span class="number">15</span>,<span class="number">36</span>,<span class="number">26</span>,<span class="number">27</span>,<span class="number">2</span>,<span class="number">46</span>,<span class="number">4</span>,<span class="number">19</span>,<span class="number">50</span>,<span class="number">48</span>&#125;;</span><br><span class="line">        bubbleSort(data);</span><br><span class="line">        System.out.println(<span class="string">&quot;冒泡排序结果：&quot;</span> + Arrays.toString(data));</span><br><span class="line">    &#125;</span><br><span class="line">  </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">bubbleSort</span><span class="params">(<span class="keyword">int</span>[] data)</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 控制排序次数</span></span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; data.length - <span class="number">1</span>; i++) &#123;</span><br><span class="line">            <span class="comment">// 此处为算法优化点，可以去掉； 设置一个标记，若为true，则表示此次循环没有需要进行交换的，也就是说待排序序列已经是有序的了</span></span><br><span class="line">            <span class="keyword">boolean</span> sortFlag = <span class="keyword">true</span>;</span><br><span class="line">            <span class="comment">// 开始从第0个元素排序，相邻两个元素排序</span></span><br><span class="line">            <span class="keyword">for</span>(<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; data.length - <span class="number">1</span> - i; j++) &#123;</span><br><span class="line">                <span class="keyword">if</span>(data[j] &gt; data[j + <span class="number">1</span>]) &#123;</span><br><span class="line">                    sortFlag = <span class="keyword">false</span>;</span><br><span class="line">                    <span class="comment">// 交换元素</span></span><br><span class="line">                    <span class="comment">// 第一种交换写法，通过加减运算</span></span><br><span class="line">                    data[j] = data[j] + data[j + <span class="number">1</span>];</span><br><span class="line">                    data[j + <span class="number">1</span>] = data[j] - data[j + <span class="number">1</span>];</span><br><span class="line">                    data[j] = data[j] - data[j + <span class="number">1</span>];</span><br><span class="line">                    <span class="comment">// 第二种交换写法，通过异或(^)运算</span></span><br><span class="line"><span class="comment">//                    data[j] = (data[j] ^ data[j + 1]);</span></span><br><span class="line"><span class="comment">//                    data[j + 1] = data[j + 1] ^ data[j];</span></span><br><span class="line"><span class="comment">//                    data[j] =  data[j + 1] ^ data[j];</span></span><br><span class="line">                    <span class="comment">// 第三种交换写法，通过借助临时变量完成</span></span><br><span class="line"><span class="comment">//                    int temp = data[j];</span></span><br><span class="line"><span class="comment">//                    data[j] = data[j + 1];</span></span><br><span class="line"><span class="comment">//                    data[j + 1] = temp;</span></span><br><span class="line"></span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span>(sortFlag) &#123;</span><br><span class="line">              <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h2 id="图解过程"><a href="#图解过程" class="headerlink" title="图解过程"></a>图解过程</h2><p>现有如下数列：data={3,44,38,5,47,15,36,26,27,2,46,4,19,50,48}，我们对这个数列使用快排。</p>
+<p>定义一个基数：<code>pivot = 3</code><br>一个查询左边的元素的指针: <code>leftPointer</code>，起初 <code>leftPointer = 0</code><br>一个查询右边的元素指针: <code>rightPointer</code> , 起初<code>rightPointer = data.length - 1 </code></p>
+<p><img src="/archives/a4803490/%E6%8E%92%E5%BA%8F%E7%AE%97%E6%B3%95.png" alt="快排算法过程"></p>
+<h2 id="动态图演示"><a href="#动态图演示" class="headerlink" title="动态图演示"></a>动态图演示</h2><p><img src="/archives/a4803490/quickSort.gif" alt="快排动态图"></p>
+<h2 id="代码实现"><a href="#代码实现" class="headerlink" title="代码实现"></a>代码实现</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.util.*;</span><br><span class="line"><span class="keyword">import</span> java.lang.*;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Rextester</span></span></span><br><span class="line"><span class="class"></span>&#123;  </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">		  <span class="keyword">int</span>[] data = &#123;<span class="number">6</span>,<span class="number">1</span>,<span class="number">2</span>,<span class="number">7</span>,<span class="number">9</span>,<span class="number">3</span>,<span class="number">4</span>,<span class="number">5</span>,<span class="number">10</span>,<span class="number">8</span>&#125;;</span><br><span class="line">		  qSort(data,<span class="number">0</span>,data.length - <span class="number">1</span>);</span><br><span class="line">		  System.out.println(Arrays.toString(data));</span><br><span class="line">    &#125;</span><br><span class="line">	</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">qSort</span><span class="params">(<span class="keyword">int</span>[] data, <span class="keyword">int</span> left,<span class="keyword">int</span> right)</span> </span>&#123;</span><br><span class="line">		<span class="comment">// 基准数</span></span><br><span class="line">		<span class="keyword">int</span> base = data[left];</span><br><span class="line">		<span class="comment">// 向后移动的指针</span></span><br><span class="line">		<span class="keyword">int</span> leftPointer = left;</span><br><span class="line">		<span class="comment">// 向前移动的指针</span></span><br><span class="line">		<span class="keyword">int</span> rightPointer = right;</span><br><span class="line">		<span class="comment">// 如果left和right不想等，说明没有循环完毕,继续循环</span></span><br><span class="line">		<span class="keyword">while</span>(leftPointer &lt; rightPointer) &#123;</span><br><span class="line">			<span class="comment">// 从后往前找比基准数小的数</span></span><br><span class="line">			<span class="keyword">while</span>(leftPointer &lt; rightPointer &amp;&amp; data[rightPointer] &gt;= base) &#123;</span><br><span class="line">				rightPointer--;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="comment">// 说明找到了</span></span><br><span class="line">			<span class="keyword">if</span>(leftPointer &lt; rightPointer) &#123;</span><br><span class="line">				<span class="keyword">int</span> temp = data[rightPointer];</span><br><span class="line">				data[rightPointer] = data[leftPointer];</span><br><span class="line">				data[leftPointer] = temp;</span><br><span class="line">				leftPointer++;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="comment">// 从前往后找比基准数大的数</span></span><br><span class="line">			<span class="keyword">while</span>(leftPointer &lt; rightPointer &amp;&amp; data[leftPointer] &lt;= base) &#123;</span><br><span class="line">				leftPointer++;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="comment">// 如果找到了就交换位置</span></span><br><span class="line">			<span class="keyword">if</span>(leftPointer &lt; rightPointer) &#123;</span><br><span class="line">				<span class="keyword">int</span> temp = data[leftPointer];</span><br><span class="line">				data[leftPointer] = data[rightPointer];</span><br><span class="line">				data[rightPointer] = temp;</span><br><span class="line">				rightPointer--;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="comment">// 将数组分成三部分，左，基准数，右，</span></span><br><span class="line">		<span class="keyword">if</span>(left &lt; leftPointer) &#123;</span><br><span class="line">			qSort(data,left,leftPointer - <span class="number">1</span>);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">if</span>(rightPointer &lt; right) &#123;</span><br><span class="line">			qSort(data,rightPointer + <span class="number">1</span>,right);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<blockquote>
-<p>在交换元素的时候有三种方式：</p>
-<ul>
-<li>通过元素间的加减运算交换——-代码中第一种写法</li>
-<li>通过元素间的异或(^)运算交换——–代码中第二种写法</li>
-<li>通过借助临时变量交换——–代码中第三种写法</li>
-</ul>
-<p>其中前两种写法在运行效率上高于第三种，因为在运行过程中减少了内存分配的开销。</p>
-</blockquote>
+<h2 id="复杂度"><a href="#复杂度" class="headerlink" title="复杂度"></a>复杂度</h2><p>当基准数选择的是数列中做小或者做大的数时，快速排序的运行情况最坏是O(n²)，如果说基准数取得比较好，或者数列中有很多已经是排好序的数列了，这时快速排序的平均复杂度降为了O(nlogn)；</p>
+<h2 id="优化"><a href="#优化" class="headerlink" title="优化"></a>优化</h2><p>这里可以中间放在优化基准数，怎么取基准数可以合适。比如：</p>
+<ol>
+<li>三数据中取基准数</li>
+</ol>
  
       <!-- reward -->
       
@@ -201,12 +201,12 @@
     <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
     <p>扫一扫，分享到微信</p>
     <div class="wx-qrcode">
-      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://www.lihuibin.top/archives/4fe6adbb/" alt="微信分享二维码">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://www.lihuibin.top/archives/a4803490/" alt="微信分享二维码">
     </div>
 </div>
 
 <div id="share-mask"></div>  
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%86%92%E6%B3%A1%E6%8E%92%E5%BA%8F/" rel="tag">冒泡排序</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%BF%AB%E9%80%9F%E6%8E%92%E5%BA%8F/" rel="tag">快速排序</a></li></ul>
 
     </footer>
   </div>
