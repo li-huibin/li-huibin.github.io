@@ -6,7 +6,7 @@
   <link href="https://www.lihuibin.top/atom.xml" rel="self"/>
   
   <link href="https://www.lihuibin.top/"/>
-  <updated>2021-11-14T07:24:46.977Z</updated>
+  <updated>2021-11-14T14:56:35.379Z</updated>
   <id>https://www.lihuibin.top/</id>
   
   <author>
@@ -17,11 +17,36 @@
   <generator uri="https://hexo.io/">Hexo</generator>
   
   <entry>
+    <title>二叉树增删改查操作</title>
+    <link href="https://www.lihuibin.top/archives/6d5957d3/"/>
+    <id>https://www.lihuibin.top/archives/6d5957d3/</id>
+    <published>2021-11-14T14:48:15.000Z</published>
+    <updated>2021-11-14T14:56:35.379Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h2 id=&quot;问题描述&quot;&gt;&lt;a href=&quot;#问题描述&quot; class=&quot;headerlink&quot; title=&quot;问题描述&quot;&gt;&lt;/a&gt;问题描述&lt;/h2&gt;&lt;p&gt;通过代码实现下面二叉树的构建，并且实现二叉树的增删改查操作。&lt;br&gt;&lt;img</summary>
+        
+      
+    
+    
+    
+    <category term="数据结构" scheme="https://www.lihuibin.top/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/"/>
+    
+    
+    <category term="二叉树" scheme="https://www.lihuibin.top/tags/%E4%BA%8C%E5%8F%89%E6%A0%91/"/>
+    
+  </entry>
+  
+  <entry>
     <title>动态规划算法——背包问题</title>
     <link href="https://www.lihuibin.top/archives/9e50665b/"/>
     <id>https://www.lihuibin.top/archives/9e50665b/</id>
     <published>2021-11-11T09:51:23.000Z</published>
-    <updated>2021-11-14T07:24:46.977Z</updated>
+    <updated>2021-11-14T07:47:49.639Z</updated>
     
     
       
@@ -488,31 +513,6 @@
         
         
     <summary type="html">&lt;h2 id=&quot;一、键值设计&quot;&gt;&lt;a href=&quot;#一、键值设计&quot; class=&quot;headerlink&quot; title=&quot;一、键值设计&quot;&gt;&lt;/a&gt;一、键值设计&lt;/h2&gt;&lt;h3 id=&quot;1、key名设计&quot;&gt;&lt;a href=&quot;#1、key名设计&quot; class=&quot;headerlink&quot;</summary>
-        
-      
-    
-    
-    
-    <category term="Redis" scheme="https://www.lihuibin.top/categories/Redis/"/>
-    
-    
-    <category term="Redis" scheme="https://www.lihuibin.top/tags/Redis/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Redis缓存失效和缓存雪崩以及热点缓存key重建优化</title>
-    <link href="https://www.lihuibin.top/archives/134045b4/"/>
-    <id>https://www.lihuibin.top/archives/134045b4/</id>
-    <published>2021-09-30T03:25:30.000Z</published>
-    <updated>2021-10-01T13:46:40.130Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;h2 id=&quot;缓存失效-击穿&quot;&gt;&lt;a href=&quot;#缓存失效-击穿&quot; class=&quot;headerlink&quot;</summary>
         
       
     

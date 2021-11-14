@@ -157,6 +157,27 @@
       </tags>
   </entry>
   <entry>
+    <title>Redis主从工作原理</title>
+    <url>/archives/1b578af4/</url>
+    <content><![CDATA[<h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>接前面讲到的<a href="/archives/ba77e58/">《redis主从架构搭建》</a>，来讲一下Redis主从架构的工作原理到底是怎么运作的</p>
+<h2 id="Redis工作原理"><a href="#Redis工作原理" class="headerlink" title="Redis工作原理"></a>Redis工作原理</h2><p>在上个博客中我们搭建了Redis主从架构；在过程中我们为master主节点配置了三个slave从节点。在这三个slave从节点启动的时候，不管是否第一次连接上master主节点，他们都会发送改一个<code>PSYNC</code>命令给master请求同步数据。</p>
+<p>master主节点接收到<code>PSYNC</code>命令后，会在后台进行数据持久化，通过<code>bgsave</code>生成最新的快照文件；在持久化期间，master主节点还会继续接受客户端的请求，并且他会把这些可能修改数据的请求命令缓存在一块内存中。当持久化进行完毕之后，master会把这份rdb文件数据集发送给slave从节点，slave从节点会把接收到的数据进行持久化生成rdb，然后再加载到内存中。然后master主节点再将之前缓存在内存中的命令发送给slave从节点，从节点根据这些请求指令重放数据到redis中。</p>
+<p>当master主节点和slave从节点之间的连接由于一些原因断开时，slave从节点能够自动重连master主节点，如果master收到了多个slave从节点并发连接的请求时，他会进行一次持久化，而不是一个一个连接一次，然后把这份持久化的数据发送给多个并发连接的slave从节点。以上整个流程可以用下图来表示</p>
+<p><img src="/archives/1b578af4/image-20210914160847756.png" alt="主从复制(全量复制)流程图"></p>
+<h3 id="主从部分数据复制"><a href="#主从部分数据复制" class="headerlink" title="主从部分数据复制"></a>主从部分数据复制</h3><p>当master和slave断开重连后，一般都会对整份数据进行复制。但是从<code>redis2.8</code>版本开始，redis改用可以支持部分数据复制的命令<code>PSYNC</code>去master同步数据，slave与master能够在网络连接断开重连后只进行部分数据复制(<strong>端点续传</strong>)。</p>
+<p>master会在其内存中创建一个复制数据用的缓存队列，缓存最近一段时间的数据，master和他所有的slave都维护了复制的数据下标offset和master的进程id，因此，当网络连接断开后，slave会请求master继续进行未完成的复制，从所记录的数据下标开始，如果master进程id变化了，或者从节点数据下标offset太旧，已经不再master的缓存队里中，那么将会进行一次全量数据的复制</p>
+<p><img src="/archives/1b578af4/image-20210914161725948.png" alt="主从复制(部分复制，端点续传)流程图"></p>
+<p>如果有很多从节点，为了缓解<strong>主从复制风暴</strong>(多个从节点同时复制主节点数据导致主节点压力过大)，可以做如下结构调整，让部分从节点与从节点(与主节点同步)同步数据</p>
+<p><img src="/archives/1b578af4/image-20210914162422875.png" alt="主从复制风暴架构解决方案"></p>
+]]></content>
+      <categories>
+        <category>Redis</category>
+      </categories>
+      <tags>
+        <tag>Redis</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Redis哨兵架构搭建</title>
     <url>/archives/8bd0f0fd/</url>
     <content><![CDATA[<h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>安装Redis教程这里就不说了，我们在之前搭建的<a href="/archives/ba77e58/">《Redis主从架构搭建》</a>基础上来进行Redis哨兵架构的搭建。</p>
@@ -197,88 +218,6 @@
 <p>sentinel集群都启动完毕后，会将哨兵集群的元数据信息写入所有sentinel的配置文件里去(追加在文件的最下面)，我们查看下如下配置文件sentinel-26379.conf，如下所示：</p>
 <p><img src="/archives/8bd0f0fd/image-20210914181849488.png" alt="image-20210914181849488"></p>
 <p>表示已经识别出了redis的主从 了         </p>
-]]></content>
-      <categories>
-        <category>Redis</category>
-      </categories>
-      <tags>
-        <tag>Redis</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Redis主从工作原理</title>
-    <url>/archives/1b578af4/</url>
-    <content><![CDATA[<h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>接前面讲到的<a href="/archives/ba77e58/">《redis主从架构搭建》</a>，来讲一下Redis主从架构的工作原理到底是怎么运作的</p>
-<h2 id="Redis工作原理"><a href="#Redis工作原理" class="headerlink" title="Redis工作原理"></a>Redis工作原理</h2><p>在上个博客中我们搭建了Redis主从架构；在过程中我们为master主节点配置了三个slave从节点。在这三个slave从节点启动的时候，不管是否第一次连接上master主节点，他们都会发送改一个<code>PSYNC</code>命令给master请求同步数据。</p>
-<p>master主节点接收到<code>PSYNC</code>命令后，会在后台进行数据持久化，通过<code>bgsave</code>生成最新的快照文件；在持久化期间，master主节点还会继续接受客户端的请求，并且他会把这些可能修改数据的请求命令缓存在一块内存中。当持久化进行完毕之后，master会把这份rdb文件数据集发送给slave从节点，slave从节点会把接收到的数据进行持久化生成rdb，然后再加载到内存中。然后master主节点再将之前缓存在内存中的命令发送给slave从节点，从节点根据这些请求指令重放数据到redis中。</p>
-<p>当master主节点和slave从节点之间的连接由于一些原因断开时，slave从节点能够自动重连master主节点，如果master收到了多个slave从节点并发连接的请求时，他会进行一次持久化，而不是一个一个连接一次，然后把这份持久化的数据发送给多个并发连接的slave从节点。以上整个流程可以用下图来表示</p>
-<p><img src="/archives/1b578af4/image-20210914160847756.png" alt="主从复制(全量复制)流程图"></p>
-<h3 id="主从部分数据复制"><a href="#主从部分数据复制" class="headerlink" title="主从部分数据复制"></a>主从部分数据复制</h3><p>当master和slave断开重连后，一般都会对整份数据进行复制。但是从<code>redis2.8</code>版本开始，redis改用可以支持部分数据复制的命令<code>PSYNC</code>去master同步数据，slave与master能够在网络连接断开重连后只进行部分数据复制(<strong>端点续传</strong>)。</p>
-<p>master会在其内存中创建一个复制数据用的缓存队列，缓存最近一段时间的数据，master和他所有的slave都维护了复制的数据下标offset和master的进程id，因此，当网络连接断开后，slave会请求master继续进行未完成的复制，从所记录的数据下标开始，如果master进程id变化了，或者从节点数据下标offset太旧，已经不再master的缓存队里中，那么将会进行一次全量数据的复制</p>
-<p><img src="/archives/1b578af4/image-20210914161725948.png" alt="主从复制(部分复制，端点续传)流程图"></p>
-<p>如果有很多从节点，为了缓解<strong>主从复制风暴</strong>(多个从节点同时复制主节点数据导致主节点压力过大)，可以做如下结构调整，让部分从节点与从节点(与主节点同步)同步数据</p>
-<p><img src="/archives/1b578af4/image-20210914162422875.png" alt="主从复制风暴架构解决方案"></p>
-]]></content>
-      <categories>
-        <category>Redis</category>
-      </categories>
-      <tags>
-        <tag>Redis</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Redis缓存失效和缓存雪崩以及热点缓存key重建优化</title>
-    <url>/archives/134045b4/</url>
-    <content><![CDATA[<h2 id="缓存失效-击穿"><a href="#缓存失效-击穿" class="headerlink" title="缓存失效(击穿)"></a>缓存失效(击穿)</h2><p>缓存失效也称缓存击穿，是由于大批量缓存在同一时间失效可能导致大量请求同时穿透缓存直达数据库，可能造成数据库瞬间压力过大甚至挂掉，对于这种情况我们在批量增加缓存时最好将这一批数据的缓存过期时间设置为一个时间段内的不同时间。</p>
-<p>示例伪代码：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function">String <span class="title">get</span><span class="params">(String key)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 从缓存中获取数据</span></span><br><span class="line">    String cacheValue = cache.get(key);</span><br><span class="line">    <span class="comment">// 缓存为空</span></span><br><span class="line">    <span class="keyword">if</span> (StringUtils.isBlank(cacheValue)) &#123;</span><br><span class="line">        <span class="comment">// 从存储中获取</span></span><br><span class="line">        String storageValue = storage.get(key);</span><br><span class="line">        cache.set(key, storageValue);</span><br><span class="line">        <span class="comment">//设置一个过期时间(300到600之间的一个随机数)</span></span><br><span class="line">        <span class="keyword">int</span> expireTime = <span class="keyword">new</span> Random().nextInt(<span class="number">300</span>)  + <span class="number">300</span>;</span><br><span class="line">        <span class="keyword">if</span> (storageValue == <span class="keyword">null</span>) &#123;</span><br><span class="line">            cache.expire(key, expireTime);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> storageValue;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// 缓存非空</span></span><br><span class="line">        <span class="keyword">return</span> cacheValue;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="缓存雪崩"><a href="#缓存雪崩" class="headerlink" title="缓存雪崩"></a>缓存雪崩</h2><p>缓存雪崩指的是缓存层支撑不住或者宕机后，流量会全部打向存储层。<br>由于缓存层承载着大量请求，有效的保护了存储层，但是如果缓存层由于某些原因不能提供服务（比如超大并发过来，缓存层支撑不住，或者由于缓存设计不好，类似大量请求访问<code>bigkey</code>，导致缓存能支撑的并发急剧下降），于是大量请求都会打到存储层，存储层的调用量会暴增，造成存储层也会级联宕机的情况。</p>
-<p>预防和解决缓存雪崩问题，可以从以下三个方面着手解决：</p>
-<ol>
-<li><p>保证缓存层服务高可用性，比如使用Redis Sentinel或Redis Cluster。</p>
-</li>
-<li><p>依赖隔离组件为后端限流熔断并降级。比如使用阿里开源流控组件Sentinel或Hystrix限流降级组件</p>
-<blockquote>
-<p>比如服务降级，我们可以针对不同的数据采用不同的处理方式，当业务应用访问的是非核心数据（例如电商商品属性，用户信息等）时，暂时停止从缓存中查询这些数据，而是返回预定义的默认降级信息、空值或是错误提示信息；当业务应用访问的是核心数据（例如电商商品库存）时，仍然允许查询缓存，如果缓存缺失，也可以继续通过数据库读取。</p>
-</blockquote>
-</li>
-<li><p>提前演练。在项目上线前，演练缓存层宕机后，应用以及后端的负载情况以及可能出现的问题，在此基础上做一些预案设定。</p>
-</li>
-</ol>
-<h2 id="热点缓存key重建优化"><a href="#热点缓存key重建优化" class="headerlink" title="热点缓存key重建优化"></a>热点缓存key重建优化</h2><p>在使用“缓存+过期时间”的策略时，既可以加速数据读写，又可以保证数据定期更新，这种模式基本上可以满足绝大部分需求，但是相应的也会出现两个问题，可能对应用造成致命bug：</p>
-<ul>
-<li>当前key是一个热点key（例如一个热门的新闻），并发量非常大。</li>
-<li>重建缓存不能在短时间内完成，可能是一个复杂的计算，例如复杂的SQL、多次I/O，多个依赖等。</li>
-</ul>
-<p>在缓存失效的瞬间，有大量线程来重建缓存，造成后端负载加大，甚至可能会让应用崩溃。要解决这个问题主要就是避免大量线程同时重建缓存。</p>
-<p>我们可以利用互斥锁来解决，此方法只允许一个线程重建缓存，其他线程等待重建缓存的线程执行完，重新从缓存获取数据即可。</p>
-<p>示例伪代码：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function">String <span class="title">get</span><span class="params">(String key)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 从Redis中获取数据</span></span><br><span class="line">    String value = redis.get(key);</span><br><span class="line">    <span class="comment">// 如果value为空， 则开始重构缓存</span></span><br><span class="line">    <span class="keyword">if</span> (value == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="comment">// 只允许一个线程重建缓存， 使用nx， 并设置过期时间ex</span></span><br><span class="line">        String mutexKey = <span class="string">&quot;mutext:key:&quot;</span> + key;</span><br><span class="line">        <span class="keyword">if</span> (redis.set(mutexKey, <span class="string">&quot;1&quot;</span>, <span class="string">&quot;ex 180&quot;</span>, <span class="string">&quot;nx&quot;</span>)) &#123;</span><br><span class="line">             <span class="comment">// 从数据源获取数据</span></span><br><span class="line">            value = db.get(key);</span><br><span class="line">            <span class="comment">// 回写Redis， 并设置过期时间</span></span><br><span class="line">            redis.setex(key, timeout, value);</span><br><span class="line">            <span class="comment">// 删除key_mutex</span></span><br><span class="line">            redis.delete(mutexKey);</span><br><span class="line">        &#125;<span class="comment">// 其他线程休息50毫秒后重试</span></span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            Thread.sleep(<span class="number">50</span>);</span><br><span class="line">            get(key);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> value;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="缓存与数据库库双写不一致"><a href="#缓存与数据库库双写不一致" class="headerlink" title="缓存与数据库库双写不一致"></a>缓存与数据库库双写不一致</h2><p>在大并发下，同时操作数据库与缓存会存在数据不一致性问题</p>
-<ol>
-<li><p>双写不一致情况</p>
-<p><img src="/archives/134045b4/image-20210930134748777.png" alt="缓存&amp;数据库双写不一致"></p>
-</li>
-<li><p>读写并发不一致</p>
-<p><img src="/archives/134045b4/image-20210930134845540.png" alt="读写并发不一致"></p>
-</li>
-</ol>
-<p><strong>解决方案：</strong></p>
-<ol>
-<li><p>对于并发几率很小的数据（如个人维度的订单数据、用户数据等），这种几乎不用考虑这个问题，很少会发生缓存不一致，可以给缓存数据加上过期时间，每隔一段时间触发读的主动更新即可。</p>
-</li>
-<li><p>就算并发很高，如果业务上能容忍短时间的缓存数据不一致（如商品名称，商品分类菜单等），缓存加上过期时间依然可以解决大部分业务对于缓存的要求。</p>
-</li>
-<li><p>如果不能容忍缓存不一致，可以通过加<strong>读写锁</strong>保证并发读写或写写的时候按顺序排好队，<strong>读读的时候相当于无锁</strong>。</p>
-</li>
-<li><p>也可以用阿里开源的canal通过监控数据库的binlog日志及时的去修改缓存，但是引入了新的中间件，增加了系统的复杂度。</p>
-<p><img src="/archives/134045b4/image-20210930141046670.png" alt="双写不一致解决方案"></p>
-</li>
-</ol>
-<p><strong>总结：</strong></p>
-<p>以上针对的都是<strong>读多写少</strong>的情况加入缓存提高性能，如果是<strong>写多读多</strong>的情况又不能容忍缓存数据不一致，那就没有必要加缓存了，可以直接操作数据库。放入缓存的数据应该是对实时性、一致性要求不是很高的数据。切记不要为了用缓存，同时又要保证绝对的一致性做大量的过度设计和控制，增加系统的复杂性！</p>
 ]]></content>
       <categories>
         <category>Redis</category>
@@ -490,6 +429,67 @@
       </tags>
   </entry>
   <entry>
+    <title>Redis缓存失效和缓存雪崩以及热点缓存key重建优化</title>
+    <url>/archives/134045b4/</url>
+    <content><![CDATA[<h2 id="缓存失效-击穿"><a href="#缓存失效-击穿" class="headerlink" title="缓存失效(击穿)"></a>缓存失效(击穿)</h2><p>缓存失效也称缓存击穿，是由于大批量缓存在同一时间失效可能导致大量请求同时穿透缓存直达数据库，可能造成数据库瞬间压力过大甚至挂掉，对于这种情况我们在批量增加缓存时最好将这一批数据的缓存过期时间设置为一个时间段内的不同时间。</p>
+<p>示例伪代码：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function">String <span class="title">get</span><span class="params">(String key)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 从缓存中获取数据</span></span><br><span class="line">    String cacheValue = cache.get(key);</span><br><span class="line">    <span class="comment">// 缓存为空</span></span><br><span class="line">    <span class="keyword">if</span> (StringUtils.isBlank(cacheValue)) &#123;</span><br><span class="line">        <span class="comment">// 从存储中获取</span></span><br><span class="line">        String storageValue = storage.get(key);</span><br><span class="line">        cache.set(key, storageValue);</span><br><span class="line">        <span class="comment">//设置一个过期时间(300到600之间的一个随机数)</span></span><br><span class="line">        <span class="keyword">int</span> expireTime = <span class="keyword">new</span> Random().nextInt(<span class="number">300</span>)  + <span class="number">300</span>;</span><br><span class="line">        <span class="keyword">if</span> (storageValue == <span class="keyword">null</span>) &#123;</span><br><span class="line">            cache.expire(key, expireTime);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> storageValue;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// 缓存非空</span></span><br><span class="line">        <span class="keyword">return</span> cacheValue;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="缓存雪崩"><a href="#缓存雪崩" class="headerlink" title="缓存雪崩"></a>缓存雪崩</h2><p>缓存雪崩指的是缓存层支撑不住或者宕机后，流量会全部打向存储层。<br>由于缓存层承载着大量请求，有效的保护了存储层，但是如果缓存层由于某些原因不能提供服务（比如超大并发过来，缓存层支撑不住，或者由于缓存设计不好，类似大量请求访问<code>bigkey</code>，导致缓存能支撑的并发急剧下降），于是大量请求都会打到存储层，存储层的调用量会暴增，造成存储层也会级联宕机的情况。</p>
+<p>预防和解决缓存雪崩问题，可以从以下三个方面着手解决：</p>
+<ol>
+<li><p>保证缓存层服务高可用性，比如使用Redis Sentinel或Redis Cluster。</p>
+</li>
+<li><p>依赖隔离组件为后端限流熔断并降级。比如使用阿里开源流控组件Sentinel或Hystrix限流降级组件</p>
+<blockquote>
+<p>比如服务降级，我们可以针对不同的数据采用不同的处理方式，当业务应用访问的是非核心数据（例如电商商品属性，用户信息等）时，暂时停止从缓存中查询这些数据，而是返回预定义的默认降级信息、空值或是错误提示信息；当业务应用访问的是核心数据（例如电商商品库存）时，仍然允许查询缓存，如果缓存缺失，也可以继续通过数据库读取。</p>
+</blockquote>
+</li>
+<li><p>提前演练。在项目上线前，演练缓存层宕机后，应用以及后端的负载情况以及可能出现的问题，在此基础上做一些预案设定。</p>
+</li>
+</ol>
+<h2 id="热点缓存key重建优化"><a href="#热点缓存key重建优化" class="headerlink" title="热点缓存key重建优化"></a>热点缓存key重建优化</h2><p>在使用“缓存+过期时间”的策略时，既可以加速数据读写，又可以保证数据定期更新，这种模式基本上可以满足绝大部分需求，但是相应的也会出现两个问题，可能对应用造成致命bug：</p>
+<ul>
+<li>当前key是一个热点key（例如一个热门的新闻），并发量非常大。</li>
+<li>重建缓存不能在短时间内完成，可能是一个复杂的计算，例如复杂的SQL、多次I/O，多个依赖等。</li>
+</ul>
+<p>在缓存失效的瞬间，有大量线程来重建缓存，造成后端负载加大，甚至可能会让应用崩溃。要解决这个问题主要就是避免大量线程同时重建缓存。</p>
+<p>我们可以利用互斥锁来解决，此方法只允许一个线程重建缓存，其他线程等待重建缓存的线程执行完，重新从缓存获取数据即可。</p>
+<p>示例伪代码：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function">String <span class="title">get</span><span class="params">(String key)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 从Redis中获取数据</span></span><br><span class="line">    String value = redis.get(key);</span><br><span class="line">    <span class="comment">// 如果value为空， 则开始重构缓存</span></span><br><span class="line">    <span class="keyword">if</span> (value == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="comment">// 只允许一个线程重建缓存， 使用nx， 并设置过期时间ex</span></span><br><span class="line">        String mutexKey = <span class="string">&quot;mutext:key:&quot;</span> + key;</span><br><span class="line">        <span class="keyword">if</span> (redis.set(mutexKey, <span class="string">&quot;1&quot;</span>, <span class="string">&quot;ex 180&quot;</span>, <span class="string">&quot;nx&quot;</span>)) &#123;</span><br><span class="line">             <span class="comment">// 从数据源获取数据</span></span><br><span class="line">            value = db.get(key);</span><br><span class="line">            <span class="comment">// 回写Redis， 并设置过期时间</span></span><br><span class="line">            redis.setex(key, timeout, value);</span><br><span class="line">            <span class="comment">// 删除key_mutex</span></span><br><span class="line">            redis.delete(mutexKey);</span><br><span class="line">        &#125;<span class="comment">// 其他线程休息50毫秒后重试</span></span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            Thread.sleep(<span class="number">50</span>);</span><br><span class="line">            get(key);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> value;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="缓存与数据库库双写不一致"><a href="#缓存与数据库库双写不一致" class="headerlink" title="缓存与数据库库双写不一致"></a>缓存与数据库库双写不一致</h2><p>在大并发下，同时操作数据库与缓存会存在数据不一致性问题</p>
+<ol>
+<li><p>双写不一致情况</p>
+<p><img src="/archives/134045b4/image-20210930134748777.png" alt="缓存&amp;数据库双写不一致"></p>
+</li>
+<li><p>读写并发不一致</p>
+<p><img src="/archives/134045b4/image-20210930134845540.png" alt="读写并发不一致"></p>
+</li>
+</ol>
+<p><strong>解决方案：</strong></p>
+<ol>
+<li><p>对于并发几率很小的数据（如个人维度的订单数据、用户数据等），这种几乎不用考虑这个问题，很少会发生缓存不一致，可以给缓存数据加上过期时间，每隔一段时间触发读的主动更新即可。</p>
+</li>
+<li><p>就算并发很高，如果业务上能容忍短时间的缓存数据不一致（如商品名称，商品分类菜单等），缓存加上过期时间依然可以解决大部分业务对于缓存的要求。</p>
+</li>
+<li><p>如果不能容忍缓存不一致，可以通过加<strong>读写锁</strong>保证并发读写或写写的时候按顺序排好队，<strong>读读的时候相当于无锁</strong>。</p>
+</li>
+<li><p>也可以用阿里开源的canal通过监控数据库的binlog日志及时的去修改缓存，但是引入了新的中间件，增加了系统的复杂度。</p>
+<p><img src="/archives/134045b4/image-20210930141046670.png" alt="双写不一致解决方案"></p>
+</li>
+</ol>
+<p><strong>总结：</strong></p>
+<p>以上针对的都是<strong>读多写少</strong>的情况加入缓存提高性能，如果是<strong>写多读多</strong>的情况又不能容忍缓存数据不一致，那就没有必要加缓存了，可以直接操作数据库。放入缓存的数据应该是对实时性、一致性要求不是很高的数据。切记不要为了用缓存，同时又要保证绝对的一致性做大量的过度设计和控制，增加系统的复杂性！</p>
+]]></content>
+      <categories>
+        <category>Redis</category>
+      </categories>
+      <tags>
+        <tag>Redis</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Redis缓存穿透</title>
     <url>/archives/f435d36e/</url>
     <content><![CDATA[<p>缓存穿透是指查询一个根本不存在的数据，缓存层和存储层都不会命中，通常处于容错的考虑，如果从存储层查不到数据则不写入缓存层。<br>缓存层将导致不存在的数据每次请求都要存储层去查询，失去了缓存保护后端存储的意义。<br>造成缓存穿透的基本原因有两个：</p>
@@ -528,197 +528,6 @@
       </categories>
       <tags>
         <tag>Redis</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Redis缓存那些事</title>
-    <url>/archives/cfd129cc/</url>
-    <content><![CDATA[<h2 id="Redis有哪些特性？"><a href="#Redis有哪些特性？" class="headerlink" title="Redis有哪些特性？"></a>Redis有哪些特性？</h2><ul>
-<li>性能高，读的速度是100000次/s，写的速度是80000次/s</li>
-<li>数据持久化，支持RDB、AOF</li>
-<li>支持事务。通过<code>MULTI</code>和<code>EXEC</code>指令包起来</li>
-<li>多数据结构类型</li>
-<li>主从复制</li>
-<li>其他特性：发布/订阅、通知、key过期等</li>
-</ul>
-<h2 id="Redis为什么这么快？"><a href="#Redis为什么这么快？" class="headerlink" title="Redis为什么这么快？"></a>Redis为什么这么快？</h2><ul>
-<li>完全基于内存，没有磁盘IO的开销，异步持久化除外</li>
-<li>单线程，避免多线程切换造成的性能损耗</li>
-<li>非阻塞的IO多路复用机制</li>
-<li>底层的数据存储结构优化、使用原生的数据结构提升性能</li>
-</ul>
-<h2 id="Redis底层的基础数据结构有哪些？"><a href="#Redis底层的基础数据结构有哪些？" class="headerlink" title="Redis底层的基础数据结构有哪些？"></a>Redis底层的基础数据结构有哪些？</h2><ul>
-<li><code>字符串：</code>没有采用C语言的传统字符串，而是自己实现的一个简单动态字符串SDS的抽象类，并保存了长度信息。</li>
-<li><code>链表（linkedlist）：</code>双向无环链表结构，每个链表的结点由一个listNode结构来表示，每个节点都有前置和后置节点的指针。</li>
-<li><code>字典（hashtable）：</code>保存键值对的抽象数据结构，底层使用hash表，每个字典带有两个hash表，供平时使用和rehash时使用。</li>
-<li><code>跳跃表（skiplist）：</code>跳跃表是有序集合的底层实现之一。redis跳跃表由zskiplist和zskiplistNode组成，zskiplist用于保存跳跃表信息（表头、表尾节点、长度等），zskiplistNode用于表示条约节点，每个跳跃表的层高都是1~32的随机数，在同一个跳跃表中，多个节点可以包含相同的分值，但是每个节点的成员对象都必须是唯一的，节点按照分值大小排序，如果分值相同，则按照成员对象的大小排序。</li>
-<li><code>整数集合（intset）：</code>用于保存整数值的集合抽象数据结构，不会出现重复元素，底层实现为数组。</li>
-<li><code>压缩列表（ziplist）：</code>为了节约内存而开发的顺序性数据结构，可以包含多个节点，每一个节点可以保存一个字节数组或整数值。</li>
-</ul>
-<h2 id="Redis支持哪些数据类型？"><a href="#Redis支持哪些数据类型？" class="headerlink" title="Redis支持哪些数据类型？"></a>Redis支持哪些数据类型？</h2><p>五种常用数据类型：<code>String</code>、<code>Hash</code>、<code>Set</code>、<code>List</code>、<code>SortedSet</code>。三种特殊的数据类型：<code>Bitmap</code>、<code>HyperLogLog</code>、<code>GeoSpatial</code>，其中Bitmap、HyperLogLog的底层都是String数据类型，Geospatial底层是Sorted Set数据类型。</p>
-<ul>
-<li>字符串对象String：int整数、embstr编码的简单动态字符串、raw简单动态字符串</li>
-<li>列表对象list：ziplist、linkedlist</li>
-<li>哈希对象hash：hashtable、ziplist</li>
-<li>集合对象set：hashtable、intset</li>
-<li>有序集合对象zset：ziplist、skiplist</li>
-</ul>
-<h2 id="Redis常用的5种数据结构和应用场景？"><a href="#Redis常用的5种数据结构和应用场景？" class="headerlink" title="Redis常用的5种数据结构和应用场景？"></a>Redis常用的5种数据结构和应用场景？</h2><ul>
-<li>String：缓存、计数器、分布式锁等</li>
-<li>List：链表、队列、微博关注人时间轴列表等</li>
-<li>Hash：用户信息、Hash表等</li>
-<li>Set：去重、赞、踩、共同好友等</li>
-<li>Zset：访问量排行榜、点击量排行榜等</li>
-</ul>
-<h2 id="为什么采用的单线程？"><a href="#为什么采用的单线程？" class="headerlink" title="为什么采用的单线程？"></a>为什么采用的单线程？</h2><p>官方回复，CPU不会成为Redis的制约瓶颈，Redis主要受制于内存、网络限制。例如，在一个普通的Linux系统上，使用pipelining可以每秒传递100万个请求，所以如果您的应用程序主要使用O(N)或O(logN)命令，则几乎不会使用太多的CPU，属于IO密集型系统。</p>
-<h2 id="Redis-6-0-之后又改用多线程呢？"><a href="#Redis-6-0-之后又改用多线程呢？" class="headerlink" title="Redis 6.0 之后又改用多线程呢？"></a>Redis 6.0 之后又改用多线程呢？</h2><p>Redis的多线程主要是用来处理数据的读写、协议解析。执行命令还是采用单线程顺序执行。</p>
-<p>主要是因为redis的性能瓶颈在于网络IO而非CPU，使用多线程进行一些周边预处理，提升IO的读写效率，从而提升了整体的吞吐量。antirez在RedisConf 2019分享时提到，Redis 6 引入的多线程IO对性能提升至少在一倍以上。</p>
-<h2 id="过期Key的删除策略有哪些？"><a href="#过期Key的删除策略有哪些？" class="headerlink" title="过期Key的删除策略有哪些？"></a>过期Key的删除策略有哪些？</h2><p>有三种过期删除策略。惰性删除、定期删除、定时删除</p>
-<ul>
-<li>惰性删除：使用key时才进行检测，如果已经过期，则删除。缺点：过期key如果一直没有被访问到，一直无法删除，一直占用内存，造成空间浪费。</li>
-<li>定期删除：每隔一段时间做一次检查，删除过期的key，每次只是随机去一些key去检查</li>
-<li>定时删除：为每个key设置过期时间，同时创建一个定时器。一旦到期，立即执行删除。缺点：如果过期键比较多时，占用CPU比较多，对服务的性能影响很大。</li>
-</ul>
-<h2 id="如果Redis的内存空间不足，淘汰机制？"><a href="#如果Redis的内存空间不足，淘汰机制？" class="headerlink" title="如果Redis的内存空间不足，淘汰机制？"></a>如果Redis的内存空间不足，淘汰机制？</h2><ul>
-<li>volatile-lru：从已设置的过期时间的key中，移除最近最少使用的key进行淘汰</li>
-<li>allkeys-lru：当内存不足以容纳新写入的数据时，再键空间中，移除最近最少使用的key（这个是最常用的）</li>
-<li>volatile-ttl：从已设置过期时间的key中，移除即将要过期的key</li>
-<li>volatile-random：从已设置过期时间的key中，随机选择key淘汰</li>
-<li>allkeys-random：从key中随机选择key进行淘汰</li>
-<li>no-eviction：禁止淘汰数据，当内存达到阈值的时候，新写入操作报错</li>
-<li>volatile-lfu：从已设置过期时间的数据集（server.db[i].expires）中挑选最不经常使用的数据淘汰（LFU(Least Frequently Used)算法，也就是最频繁被访问的数据将来最可能被访问到）</li>
-<li>allkeys-lfu：当内存不足以容纳新写入的数据时，在键空间中，移除最不经常使用的key</li>
-</ul>
-<h2 id="Redis突然挂了怎么解决？"><a href="#Redis突然挂了怎么解决？" class="headerlink" title="Redis突然挂了怎么解决？"></a>Redis突然挂了怎么解决？</h2><ol>
-<li>从系统可用性角度思考，Redis Cluster引入主备机制，当主节点挂了后，自动切换到备用节点，继续提供服务。</li>
-<li>Client端引入本地缓存，通过开关切换，避免Redis突然挂掉，高并发流量把数据库打垮。</li>
-</ol>
-<h2 id="Redis持久化有哪些方式？"><a href="#Redis持久化有哪些方式？" class="headerlink" title="Redis持久化有哪些方式？"></a>Redis持久化有哪些方式？</h2><ol>
-<li>快照RDB。将某个时间点上的数据库状态保存到<code>RDB文件</code>中，RDB文件是一个压缩的二进制文件，保存在磁盘上。当Redis崩溃时，可用于恢复数据。通过<code>SAVE</code>或<code>BGSAVE</code>来来生成RDB文件。<ul>
-<li>SAVE：会阻塞redis进程，直到RDB文件创建完成，在进程阻塞期间，redis不能处理任何命令请求。</li>
-<li>BGSAVE：会fork出一个子进程，然后由子进程负责生成RDB文件，父进程还可以继续处理命令请求，不会阻塞进程。</li>
-</ul>
-</li>
-<li>只追加文件AOF。以日志的形式记录每个写操作（非读操作）。当不同的节点同步数据时，读取日志文件中的内容将写指令从前到后执行一次，既可以完成数据的恢复。</li>
-</ol>
-<h2 id="Redis常用场景"><a href="#Redis常用场景" class="headerlink" title="Redis常用场景"></a>Redis常用场景</h2><ol>
-<li>缓存</li>
-<li>分布式锁，利用Redis的setnx</li>
-<li>分布式session</li>
-<li>计数器，通过incr命令</li>
-<li>排行榜，Redis的有序集合</li>
-<li>其他</li>
-</ol>
-<h2 id="Redis缓存要注意的七大经典问题？"><a href="#Redis缓存要注意的七大经典问题？" class="headerlink" title="Redis缓存要注意的七大经典问题？"></a>Redis缓存要注意的七大经典问题？</h2><p>列举了亿级系统，高访问量情况下Redis缓存可能遇到哪些问题？以及对应的解决方案。</p>
-<ol>
-<li>缓存集中失效</li>
-<li>缓存穿透</li>
-<li>缓存雪崩</li>
-<li>缓存热点</li>
-<li>缓存大key</li>
-<li>缓存数据一直性</li>
-<li>数据并发竞争预热</li>
-</ol>
-<p>每个问题的详细解决方案可以参考<a href="/archives/f435d36e/">Redis缓冲穿透</a>、<a href="/archives/134045b4/">Redis缓存失效和缓存雪崩以及热点缓存key重建优化</a>、<a href="https://mp.weixin.qq.com/s?__biz=Mzg2NzYyNjQzNg==&mid=2247484947&idx=1&sn=5a70f88fba83b435b8144bf1ddd3cc9f&scene=21#wechat_redirect">亿级系统的Redis缓存如何设计？？</a></p>
-<h2 id="Redis集群方案有哪几种？"><a href="#Redis集群方案有哪几种？" class="headerlink" title="Redis集群方案有哪几种？"></a>Redis集群方案有哪几种？</h2><ul>
-<li>主从复制模式</li>
-<li>Sentinel（哨兵）模式</li>
-<li>Redis Cluster模式</li>
-</ul>
-<h2 id="Redis主从数据同步（主从复制）的过程？"><a href="#Redis主从数据同步（主从复制）的过程？" class="headerlink" title="Redis主从数据同步（主从复制）的过程？"></a>Redis主从数据同步（主从复制）的过程？</h2><ol>
-<li>slave启动后，会向master发送sync同步命令</li>
-<li>master收到sync之后，执行bgsave保存快照，生成RDB全量文件</li>
-<li>如果在生成RDB全量快照的过程中，有写命令请求，则将写命令请求记录到临时缓存中</li>
-<li>bgsave执行完毕之后，将RDB全量文件发送到slave节点</li>
-<li>slave清除缓存中的数据，并将RDB中的二进制数据加载到缓存中，</li>
-<li>master发送临时缓存区中写命令给slave，slave接收到写命令并依次顺序执行写命令，将数据加载到缓存中，完成数据初始化</li>
-<li>此后，master会和slave保持长连接，master每次执行一个写命令都会发送给slave，保持master与slave之间数据的一致性</li>
-</ol>
-<h2 id="主从复制的优缺点？"><a href="#主从复制的优缺点？" class="headerlink" title="主从复制的优缺点？"></a>主从复制的优缺点？</h2><h3 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h3><ul>
-<li>master能自动将数据同步到slave，可以进行读写分离，分担master的读压力</li>
-<li>master、slave之间的同步是以非阻塞的方式进行的，同步期间，客户端仍然可以提交查询或更新请求</li>
-</ul>
-<h3 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h3><ul>
-<li>不具备自动容错与恢复功能，master节点宕机后，需要手动指定新的master</li>
-<li>master宕机，如果宕机前数据没有同步完，则切换IP后会存在数据不一致的问题</li>
-<li>难以支持在线扩容，Redis容量受限与单机配置</li>
-</ul>
-<h2 id="Sentinel（哨兵）模式的优缺点？"><a href="#Sentinel（哨兵）模式的优缺点？" class="headerlink" title="Sentinel（哨兵）模式的优缺点？"></a>Sentinel（哨兵）模式的优缺点？</h2><p>哨兵模式基于主从复制模式，增加了<strong>哨兵来监控</strong>与<strong>自动处理故障</strong></p>
-<h3 id="优点-1"><a href="#优点-1" class="headerlink" title="优点"></a>优点</h3><ul>
-<li>哨兵模式基于主从复制模式，所以主从模式有的优点，哨兵模式也有</li>
-<li>master节点挂掉之后可以自动进行切换，系统可用性更高</li>
-</ul>
-<h3 id="缺点-1"><a href="#缺点-1" class="headerlink" title="缺点"></a>缺点</h3><ul>
-<li>Redis的容量受限于单机配置</li>
-<li>需要额外的资源来启动Sentinel进程</li>
-</ul>
-<h2 id="Redis-Cluster模式的优缺点？"><a href="#Redis-Cluster模式的优缺点？" class="headerlink" title="Redis Cluster模式的优缺点？"></a>Redis Cluster模式的优缺点？</h2><p>实现了Redis的分布式存储，即每台节点都存储不同的内容，来解决在线扩容的问题。</p>
-<h3 id="优点-2"><a href="#优点-2" class="headerlink" title="优点"></a>优点</h3><ul>
-<li>无中心架构，数据按照slot分布在多个节点</li>
-<li>集群中的每个节点都是平等的，每个节点都保存各自的数据和整个集群的状态。每个节点都和其他所有节点连接，而且这些连接保持活跃，这样就保证了我们只需要连接集群中的任意一个节点，就可以获取到其他节点的数据。</li>
-<li>可在线扩容到1000多个节点，节点可以动态添加或删除</li>
-<li>能够实现自动故障转移，节点之间通过<code>gossip协议</code>交换状态信息，用投票机制完成slave到master的角色转换</li>
-</ul>
-<h3 id="缺点-2"><a href="#缺点-2" class="headerlink" title="缺点"></a>缺点</h3><ul>
-<li>数据通过异步复制，不保证数据的强一致性</li>
-<li>slave充当“冷备”，不对外提供读、写服务，只作为故障转移使用</li>
-<li>批量操作限制，目前只支持具有相同slot值的key执行批量操作，对mset、mget、sunion等操作支持不友好</li>
-<li>key事务操作支持有限，只支持多key在同一个节点的事务操作，多个key分布在不同的节点是无法使用事务功能</li>
-<li>不支持多数据库空间，一台Redis可以支持16个db，集群模式下只能使用一个，即<code>db 0</code>。Redis Cluster模式不建议使用pipeline和multi-keys操作，减少max redirect产生的场景</li>
-</ul>
-<h2 id="Redis如何做扩容？"><a href="#Redis如何做扩容？" class="headerlink" title="Redis如何做扩容？"></a>Redis如何做扩容？</h2><p>为了避免数据迁移失败，通常使用<code>一致性哈希</code>实现动态扩容缩容，有效减少需要迁移的key数量。</p>
-<p>但是Cluster模式，采用固定Slot槽位方式（16384个），对每个key计算CRC16值，然后对16384取模，然后根据slot值找到目标机器，扩容时，我们只需要迁移一部分的slot到新节点即可。</p>
-<h2 id="Redis的集群原理？"><a href="#Redis的集群原理？" class="headerlink" title="Redis的集群原理？"></a>Redis的集群原理？</h2><p>一个redis集群由多个node节点组成，而多个node节点之间通过<code>cluster meet</code>命令来进行连接，组成一个集群。</p>
-<p>数据存储通过分片的形式，整个集群分成<code>16384</code>个slot，每个节点负责一部分槽位。整个槽位的信息会同步到所有节点中。</p>
-<p>key与slot的映射关系：</p>
-<ul>
-<li>键值对key，进行<code>CRC16</code>计算，计算出一个16 bit 的值</li>
-<li>将16 bit 的值对16384取模，得到0~16384的数字表示key对应的哈希槽</li>
-</ul>
-<h2 id="Redis如何做到高可用的？"><a href="#Redis如何做到高可用的？" class="headerlink" title="Redis如何做到高可用的？"></a>Redis如何做到高可用的？</h2><p>哨兵机制。具有自动故障转移、集群监控、消息通知等功能。</p>
-<p>哨兵可以同时监控所有的主、从服务器，当某个master下线时，自动提升对应的slave为master，然后由新的master对外提供服务。</p>
-<h2 id="什么时Redis事务？"><a href="#什么时Redis事务？" class="headerlink" title="什么时Redis事务？"></a>什么时Redis事务？</h2><p>Redis事务是一组命令的集合，将多个命令打包，然后把这些命令按顺序添加到队列中，并且顺序执行这些命令。</p>
-<p>Redis事务中没有像Mysql关系型数据库中事务隔离级别的概念，不能保证原子性操作，也没有像Mysql那样执行事务失败会进行事务回滚操作。</p>
-<h2 id="Redis事务执行流程？"><a href="#Redis事务执行流程？" class="headerlink" title="Redis事务执行流程？"></a>Redis事务执行流程？</h2><p>通过<code>MULTI</code>、<code>EXEC</code>、<code>WATCH</code>等命令来实现事务机制，事务执行过程将一系列多个命令按照顺序一次性执行，在执行期间，事务不会被中断，也不会执行客户端的其他请求，直到所有命令执行完毕。</p>
-<p>具体过程：</p>
-<ul>
-<li>服务端收到客户端请求，事务以<code>MULTI</code>开始</li>
-<li>如果正处于事务状态时，则会把后续命令放入队列同时返回给客户端<code>QUEUED</code>，反之直接执行这个命令</li>
-<li>当收到客户端的<code>EXEC</code>命令时，才会将队列里的命令取出、顺序执行、执行完将当前事务状态改为非事务状态</li>
-<li>如果收到<code>DISCARD</code>命令，放弃执行队列中的命令，可以理解为Mysql中的回滚操作，并且将当前的事务状态改为非事务状态</li>
-</ul>
-<blockquote>
-<p>WATCH监视某个key，该命令只能在MULTI命令之前执行。如果监视的key被其他客户端修改，EXEC将会放弃执行队列中的所有命令。UNWATCH取消监视之前通过WATCH命令监视的key。通过执行EXEC、DISCARD两个命令之前监视的key也会被取消监视。</p>
-</blockquote>
-<h2 id="Redis与Guava、Caffeine-有什么区别？"><a href="#Redis与Guava、Caffeine-有什么区别？" class="headerlink" title="Redis与Guava、Caffeine 有什么区别？"></a>Redis与Guava、Caffeine 有什么区别？</h2><p>缓存分为本地缓存和分布式缓存。</p>
-<p>1、Caffeine、Guava，属于本地缓存，特点：</p>
-<ul>
-<li>直接访问内存，速度快，受内存限制，无法进行大数据存储。</li>
-<li>无网络通讯开销，性能更高。</li>
-<li>只支持本地应用进程访问，同步更新所有节点的本地缓存数据成本较高。</li>
-<li>应用进程重启，数据会丢失。</li>
-</ul>
-<p>所以，本地缓存适合存储一些不易改变或者低频改变的高热点数据。</p>
-<p>2、Redis属于分布式缓存，特点：</p>
-<ul>
-<li>集群模式，支持大数据量存储</li>
-<li>数据集中存储，保证数据的一致性</li>
-<li>数据跨网络传输，性能低于本地缓存。但同一个机房，两台服务器之间请求跑一个来回也就500微秒，比起其优势，这点损耗完全可以忽略，这也是分布式缓存受欢迎的原因。</li>
-<li>支持副本机制，有效保证高可用性</li>
-</ul>
-<h2 id="如何实现一个分布式锁？"><a href="#如何实现一个分布式锁？" class="headerlink" title="如何实现一个分布式锁？"></a>如何实现一个分布式锁？</h2><ol>
-<li>数据库表，性能比较差</li>
-<li>使用Lua脚本(包括 Setnx + expire 两条指令)</li>
-<li>set的扩展命令(set key value [ex][px] [NX|XX])</li>
-<li>Redlock框架</li>
-<li>Zookeeper Curator框架提供了现成的分布式锁。</li>
-</ol>
-]]></content>
-      <categories>
-        <category>面试宝典</category>
-      </categories>
-      <tags>
-        <tag>面试宝典</tag>
       </tags>
   </entry>
   <entry>
@@ -935,6 +744,197 @@
       </categories>
       <tags>
         <tag>Redis</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Redis缓存那些事</title>
+    <url>/archives/cfd129cc/</url>
+    <content><![CDATA[<h2 id="Redis有哪些特性？"><a href="#Redis有哪些特性？" class="headerlink" title="Redis有哪些特性？"></a>Redis有哪些特性？</h2><ul>
+<li>性能高，读的速度是100000次/s，写的速度是80000次/s</li>
+<li>数据持久化，支持RDB、AOF</li>
+<li>支持事务。通过<code>MULTI</code>和<code>EXEC</code>指令包起来</li>
+<li>多数据结构类型</li>
+<li>主从复制</li>
+<li>其他特性：发布/订阅、通知、key过期等</li>
+</ul>
+<h2 id="Redis为什么这么快？"><a href="#Redis为什么这么快？" class="headerlink" title="Redis为什么这么快？"></a>Redis为什么这么快？</h2><ul>
+<li>完全基于内存，没有磁盘IO的开销，异步持久化除外</li>
+<li>单线程，避免多线程切换造成的性能损耗</li>
+<li>非阻塞的IO多路复用机制</li>
+<li>底层的数据存储结构优化、使用原生的数据结构提升性能</li>
+</ul>
+<h2 id="Redis底层的基础数据结构有哪些？"><a href="#Redis底层的基础数据结构有哪些？" class="headerlink" title="Redis底层的基础数据结构有哪些？"></a>Redis底层的基础数据结构有哪些？</h2><ul>
+<li><code>字符串：</code>没有采用C语言的传统字符串，而是自己实现的一个简单动态字符串SDS的抽象类，并保存了长度信息。</li>
+<li><code>链表（linkedlist）：</code>双向无环链表结构，每个链表的结点由一个listNode结构来表示，每个节点都有前置和后置节点的指针。</li>
+<li><code>字典（hashtable）：</code>保存键值对的抽象数据结构，底层使用hash表，每个字典带有两个hash表，供平时使用和rehash时使用。</li>
+<li><code>跳跃表（skiplist）：</code>跳跃表是有序集合的底层实现之一。redis跳跃表由zskiplist和zskiplistNode组成，zskiplist用于保存跳跃表信息（表头、表尾节点、长度等），zskiplistNode用于表示条约节点，每个跳跃表的层高都是1~32的随机数，在同一个跳跃表中，多个节点可以包含相同的分值，但是每个节点的成员对象都必须是唯一的，节点按照分值大小排序，如果分值相同，则按照成员对象的大小排序。</li>
+<li><code>整数集合（intset）：</code>用于保存整数值的集合抽象数据结构，不会出现重复元素，底层实现为数组。</li>
+<li><code>压缩列表（ziplist）：</code>为了节约内存而开发的顺序性数据结构，可以包含多个节点，每一个节点可以保存一个字节数组或整数值。</li>
+</ul>
+<h2 id="Redis支持哪些数据类型？"><a href="#Redis支持哪些数据类型？" class="headerlink" title="Redis支持哪些数据类型？"></a>Redis支持哪些数据类型？</h2><p>五种常用数据类型：<code>String</code>、<code>Hash</code>、<code>Set</code>、<code>List</code>、<code>SortedSet</code>。三种特殊的数据类型：<code>Bitmap</code>、<code>HyperLogLog</code>、<code>GeoSpatial</code>，其中Bitmap、HyperLogLog的底层都是String数据类型，Geospatial底层是Sorted Set数据类型。</p>
+<ul>
+<li>字符串对象String：int整数、embstr编码的简单动态字符串、raw简单动态字符串</li>
+<li>列表对象list：ziplist、linkedlist</li>
+<li>哈希对象hash：hashtable、ziplist</li>
+<li>集合对象set：hashtable、intset</li>
+<li>有序集合对象zset：ziplist、skiplist</li>
+</ul>
+<h2 id="Redis常用的5种数据结构和应用场景？"><a href="#Redis常用的5种数据结构和应用场景？" class="headerlink" title="Redis常用的5种数据结构和应用场景？"></a>Redis常用的5种数据结构和应用场景？</h2><ul>
+<li>String：缓存、计数器、分布式锁等</li>
+<li>List：链表、队列、微博关注人时间轴列表等</li>
+<li>Hash：用户信息、Hash表等</li>
+<li>Set：去重、赞、踩、共同好友等</li>
+<li>Zset：访问量排行榜、点击量排行榜等</li>
+</ul>
+<h2 id="为什么采用的单线程？"><a href="#为什么采用的单线程？" class="headerlink" title="为什么采用的单线程？"></a>为什么采用的单线程？</h2><p>官方回复，CPU不会成为Redis的制约瓶颈，Redis主要受制于内存、网络限制。例如，在一个普通的Linux系统上，使用pipelining可以每秒传递100万个请求，所以如果您的应用程序主要使用O(N)或O(logN)命令，则几乎不会使用太多的CPU，属于IO密集型系统。</p>
+<h2 id="Redis-6-0-之后又改用多线程呢？"><a href="#Redis-6-0-之后又改用多线程呢？" class="headerlink" title="Redis 6.0 之后又改用多线程呢？"></a>Redis 6.0 之后又改用多线程呢？</h2><p>Redis的多线程主要是用来处理数据的读写、协议解析。执行命令还是采用单线程顺序执行。</p>
+<p>主要是因为redis的性能瓶颈在于网络IO而非CPU，使用多线程进行一些周边预处理，提升IO的读写效率，从而提升了整体的吞吐量。antirez在RedisConf 2019分享时提到，Redis 6 引入的多线程IO对性能提升至少在一倍以上。</p>
+<h2 id="过期Key的删除策略有哪些？"><a href="#过期Key的删除策略有哪些？" class="headerlink" title="过期Key的删除策略有哪些？"></a>过期Key的删除策略有哪些？</h2><p>有三种过期删除策略。惰性删除、定期删除、定时删除</p>
+<ul>
+<li>惰性删除：使用key时才进行检测，如果已经过期，则删除。缺点：过期key如果一直没有被访问到，一直无法删除，一直占用内存，造成空间浪费。</li>
+<li>定期删除：每隔一段时间做一次检查，删除过期的key，每次只是随机去一些key去检查</li>
+<li>定时删除：为每个key设置过期时间，同时创建一个定时器。一旦到期，立即执行删除。缺点：如果过期键比较多时，占用CPU比较多，对服务的性能影响很大。</li>
+</ul>
+<h2 id="如果Redis的内存空间不足，淘汰机制？"><a href="#如果Redis的内存空间不足，淘汰机制？" class="headerlink" title="如果Redis的内存空间不足，淘汰机制？"></a>如果Redis的内存空间不足，淘汰机制？</h2><ul>
+<li>volatile-lru：从已设置的过期时间的key中，移除最近最少使用的key进行淘汰</li>
+<li>allkeys-lru：当内存不足以容纳新写入的数据时，再键空间中，移除最近最少使用的key（这个是最常用的）</li>
+<li>volatile-ttl：从已设置过期时间的key中，移除即将要过期的key</li>
+<li>volatile-random：从已设置过期时间的key中，随机选择key淘汰</li>
+<li>allkeys-random：从key中随机选择key进行淘汰</li>
+<li>no-eviction：禁止淘汰数据，当内存达到阈值的时候，新写入操作报错</li>
+<li>volatile-lfu：从已设置过期时间的数据集（server.db[i].expires）中挑选最不经常使用的数据淘汰（LFU(Least Frequently Used)算法，也就是最频繁被访问的数据将来最可能被访问到）</li>
+<li>allkeys-lfu：当内存不足以容纳新写入的数据时，在键空间中，移除最不经常使用的key</li>
+</ul>
+<h2 id="Redis突然挂了怎么解决？"><a href="#Redis突然挂了怎么解决？" class="headerlink" title="Redis突然挂了怎么解决？"></a>Redis突然挂了怎么解决？</h2><ol>
+<li>从系统可用性角度思考，Redis Cluster引入主备机制，当主节点挂了后，自动切换到备用节点，继续提供服务。</li>
+<li>Client端引入本地缓存，通过开关切换，避免Redis突然挂掉，高并发流量把数据库打垮。</li>
+</ol>
+<h2 id="Redis持久化有哪些方式？"><a href="#Redis持久化有哪些方式？" class="headerlink" title="Redis持久化有哪些方式？"></a>Redis持久化有哪些方式？</h2><ol>
+<li>快照RDB。将某个时间点上的数据库状态保存到<code>RDB文件</code>中，RDB文件是一个压缩的二进制文件，保存在磁盘上。当Redis崩溃时，可用于恢复数据。通过<code>SAVE</code>或<code>BGSAVE</code>来来生成RDB文件。<ul>
+<li>SAVE：会阻塞redis进程，直到RDB文件创建完成，在进程阻塞期间，redis不能处理任何命令请求。</li>
+<li>BGSAVE：会fork出一个子进程，然后由子进程负责生成RDB文件，父进程还可以继续处理命令请求，不会阻塞进程。</li>
+</ul>
+</li>
+<li>只追加文件AOF。以日志的形式记录每个写操作（非读操作）。当不同的节点同步数据时，读取日志文件中的内容将写指令从前到后执行一次，既可以完成数据的恢复。</li>
+</ol>
+<h2 id="Redis常用场景"><a href="#Redis常用场景" class="headerlink" title="Redis常用场景"></a>Redis常用场景</h2><ol>
+<li>缓存</li>
+<li>分布式锁，利用Redis的setnx</li>
+<li>分布式session</li>
+<li>计数器，通过incr命令</li>
+<li>排行榜，Redis的有序集合</li>
+<li>其他</li>
+</ol>
+<h2 id="Redis缓存要注意的七大经典问题？"><a href="#Redis缓存要注意的七大经典问题？" class="headerlink" title="Redis缓存要注意的七大经典问题？"></a>Redis缓存要注意的七大经典问题？</h2><p>列举了亿级系统，高访问量情况下Redis缓存可能遇到哪些问题？以及对应的解决方案。</p>
+<ol>
+<li>缓存集中失效</li>
+<li>缓存穿透</li>
+<li>缓存雪崩</li>
+<li>缓存热点</li>
+<li>缓存大key</li>
+<li>缓存数据一直性</li>
+<li>数据并发竞争预热</li>
+</ol>
+<p>每个问题的详细解决方案可以参考<a href="/archives/f435d36e/">Redis缓冲穿透</a>、<a href="/archives/134045b4/">Redis缓存失效和缓存雪崩以及热点缓存key重建优化</a>、<a href="https://mp.weixin.qq.com/s?__biz=Mzg2NzYyNjQzNg==&mid=2247484947&idx=1&sn=5a70f88fba83b435b8144bf1ddd3cc9f&scene=21#wechat_redirect">亿级系统的Redis缓存如何设计？？</a></p>
+<h2 id="Redis集群方案有哪几种？"><a href="#Redis集群方案有哪几种？" class="headerlink" title="Redis集群方案有哪几种？"></a>Redis集群方案有哪几种？</h2><ul>
+<li>主从复制模式</li>
+<li>Sentinel（哨兵）模式</li>
+<li>Redis Cluster模式</li>
+</ul>
+<h2 id="Redis主从数据同步（主从复制）的过程？"><a href="#Redis主从数据同步（主从复制）的过程？" class="headerlink" title="Redis主从数据同步（主从复制）的过程？"></a>Redis主从数据同步（主从复制）的过程？</h2><ol>
+<li>slave启动后，会向master发送sync同步命令</li>
+<li>master收到sync之后，执行bgsave保存快照，生成RDB全量文件</li>
+<li>如果在生成RDB全量快照的过程中，有写命令请求，则将写命令请求记录到临时缓存中</li>
+<li>bgsave执行完毕之后，将RDB全量文件发送到slave节点</li>
+<li>slave清除缓存中的数据，并将RDB中的二进制数据加载到缓存中，</li>
+<li>master发送临时缓存区中写命令给slave，slave接收到写命令并依次顺序执行写命令，将数据加载到缓存中，完成数据初始化</li>
+<li>此后，master会和slave保持长连接，master每次执行一个写命令都会发送给slave，保持master与slave之间数据的一致性</li>
+</ol>
+<h2 id="主从复制的优缺点？"><a href="#主从复制的优缺点？" class="headerlink" title="主从复制的优缺点？"></a>主从复制的优缺点？</h2><h3 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h3><ul>
+<li>master能自动将数据同步到slave，可以进行读写分离，分担master的读压力</li>
+<li>master、slave之间的同步是以非阻塞的方式进行的，同步期间，客户端仍然可以提交查询或更新请求</li>
+</ul>
+<h3 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h3><ul>
+<li>不具备自动容错与恢复功能，master节点宕机后，需要手动指定新的master</li>
+<li>master宕机，如果宕机前数据没有同步完，则切换IP后会存在数据不一致的问题</li>
+<li>难以支持在线扩容，Redis容量受限与单机配置</li>
+</ul>
+<h2 id="Sentinel（哨兵）模式的优缺点？"><a href="#Sentinel（哨兵）模式的优缺点？" class="headerlink" title="Sentinel（哨兵）模式的优缺点？"></a>Sentinel（哨兵）模式的优缺点？</h2><p>哨兵模式基于主从复制模式，增加了<strong>哨兵来监控</strong>与<strong>自动处理故障</strong></p>
+<h3 id="优点-1"><a href="#优点-1" class="headerlink" title="优点"></a>优点</h3><ul>
+<li>哨兵模式基于主从复制模式，所以主从模式有的优点，哨兵模式也有</li>
+<li>master节点挂掉之后可以自动进行切换，系统可用性更高</li>
+</ul>
+<h3 id="缺点-1"><a href="#缺点-1" class="headerlink" title="缺点"></a>缺点</h3><ul>
+<li>Redis的容量受限于单机配置</li>
+<li>需要额外的资源来启动Sentinel进程</li>
+</ul>
+<h2 id="Redis-Cluster模式的优缺点？"><a href="#Redis-Cluster模式的优缺点？" class="headerlink" title="Redis Cluster模式的优缺点？"></a>Redis Cluster模式的优缺点？</h2><p>实现了Redis的分布式存储，即每台节点都存储不同的内容，来解决在线扩容的问题。</p>
+<h3 id="优点-2"><a href="#优点-2" class="headerlink" title="优点"></a>优点</h3><ul>
+<li>无中心架构，数据按照slot分布在多个节点</li>
+<li>集群中的每个节点都是平等的，每个节点都保存各自的数据和整个集群的状态。每个节点都和其他所有节点连接，而且这些连接保持活跃，这样就保证了我们只需要连接集群中的任意一个节点，就可以获取到其他节点的数据。</li>
+<li>可在线扩容到1000多个节点，节点可以动态添加或删除</li>
+<li>能够实现自动故障转移，节点之间通过<code>gossip协议</code>交换状态信息，用投票机制完成slave到master的角色转换</li>
+</ul>
+<h3 id="缺点-2"><a href="#缺点-2" class="headerlink" title="缺点"></a>缺点</h3><ul>
+<li>数据通过异步复制，不保证数据的强一致性</li>
+<li>slave充当“冷备”，不对外提供读、写服务，只作为故障转移使用</li>
+<li>批量操作限制，目前只支持具有相同slot值的key执行批量操作，对mset、mget、sunion等操作支持不友好</li>
+<li>key事务操作支持有限，只支持多key在同一个节点的事务操作，多个key分布在不同的节点是无法使用事务功能</li>
+<li>不支持多数据库空间，一台Redis可以支持16个db，集群模式下只能使用一个，即<code>db 0</code>。Redis Cluster模式不建议使用pipeline和multi-keys操作，减少max redirect产生的场景</li>
+</ul>
+<h2 id="Redis如何做扩容？"><a href="#Redis如何做扩容？" class="headerlink" title="Redis如何做扩容？"></a>Redis如何做扩容？</h2><p>为了避免数据迁移失败，通常使用<code>一致性哈希</code>实现动态扩容缩容，有效减少需要迁移的key数量。</p>
+<p>但是Cluster模式，采用固定Slot槽位方式（16384个），对每个key计算CRC16值，然后对16384取模，然后根据slot值找到目标机器，扩容时，我们只需要迁移一部分的slot到新节点即可。</p>
+<h2 id="Redis的集群原理？"><a href="#Redis的集群原理？" class="headerlink" title="Redis的集群原理？"></a>Redis的集群原理？</h2><p>一个redis集群由多个node节点组成，而多个node节点之间通过<code>cluster meet</code>命令来进行连接，组成一个集群。</p>
+<p>数据存储通过分片的形式，整个集群分成<code>16384</code>个slot，每个节点负责一部分槽位。整个槽位的信息会同步到所有节点中。</p>
+<p>key与slot的映射关系：</p>
+<ul>
+<li>键值对key，进行<code>CRC16</code>计算，计算出一个16 bit 的值</li>
+<li>将16 bit 的值对16384取模，得到0~16384的数字表示key对应的哈希槽</li>
+</ul>
+<h2 id="Redis如何做到高可用的？"><a href="#Redis如何做到高可用的？" class="headerlink" title="Redis如何做到高可用的？"></a>Redis如何做到高可用的？</h2><p>哨兵机制。具有自动故障转移、集群监控、消息通知等功能。</p>
+<p>哨兵可以同时监控所有的主、从服务器，当某个master下线时，自动提升对应的slave为master，然后由新的master对外提供服务。</p>
+<h2 id="什么时Redis事务？"><a href="#什么时Redis事务？" class="headerlink" title="什么时Redis事务？"></a>什么时Redis事务？</h2><p>Redis事务是一组命令的集合，将多个命令打包，然后把这些命令按顺序添加到队列中，并且顺序执行这些命令。</p>
+<p>Redis事务中没有像Mysql关系型数据库中事务隔离级别的概念，不能保证原子性操作，也没有像Mysql那样执行事务失败会进行事务回滚操作。</p>
+<h2 id="Redis事务执行流程？"><a href="#Redis事务执行流程？" class="headerlink" title="Redis事务执行流程？"></a>Redis事务执行流程？</h2><p>通过<code>MULTI</code>、<code>EXEC</code>、<code>WATCH</code>等命令来实现事务机制，事务执行过程将一系列多个命令按照顺序一次性执行，在执行期间，事务不会被中断，也不会执行客户端的其他请求，直到所有命令执行完毕。</p>
+<p>具体过程：</p>
+<ul>
+<li>服务端收到客户端请求，事务以<code>MULTI</code>开始</li>
+<li>如果正处于事务状态时，则会把后续命令放入队列同时返回给客户端<code>QUEUED</code>，反之直接执行这个命令</li>
+<li>当收到客户端的<code>EXEC</code>命令时，才会将队列里的命令取出、顺序执行、执行完将当前事务状态改为非事务状态</li>
+<li>如果收到<code>DISCARD</code>命令，放弃执行队列中的命令，可以理解为Mysql中的回滚操作，并且将当前的事务状态改为非事务状态</li>
+</ul>
+<blockquote>
+<p>WATCH监视某个key，该命令只能在MULTI命令之前执行。如果监视的key被其他客户端修改，EXEC将会放弃执行队列中的所有命令。UNWATCH取消监视之前通过WATCH命令监视的key。通过执行EXEC、DISCARD两个命令之前监视的key也会被取消监视。</p>
+</blockquote>
+<h2 id="Redis与Guava、Caffeine-有什么区别？"><a href="#Redis与Guava、Caffeine-有什么区别？" class="headerlink" title="Redis与Guava、Caffeine 有什么区别？"></a>Redis与Guava、Caffeine 有什么区别？</h2><p>缓存分为本地缓存和分布式缓存。</p>
+<p>1、Caffeine、Guava，属于本地缓存，特点：</p>
+<ul>
+<li>直接访问内存，速度快，受内存限制，无法进行大数据存储。</li>
+<li>无网络通讯开销，性能更高。</li>
+<li>只支持本地应用进程访问，同步更新所有节点的本地缓存数据成本较高。</li>
+<li>应用进程重启，数据会丢失。</li>
+</ul>
+<p>所以，本地缓存适合存储一些不易改变或者低频改变的高热点数据。</p>
+<p>2、Redis属于分布式缓存，特点：</p>
+<ul>
+<li>集群模式，支持大数据量存储</li>
+<li>数据集中存储，保证数据的一致性</li>
+<li>数据跨网络传输，性能低于本地缓存。但同一个机房，两台服务器之间请求跑一个来回也就500微秒，比起其优势，这点损耗完全可以忽略，这也是分布式缓存受欢迎的原因。</li>
+<li>支持副本机制，有效保证高可用性</li>
+</ul>
+<h2 id="如何实现一个分布式锁？"><a href="#如何实现一个分布式锁？" class="headerlink" title="如何实现一个分布式锁？"></a>如何实现一个分布式锁？</h2><ol>
+<li>数据库表，性能比较差</li>
+<li>使用Lua脚本(包括 Setnx + expire 两条指令)</li>
+<li>set的扩展命令(set key value [ex][px] [NX|XX])</li>
+<li>Redlock框架</li>
+<li>Zookeeper Curator框架提供了现成的分布式锁。</li>
+</ol>
+]]></content>
+      <categories>
+        <category>面试宝典</category>
+      </categories>
+      <tags>
+        <tag>面试宝典</tag>
       </tags>
   </entry>
   <entry>
@@ -1308,29 +1308,6 @@
       </tags>
   </entry>
   <entry>
-    <title>hexo静态页面图片不显示问题</title>
-    <url>/archives/e4419141/</url>
-    <content><![CDATA[<p>hexo静态页面图片不显示一般有几个原因：</p>
-<p>1、<code>_config.yml</code>中没有设置<code>post_asset_folder: true</code>；这个设置默认是false</p>
-<p>2、没有安装插件 asset-image</p>
-<p>如果在运行工程之前上面两个步骤都没有操作过，则首先需要在<code>_config.yml</code>中设置<code>post_asset_folder:true</code> 。然后在cmd中运行</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npm install https://github.com/CodeFalling/hexo-asset-image --save</span><br></pre></td></tr></table></figure>
-
-<p>由于国内网络环境，可能需要多下载几次才可以下载成功，要耐心等待。或者有条件的可以翻墙下载。</p>
-<p>以上操作完毕之后重新发布工程</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean &amp;&amp; hexo generate &amp;&amp; hexo deploy</span><br></pre></td></tr></table></figure>
-
-<p>页面效果如下：</p>
-<p><img src="/archives/e4419141/image-20210728134047043.png"></p>
-]]></content>
-      <categories>
-        <category>解决方案</category>
-      </categories>
-      <tags>
-        <tag>问题解决</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>html播放.m3u8格式视频</title>
     <url>/archives/e6ea49db/</url>
     <content><![CDATA[<p>播放<code>.m3u8</code>格式视频时需要借助<code>hls.js</code>，为了下载速度快点，我们直接通过国内的cdn访问<a href="https://www.bootcdn.cn/hls.js/">https://www.bootcdn.cn/hls.js/</a></p>
@@ -1384,6 +1361,29 @@
       </categories>
       <tags>
         <tag>html</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>hexo静态页面图片不显示问题</title>
+    <url>/archives/e4419141/</url>
+    <content><![CDATA[<p>hexo静态页面图片不显示一般有几个原因：</p>
+<p>1、<code>_config.yml</code>中没有设置<code>post_asset_folder: true</code>；这个设置默认是false</p>
+<p>2、没有安装插件 asset-image</p>
+<p>如果在运行工程之前上面两个步骤都没有操作过，则首先需要在<code>_config.yml</code>中设置<code>post_asset_folder:true</code> 。然后在cmd中运行</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npm install https://github.com/CodeFalling/hexo-asset-image --save</span><br></pre></td></tr></table></figure>
+
+<p>由于国内网络环境，可能需要多下载几次才可以下载成功，要耐心等待。或者有条件的可以翻墙下载。</p>
+<p>以上操作完毕之后重新发布工程</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean &amp;&amp; hexo generate &amp;&amp; hexo deploy</span><br></pre></td></tr></table></figure>
+
+<p>页面效果如下：</p>
+<p><img src="/archives/e4419141/image-20210728134047043.png"></p>
+]]></content>
+      <categories>
+        <category>解决方案</category>
+      </categories>
+      <tags>
+        <tag>问题解决</tag>
       </tags>
   </entry>
   <entry>
@@ -1533,6 +1533,23 @@
       </tags>
   </entry>
   <entry>
+    <title>使用栈数据结构实现简易计算器算法</title>
+    <url>/archives/12e6bc0/</url>
+    <content><![CDATA[<p>首先看一下设计思路：</p>
+<p><img src="/archives/12e6bc0/%E6%A0%88%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%AE%9E%E7%8E%B0%E8%AE%A1%E7%AE%97%E5%99%A8.png" alt="栈数据结构实现简易计算器"></p>
+<p>具体代码实现：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lhb.test;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.util.Stack;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Program</span>: netty-chat 数字</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Description</span>:</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Author</span>: LHB</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Version</span>: v0.0.1</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Time</span>: 2021-11-01 15:02</span></span><br><span class="line"><span class="comment"> **/</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CalculateStack</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 操作数栈</span></span><br><span class="line">    <span class="keyword">private</span> Stack&lt;Integer&gt; numberStack = <span class="keyword">new</span> Stack&lt;&gt;();</span><br><span class="line">    <span class="comment">// 符号栈</span></span><br><span class="line">    <span class="keyword">private</span> Stack&lt;Character&gt; operatorStack = <span class="keyword">new</span> Stack&lt;&gt;();</span><br><span class="line">    <span class="function"><span class="keyword">public</span> Integer <span class="title">calculate</span><span class="params">(String des)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; des.length(); i++) &#123;</span><br><span class="line">            <span class="comment">// 如果读取出来的是数字，直接将数字加入到操作数栈，否则加入的符号栈中</span></span><br><span class="line">            <span class="keyword">if</span> (Character.getType(des.charAt(i)) == <span class="number">9</span>) &#123;</span><br><span class="line">                <span class="comment">// 读取出来的是ASCII码，需要减去48才是真正是数字</span></span><br><span class="line">                numberStack.push(Integer.valueOf(des.charAt(i)-<span class="number">48</span>));</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="comment">// 如果符号栈为空，则直接加入到符号栈中</span></span><br><span class="line">                <span class="keyword">if</span> (operatorStack.isEmpty()) &#123;</span><br><span class="line">                    operatorStack.push(des.charAt(i));</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="comment">// 如果符号栈不为空，则比较符号栈栈顶符号和截取出来的符号的优先级，如果小于栈顶符号优先级，则取出栈顶符号和操作数栈中的两个数字做运算，</span></span><br><span class="line">                    <span class="comment">// 并将最后运算结果重新加入到操作数栈中，同时将此刻解析到的符号加入到符号栈中</span></span><br><span class="line">                    <span class="keyword">if</span> (priority(des.charAt(i)) &lt;= priority(operatorStack.peek())) &#123;</span><br><span class="line">                        Integer sec = numberStack.pop();</span><br><span class="line">                        Integer fir = numberStack.pop();</span><br><span class="line">                        Character operator = operatorStack.pop();</span><br><span class="line">                        <span class="keyword">int</span> result = <span class="keyword">this</span>.cal(fir, sec, operator);</span><br><span class="line">                        numberStack.push(result);</span><br><span class="line">                        operatorStack.push(des.charAt(i));</span><br><span class="line">                    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                        operatorStack.push(des.charAt(i));</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 处理符号栈中剩余的还没有做运算的符号</span></span><br><span class="line">        <span class="keyword">while</span>(<span class="keyword">true</span>) &#123;</span><br><span class="line">            <span class="keyword">if</span> (operatorStack.isEmpty()) &#123;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            Integer sec = numberStack.pop();</span><br><span class="line">            Integer fir = numberStack.pop();</span><br><span class="line">            Character operator = operatorStack.pop();</span><br><span class="line">            <span class="keyword">int</span> result = cal(fir, sec, operator);</span><br><span class="line">            numberStack.push(result);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 最后留在操作数栈中的数字，就是最后表达式的运算结果</span></span><br><span class="line">        <span class="keyword">return</span> numberStack.pop();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 获取操作数优先级</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> operator 操作数</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">priority</span><span class="params">(<span class="keyword">char</span> operator)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (operator == <span class="string">&#x27;*&#x27;</span> || operator == <span class="string">&#x27;/&#x27;</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (operator == <span class="string">&#x27;+&#x27;</span> || operator == <span class="string">&#x27;-&#x27;</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 做计算操作</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> a</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> b</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> operator</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">cal</span><span class="params">(<span class="keyword">int</span> a, <span class="keyword">int</span> b, <span class="keyword">int</span> operator)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> result = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">switch</span> (operator)&#123;</span><br><span class="line">            <span class="keyword">case</span> <span class="string">&#x27;+&#x27;</span>:</span><br><span class="line">                result = a + b;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> <span class="string">&#x27;-&#x27;</span>:</span><br><span class="line">                result = a - b;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> <span class="string">&#x27;*&#x27;</span>:</span><br><span class="line">                result = a * b;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> <span class="string">&#x27;/&#x27;</span>:</span><br><span class="line">                result = a / b;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">default</span>:</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Integer calculate = <span class="keyword">new</span> CalculateStack().calculate(<span class="string">&quot;8+4*3-6/2+1&quot;</span>);</span><br><span class="line">        System.out.println(<span class="string">&quot;8+4*3-6/2+1 = &quot;</span> + calculate);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/12e6bc0/image-20211101162442155.png" alt="运行结果"></p>
+]]></content>
+      <categories>
+        <category>数据结构</category>
+      </categories>
+      <tags>
+        <tag>栈</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>vmare_workstation16许可证秘钥</title>
     <url>/archives/59b9c4e6/</url>
     <content><![CDATA[<p><code>vmare workstation16 player</code>虚拟机许可秘钥</p>
@@ -1552,20 +1569,17 @@
       </tags>
   </entry>
   <entry>
-    <title>使用栈数据结构实现简易计算器算法</title>
-    <url>/archives/12e6bc0/</url>
-    <content><![CDATA[<p>首先看一下设计思路：</p>
-<p><img src="/archives/12e6bc0/%E6%A0%88%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%AE%9E%E7%8E%B0%E8%AE%A1%E7%AE%97%E5%99%A8.png" alt="栈数据结构实现简易计算器"></p>
-<p>具体代码实现：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lhb.test;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.util.Stack;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Program</span>: netty-chat 数字</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Description</span>:</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Author</span>: LHB</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Version</span>: v0.0.1</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Time</span>: 2021-11-01 15:02</span></span><br><span class="line"><span class="comment"> **/</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CalculateStack</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 操作数栈</span></span><br><span class="line">    <span class="keyword">private</span> Stack&lt;Integer&gt; numberStack = <span class="keyword">new</span> Stack&lt;&gt;();</span><br><span class="line">    <span class="comment">// 符号栈</span></span><br><span class="line">    <span class="keyword">private</span> Stack&lt;Character&gt; operatorStack = <span class="keyword">new</span> Stack&lt;&gt;();</span><br><span class="line">    <span class="function"><span class="keyword">public</span> Integer <span class="title">calculate</span><span class="params">(String des)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; des.length(); i++) &#123;</span><br><span class="line">            <span class="comment">// 如果读取出来的是数字，直接将数字加入到操作数栈，否则加入的符号栈中</span></span><br><span class="line">            <span class="keyword">if</span> (Character.getType(des.charAt(i)) == <span class="number">9</span>) &#123;</span><br><span class="line">                <span class="comment">// 读取出来的是ASCII码，需要减去48才是真正是数字</span></span><br><span class="line">                numberStack.push(Integer.valueOf(des.charAt(i)-<span class="number">48</span>));</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="comment">// 如果符号栈为空，则直接加入到符号栈中</span></span><br><span class="line">                <span class="keyword">if</span> (operatorStack.isEmpty()) &#123;</span><br><span class="line">                    operatorStack.push(des.charAt(i));</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="comment">// 如果符号栈不为空，则比较符号栈栈顶符号和截取出来的符号的优先级，如果小于栈顶符号优先级，则取出栈顶符号和操作数栈中的两个数字做运算，</span></span><br><span class="line">                    <span class="comment">// 并将最后运算结果重新加入到操作数栈中，同时将此刻解析到的符号加入到符号栈中</span></span><br><span class="line">                    <span class="keyword">if</span> (priority(des.charAt(i)) &lt;= priority(operatorStack.peek())) &#123;</span><br><span class="line">                        Integer sec = numberStack.pop();</span><br><span class="line">                        Integer fir = numberStack.pop();</span><br><span class="line">                        Character operator = operatorStack.pop();</span><br><span class="line">                        <span class="keyword">int</span> result = <span class="keyword">this</span>.cal(fir, sec, operator);</span><br><span class="line">                        numberStack.push(result);</span><br><span class="line">                        operatorStack.push(des.charAt(i));</span><br><span class="line">                    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                        operatorStack.push(des.charAt(i));</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 处理符号栈中剩余的还没有做运算的符号</span></span><br><span class="line">        <span class="keyword">while</span>(<span class="keyword">true</span>) &#123;</span><br><span class="line">            <span class="keyword">if</span> (operatorStack.isEmpty()) &#123;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            Integer sec = numberStack.pop();</span><br><span class="line">            Integer fir = numberStack.pop();</span><br><span class="line">            Character operator = operatorStack.pop();</span><br><span class="line">            <span class="keyword">int</span> result = cal(fir, sec, operator);</span><br><span class="line">            numberStack.push(result);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 最后留在操作数栈中的数字，就是最后表达式的运算结果</span></span><br><span class="line">        <span class="keyword">return</span> numberStack.pop();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 获取操作数优先级</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> operator 操作数</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">priority</span><span class="params">(<span class="keyword">char</span> operator)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (operator == <span class="string">&#x27;*&#x27;</span> || operator == <span class="string">&#x27;/&#x27;</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (operator == <span class="string">&#x27;+&#x27;</span> || operator == <span class="string">&#x27;-&#x27;</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 做计算操作</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> a</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> b</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> operator</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">cal</span><span class="params">(<span class="keyword">int</span> a, <span class="keyword">int</span> b, <span class="keyword">int</span> operator)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> result = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">switch</span> (operator)&#123;</span><br><span class="line">            <span class="keyword">case</span> <span class="string">&#x27;+&#x27;</span>:</span><br><span class="line">                result = a + b;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> <span class="string">&#x27;-&#x27;</span>:</span><br><span class="line">                result = a - b;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> <span class="string">&#x27;*&#x27;</span>:</span><br><span class="line">                result = a * b;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> <span class="string">&#x27;/&#x27;</span>:</span><br><span class="line">                result = a / b;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">default</span>:</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Integer calculate = <span class="keyword">new</span> CalculateStack().calculate(<span class="string">&quot;8+4*3-6/2+1&quot;</span>);</span><br><span class="line">        System.out.println(<span class="string">&quot;8+4*3-6/2+1 = &quot;</span> + calculate);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+    <title>二叉树增删改查操作</title>
+    <url>/archives/6d5957d3/</url>
+    <content><![CDATA[<h2 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h2><p>通过代码实现下面二叉树的构建，并且实现二叉树的增删改查操作。<br><img src="/archives/6d5957d3/image-20211114225038889.png" alt="二叉树"></p>
+<h2 id="代码实现"><a href="#代码实现" class="headerlink" title="代码实现"></a>代码实现</h2><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> net.coding.demo;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.junit.jupiter.api.Test;</span><br><span class="line"><span class="keyword">import</span> org.springframework.boot.test.context.SpringBootTest;</span><br><span class="line"><span class="keyword">import</span> org.springframework.util.Assert;</span><br><span class="line"></span><br><span class="line"><span class="meta">@SpringBootTest</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">DemoApplicationTests</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="class"><span class="keyword">class</span> <span class="title">TreeNode</span> </span>&#123;</span><br><span class="line">		<span class="keyword">private</span> <span class="keyword">char</span> data;</span><br><span class="line">		<span class="keyword">private</span> TreeNode left;</span><br><span class="line">		<span class="keyword">private</span> TreeNode right;</span><br><span class="line"></span><br><span class="line">		<span class="function"><span class="keyword">public</span> <span class="title">TreeNode</span><span class="params">(<span class="keyword">char</span> data, TreeNode left, TreeNode right)</span> </span>&#123;</span><br><span class="line">			<span class="keyword">this</span>.data = data;</span><br><span class="line">			<span class="keyword">this</span>.left = left;</span><br><span class="line">			<span class="keyword">this</span>.right = right;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setData</span><span class="params">(<span class="keyword">char</span> data)</span> </span>&#123;</span><br><span class="line">			<span class="keyword">this</span>.data = data;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="function"><span class="keyword">public</span> <span class="keyword">char</span> <span class="title">getData</span><span class="params">()</span> </span>&#123;</span><br><span class="line">			<span class="keyword">return</span> data;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setLeft</span><span class="params">(TreeNode left)</span> </span>&#123;</span><br><span class="line">			<span class="keyword">this</span>.left = left;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="function"><span class="keyword">public</span> TreeNode <span class="title">getLeft</span><span class="params">()</span> </span>&#123;</span><br><span class="line">			<span class="keyword">return</span> left;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setRight</span><span class="params">(TreeNode right)</span> </span>&#123;</span><br><span class="line">			<span class="keyword">this</span>.right = right;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="function"><span class="keyword">public</span> TreeNode <span class="title">getRight</span><span class="params">()</span> </span>&#123;</span><br><span class="line">			<span class="keyword">return</span> right;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="class"><span class="keyword">class</span> <span class="title">BinaryTreeOptional</span> </span>&#123;</span><br><span class="line">		<span class="comment">// 前序遍历 根左右  </span></span><br><span class="line">		<span class="comment">// 时间复杂度O(2n) =&gt; O(n)</span></span><br><span class="line">		<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">pre</span><span class="params">(TreeNode root)</span> </span>&#123;</span><br><span class="line">			<span class="keyword">if</span> (root != <span class="keyword">null</span>) &#123;</span><br><span class="line">			    print(root);</span><br><span class="line">			    <span class="keyword">if</span> (root.getLeft() != <span class="keyword">null</span>) &#123;</span><br><span class="line">				    pre(root.getLeft());</span><br><span class="line">			    &#125;</span><br><span class="line">			    <span class="keyword">if</span> (root.getRight() != <span class="keyword">null</span>) &#123;</span><br><span class="line">				    pre(root.getRight());				</span><br><span class="line">			    &#125;</span><br><span class="line">		    &#125;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="comment">// 中序遍历 左根右</span></span><br><span class="line">		<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">mid</span><span class="params">(TreeNode root)</span> </span>&#123;</span><br><span class="line">			<span class="keyword">if</span>(root != <span class="keyword">null</span>) &#123;</span><br><span class="line">				<span class="keyword">if</span>(root.getLeft() != <span class="keyword">null</span>) &#123;</span><br><span class="line">					mid(root.getLeft());</span><br><span class="line">				&#125;</span><br><span class="line">				print(root);</span><br><span class="line">				<span class="keyword">if</span> (root.getRight() != <span class="keyword">null</span>) &#123;</span><br><span class="line">					mid(root.getRight());</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="comment">// 后序遍历 左右根</span></span><br><span class="line">		<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">post</span><span class="params">(TreeNode root)</span> </span>&#123;</span><br><span class="line">			<span class="keyword">if</span>(root != <span class="keyword">null</span>) &#123;</span><br><span class="line">				<span class="keyword">if</span>(root.getLeft() != <span class="keyword">null</span>) &#123;</span><br><span class="line">					post(root.getLeft());</span><br><span class="line">				&#125;</span><br><span class="line">				<span class="keyword">if</span>(root.getRight() != <span class="keyword">null</span>) &#123;</span><br><span class="line">					post(root.getRight());</span><br><span class="line">				&#125;</span><br><span class="line">				print(root);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="comment">// 添加节点</span></span><br><span class="line">		<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">add</span><span class="params">(TreeNode root, TreeNode node)</span> </span>&#123;</span><br><span class="line">			Assert.notNull(root, <span class="string">&quot;二叉树不能为空&quot;</span>);</span><br><span class="line">			Assert.notNull(node, <span class="string">&quot;添加的节点不能为空&quot;</span>);</span><br><span class="line">			<span class="keyword">if</span>(node.getData() &lt;= root.getData()) &#123;</span><br><span class="line">				<span class="keyword">if</span>(root.getLeft() == <span class="keyword">null</span>) &#123;</span><br><span class="line">					root.setLeft(node);</span><br><span class="line">				&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">					add(root.getLeft(),node);</span><br><span class="line">				&#125;</span><br><span class="line">			&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">				<span class="keyword">if</span>(root.getRight() == <span class="keyword">null</span>) &#123;</span><br><span class="line">					root.setRight(node);</span><br><span class="line">				&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">					add(root.getRight(),node);</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">print</span><span class="params">(TreeNode node)</span> </span>&#123;</span><br><span class="line">			<span class="keyword">if</span> (node != <span class="keyword">null</span>) &#123;</span><br><span class="line">				System.out.print(node.getData());	</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	<span class="meta">@Test</span></span><br><span class="line">	<span class="function"><span class="keyword">void</span> <span class="title">contextLoads</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		TreeNode node_D = <span class="keyword">new</span> TreeNode(<span class="string">&#x27;D&#x27;</span>,<span class="keyword">null</span>,<span class="keyword">null</span>);</span><br><span class="line">		TreeNode node_G = <span class="keyword">new</span> TreeNode(<span class="string">&#x27;G&#x27;</span>,<span class="keyword">null</span>,<span class="keyword">null</span>);</span><br><span class="line">		TreeNode node_F = <span class="keyword">new</span> TreeNode(<span class="string">&#x27;F&#x27;</span>,<span class="keyword">null</span>,node_G);</span><br><span class="line">		TreeNode node_B = <span class="keyword">new</span> TreeNode(<span class="string">&#x27;B&#x27;</span>,<span class="keyword">null</span>,<span class="keyword">null</span>);</span><br><span class="line">		TreeNode node_M = <span class="keyword">new</span> TreeNode(<span class="string">&#x27;M&#x27;</span>,<span class="keyword">null</span>,<span class="keyword">null</span>);</span><br><span class="line">		TreeNode node_A = <span class="keyword">new</span> TreeNode(<span class="string">&#x27;A&#x27;</span>,<span class="keyword">null</span>,node_B);</span><br><span class="line">		TreeNode node_C = <span class="keyword">new</span> TreeNode(<span class="string">&#x27;C&#x27;</span>,node_A,node_D);</span><br><span class="line">		TreeNode node_E = <span class="keyword">new</span> TreeNode(<span class="string">&#x27;E&#x27;</span>,node_C,node_F);</span><br><span class="line">		TreeNode root_H = <span class="keyword">new</span> TreeNode(<span class="string">&#x27;H&#x27;</span>,node_E,node_M);</span><br><span class="line"></span><br><span class="line">		BinaryTreeOptional treeOption = <span class="keyword">new</span> BinaryTreeOptional();</span><br><span class="line">		<span class="comment">// 前序遍历</span></span><br><span class="line">		System.out.print(<span class="string">&quot;前序遍历：&quot;</span>);</span><br><span class="line">		treeOption.pre(root_H);</span><br><span class="line">		System.out.println();</span><br><span class="line">		<span class="comment">// 中序遍历</span></span><br><span class="line">		System.out.print(<span class="string">&quot;中序遍历：&quot;</span>);</span><br><span class="line">		treeOption.mid(root_H);</span><br><span class="line">		System.out.println();</span><br><span class="line">		<span class="comment">// 后序遍历</span></span><br><span class="line">		System.out.print(<span class="string">&quot;后序遍历: &quot;</span>);</span><br><span class="line">		treeOption.post(root_H);</span><br><span class="line">		System.out.println();</span><br><span class="line">		<span class="comment">// 添加节点</span></span><br><span class="line">		TreeNode node_K = <span class="keyword">new</span> TreeNode(<span class="string">&#x27;K&#x27;</span>,<span class="keyword">null</span>,<span class="keyword">null</span>);</span><br><span class="line">		TreeNode node_I = <span class="keyword">new</span> TreeNode(<span class="string">&#x27;I&#x27;</span>,<span class="keyword">null</span>,<span class="keyword">null</span>);</span><br><span class="line">		System.out.println(<span class="string">&quot;添加节点: &quot;</span> + node_K.getData() + <span class="string">&quot;,&quot;</span> + node_I.getData());</span><br><span class="line">		treeOption.add(root_H, node_K);</span><br><span class="line">		treeOption.add(root_H, node_I);</span><br><span class="line">		System.out.print(<span class="string">&quot;添加节点后的前序遍历是：&quot;</span>);</span><br><span class="line">		treeOption.pre(root_H);</span><br><span class="line">		System.out.println();</span><br><span class="line"></span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
 
-<p><img src="/archives/12e6bc0/image-20211101162442155.png" alt="运行结果"></p>
 ]]></content>
       <categories>
         <category>数据结构</category>
       </categories>
       <tags>
-        <tag>栈</tag>
+        <tag>二叉树</tag>
       </tags>
   </entry>
   <entry>
