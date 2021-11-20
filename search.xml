@@ -1,6 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>Linux安装配置Redis</title>
+    <url>/archives/a813391e/</url>
+    <content><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><ul>
+<li>Redis版本 6.2.5</li>
+<li>服务器版本 Linux Centos 7.6 64位</li>
+</ul>
+<h2 id="下载Redis"><a href="#下载Redis" class="headerlink" title="下载Redis"></a>下载Redis</h2><p>进入官网下载地址<a href="https://redis.io/download">https://redis.io/download</a></p>
+<p><img src="/archives/a813391e/image-20210914123642204.png" alt="Redis官网"></p>
+<p>选择对应的版本，这里我选择的是Stable版，右键Download按钮，选择复制链接。进入到MobaXtream控制台，并打开我们默认建好的目录</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">wget https://download.redis.io/releases/redis-6.2.5.tar.gz</span><br></pre></td></tr></table></figure>
+
+<p>回车后如下图</p>
+<p><img src="/archives/a813391e/image-20210914124512088.png" alt="Redis下载"></p>
+<p>等待下载完毕</p>
+<h2 id="解压并安装Redis"><a href="#解压并安装Redis" class="headerlink" title="解压并安装Redis"></a>解压并安装Redis</h2><h3 id="解压"><a href="#解压" class="headerlink" title="解压"></a>解压</h3><p>下载完成后需要将压缩文件解压，输入以下命令解压到当前目录</p>
+<p><img src="/archives/a813391e/image-20210914124700732.png" alt="解压Redis"></p>
+<h3 id="编译"><a href="#编译" class="headerlink" title="编译"></a>编译</h3><p>编译需要gcc，所以在编译之前需要执行<code>yum install gcc</code>来安装gcc环境，等待安装完毕之后进入到解压文件夹，并执行编译</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line"><span class="built_in">cd</span> redis-6.2.5</span><br><span class="line">make</span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/a813391e/image-20210914125434056.png" alt="编译完成"></p>
+<h3 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h3><p>输入一下命令</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">make PREFIX=/home/redis/build install</span><br></pre></td></tr></table></figure>
+
+<p>这里多了一个关键字 <strong><code>PREFIX=</code></strong> 这个关键字的作用是编译的时候用于指定程序存放的路径。比如我们现在就是指定了redis必须存放在/home/redis/build目录。假设不添加该关键字Linux会将可执行文件存放在/usr/local/bin目录，库文件会存放在/usr/local/lib目录。配置文件会存放在/usr/local/etc目录。其他的资源文件会存放在usr/local/share目录。这里指定号目录也方便后续的卸载，后续直接rm -rf /home/redis/build 即可删除redis。</p>
+<p>执行结果如下图:</p>
+<p><img src="/archives/a813391e/image-20210914130201598.png" alt="安装Redis"></p>
+<h3 id="修改配置文件"><a href="#修改配置文件" class="headerlink" title="修改配置文件"></a>修改配置文件</h3><p>执行一下命令将配置文件拷贝到安装目录/home/redis/build/bin</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">cp /home/redis/redis-6.2.5/redis.conf /home/redis/build/bin</span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/a813391e/image-20210914130546712.png" alt="拷贝配置文件"></p>
+<p>修改该配置文件中一下内容</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">port 6379</span><br><span class="line">pidfile /var/run/redis_6379.pid  # 把pid进程号写入pidfile配置的文件</span><br><span class="line">logfile &quot;/home/redis/build/log/6379.log&quot;</span><br><span class="line">dir /home/redis/build/data  # 指定数据存放目录</span><br><span class="line"># 需要注释掉bind</span><br><span class="line"># bind 127.0.0.1（bind绑定的是自己机器网卡的ip，如果有多块网卡可以配多个ip，代表允许客户端通过机器的哪些网卡ip去访问，内网一般可以不配置bind，注释掉即可）</span><br><span class="line">daemonize yes #后台启动方式</span><br><span class="line">protected-mode no  #关闭保护模式，开启的话，只有本机才可以访问redis</span><br></pre></td></tr></table></figure>
+
+<h3 id="启动服务"><a href="#启动服务" class="headerlink" title="启动服务"></a>启动服务</h3><figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">/home/redis/build/bin/redis-server redis.conf</span><br></pre></td></tr></table></figure>
+
+<h3 id="验证是否启动成功"><a href="#验证是否启动成功" class="headerlink" title="验证是否启动成功"></a>验证是否启动成功</h3><figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">ps -ef | grep redis</span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/a813391e/image-20210914134023196.png" alt="image-20210914134023196"></p>
+]]></content>
+      <categories>
+        <category>Redis</category>
+      </categories>
+      <tags>
+        <tag>Redis</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Netty核心源码解析</title>
     <url>/archives/b4dafe2/</url>
     <content><![CDATA[<h2 id="Netty线程模型图"><a href="#Netty线程模型图" class="headerlink" title="Netty线程模型图"></a>Netty线程模型图</h2><p><img src="/archives/b4dafe2/Netty%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B%E5%9B%BE.png" alt="Netty线程模型图"></p>
@@ -107,53 +154,6 @@
       </categories>
       <tags>
         <tag>Netty</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Linux安装配置Redis</title>
-    <url>/archives/a813391e/</url>
-    <content><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><ul>
-<li>Redis版本 6.2.5</li>
-<li>服务器版本 Linux Centos 7.6 64位</li>
-</ul>
-<h2 id="下载Redis"><a href="#下载Redis" class="headerlink" title="下载Redis"></a>下载Redis</h2><p>进入官网下载地址<a href="https://redis.io/download">https://redis.io/download</a></p>
-<p><img src="/archives/a813391e/image-20210914123642204.png" alt="Redis官网"></p>
-<p>选择对应的版本，这里我选择的是Stable版，右键Download按钮，选择复制链接。进入到MobaXtream控制台，并打开我们默认建好的目录</p>
-<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">wget https://download.redis.io/releases/redis-6.2.5.tar.gz</span><br></pre></td></tr></table></figure>
-
-<p>回车后如下图</p>
-<p><img src="/archives/a813391e/image-20210914124512088.png" alt="Redis下载"></p>
-<p>等待下载完毕</p>
-<h2 id="解压并安装Redis"><a href="#解压并安装Redis" class="headerlink" title="解压并安装Redis"></a>解压并安装Redis</h2><h3 id="解压"><a href="#解压" class="headerlink" title="解压"></a>解压</h3><p>下载完成后需要将压缩文件解压，输入以下命令解压到当前目录</p>
-<p><img src="/archives/a813391e/image-20210914124700732.png" alt="解压Redis"></p>
-<h3 id="编译"><a href="#编译" class="headerlink" title="编译"></a>编译</h3><p>编译需要gcc，所以在编译之前需要执行<code>yum install gcc</code>来安装gcc环境，等待安装完毕之后进入到解压文件夹，并执行编译</p>
-<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line"><span class="built_in">cd</span> redis-6.2.5</span><br><span class="line">make</span><br></pre></td></tr></table></figure>
-
-<p><img src="/archives/a813391e/image-20210914125434056.png" alt="编译完成"></p>
-<h3 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h3><p>输入一下命令</p>
-<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">make PREFIX=/home/redis/build install</span><br></pre></td></tr></table></figure>
-
-<p>这里多了一个关键字 <strong><code>PREFIX=</code></strong> 这个关键字的作用是编译的时候用于指定程序存放的路径。比如我们现在就是指定了redis必须存放在/home/redis/build目录。假设不添加该关键字Linux会将可执行文件存放在/usr/local/bin目录，库文件会存放在/usr/local/lib目录。配置文件会存放在/usr/local/etc目录。其他的资源文件会存放在usr/local/share目录。这里指定号目录也方便后续的卸载，后续直接rm -rf /home/redis/build 即可删除redis。</p>
-<p>执行结果如下图:</p>
-<p><img src="/archives/a813391e/image-20210914130201598.png" alt="安装Redis"></p>
-<h3 id="修改配置文件"><a href="#修改配置文件" class="headerlink" title="修改配置文件"></a>修改配置文件</h3><p>执行一下命令将配置文件拷贝到安装目录/home/redis/build/bin</p>
-<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">cp /home/redis/redis-6.2.5/redis.conf /home/redis/build/bin</span><br></pre></td></tr></table></figure>
-
-<p><img src="/archives/a813391e/image-20210914130546712.png" alt="拷贝配置文件"></p>
-<p>修改该配置文件中一下内容</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">port 6379</span><br><span class="line">pidfile /var/run/redis_6379.pid  # 把pid进程号写入pidfile配置的文件</span><br><span class="line">logfile &quot;/home/redis/build/log/6379.log&quot;</span><br><span class="line">dir /home/redis/build/data  # 指定数据存放目录</span><br><span class="line"># 需要注释掉bind</span><br><span class="line"># bind 127.0.0.1（bind绑定的是自己机器网卡的ip，如果有多块网卡可以配多个ip，代表允许客户端通过机器的哪些网卡ip去访问，内网一般可以不配置bind，注释掉即可）</span><br><span class="line">daemonize yes #后台启动方式</span><br><span class="line">protected-mode no  #关闭保护模式，开启的话，只有本机才可以访问redis</span><br></pre></td></tr></table></figure>
-
-<h3 id="启动服务"><a href="#启动服务" class="headerlink" title="启动服务"></a>启动服务</h3><figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">/home/redis/build/bin/redis-server redis.conf</span><br></pre></td></tr></table></figure>
-
-<h3 id="验证是否启动成功"><a href="#验证是否启动成功" class="headerlink" title="验证是否启动成功"></a>验证是否启动成功</h3><figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">ps -ef | grep redis</span><br></pre></td></tr></table></figure>
-
-<p><img src="/archives/a813391e/image-20210914134023196.png" alt="image-20210914134023196"></p>
-]]></content>
-      <categories>
-        <category>Redis</category>
-      </categories>
-      <tags>
-        <tag>Redis</tag>
       </tags>
   </entry>
   <entry>
@@ -1405,6 +1405,50 @@
       </tags>
   </entry>
   <entry>
+    <title>invokeBeanDefinitionRegistryPostProcessors方法解析</title>
+    <url>/archives/8d05e930/</url>
+    <content><![CDATA[<p>在上一篇<a href="/archives/e74be873">《Spring-IOC原理之invokeBeanFactoryPostProcessor详解》</a>中我们提到了一个方法<code>invokeBeanDefinitionRegistryPostProcessors()</code>。也说了这个方法最终会调用<code>ConfigurationClassPostProcessor</code>类中的<code>postProcessBeanDefinitionRegistry</code>方法。并且在这个方法中会解析<code>@Import</code>、<code>@Component</code>等注解和创建<code>CGLIB</code>动态代理。那么这一篇我们来详细看一下这个调用链中的方法。</p>
+<p>先找到<code>refresh()</code>方法中的<code>invokeBeanFactoryPostProcessors()</code>，然后找到方法中的<code>invokeBeanDefinitionRegistryPostProcessors</code>方法。</p>
+<p><img src="/archives/8d05e930/image-20210828140340723.png" alt="PostProcessorRegistrationDelegate#invokeBeanFactoryPostProcessors"></p>
+<p>然后<code>Ctrl+鼠标左键</code>进入到该方法中</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">invokeBeanDefinitionRegistryPostProcessors</span><span class="params">(Collection&lt;? extends BeanDefinitionRegistryPostProcessor&gt; postProcessors, BeanDefinitionRegistry registry)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">for</span> (BeanDefinitionRegistryPostProcessor postProcessor : postProcessors) &#123;</span><br><span class="line">		<span class="comment">/** 这里调用ConfigutationClassPostProcessor处理beanDefinitionMap中的bean定义 */</span></span><br><span class="line">		postProcessor.postProcessBeanDefinitionRegistry(registry);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>循环遍历了传进来的<code>postProcessors</code>，不过<code>postProcessors</code>中只有一个类是<code>ConfigurationClassPostProcessor</code>。然后调用<code>postProcessBeanDefinitionRegistry</code>。</p>
+<p><img src="/archives/8d05e930/image-20210828141408341.png" alt="Debug-invokeBeanDefinitionRegistryPostProcessors"></p>
+<blockquote>
+<p>这里还有一个点，就是<code>postProcessBeanDefinitionRegistry</code>方法，这个方法是<code>BeanDefinitionRegistryPostProcessor</code>接口中的方法，所以要想看方法内的实现逻辑只能找实现类中该方法的实现逻辑；通过上面的调试图片我们可以知道，<code>postProcessor</code>是<code>ConfigurationClassPostProcessor</code>类型，而<code>ConfigurationClassPostProcessor</code>切好也实现了<code>BeanDefinitionRegistryPostProcessors</code>接口，当然也实现了这个接口中的方法。所以这里我们只要去<code>ConfigurationClassPostProcessor</code>类中去找方法即可。</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">postProcessBeanDefinitionRegistry</span><span class="params">(BeanDefinitionRegistry registry)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">int</span> registryId = System.identityHashCode(registry);</span><br><span class="line">	<span class="keyword">if</span> (<span class="keyword">this</span>.registriesPostProcessed.contains(registryId)) &#123;</span><br><span class="line">		<span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(</span><br><span class="line">				<span class="string">&quot;postProcessBeanDefinitionRegistry already called on this post-processor against &quot;</span> + registry);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (<span class="keyword">this</span>.factoriesPostProcessed.contains(registryId)) &#123;</span><br><span class="line">		<span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(</span><br><span class="line">				<span class="string">&quot;postProcessBeanFactory already called on this post-processor against &quot;</span> + registry);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">this</span>.registriesPostProcessed.add(registryId);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/** 这里会解析配置类的一些注解，例如<span class="doctag">@Configutation</span>、<span class="doctag">@Component</span>、<span class="doctag">@Import</span>等配置注解 */</span></span><br><span class="line">	processConfigBeanDefinitions(registry);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在<code>postProcessBeanDefinitionRegistry</code>方法中，我们直接看到最后一行，调用了<code>processConfigBeanDefinitions(registry)</code>，这个方法主要是解析<code>@Component</code>、<code>@Import</code>等配置注解。<a href="/archives/79103379">想要了解<code>processConfigBeanDefinitioins</code>中具体流程可以查看这一篇。</a></p>
+]]></content>
+      <categories>
+        <category>Spring源码</category>
+      </categories>
+      <tags>
+        <tag>Spring源码</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>vmare_workstation16许可证秘钥</title>
+    <url>/archives/59b9c4e6/</url>
+    <content><![CDATA[<p><code>vmare workstation16 player</code>虚拟机许可秘钥</p>
+<blockquote>
+<p>ZF3R0-FHED2-M80TY-8QYGC-NPKYF<br>YF390-0HF8P-M81RQ-2DXQE-M2UT6<br>ZF71R-DMX85-08DQY-8YMNC-PPHV8</p>
+</blockquote>
+<p>如果上面三个已经失效可以使用下面这个秘钥</p>
+<blockquote>
+<p>FA1M0-89YE3-081TQ-AFNX9-NKUC0</p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>软件破解</category>
+      </categories>
+      <tags>
+        <tag>软件破解</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>netty实现简单聊天室功能</title>
     <url>/archives/8839ad77/</url>
     <content><![CDATA[<p>首先看一下项目目录结构</p>
@@ -1430,31 +1474,6 @@
       </categories>
       <tags>
         <tag>Netty</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>invokeBeanDefinitionRegistryPostProcessors方法解析</title>
-    <url>/archives/8d05e930/</url>
-    <content><![CDATA[<p>在上一篇<a href="/archives/e74be873">《Spring-IOC原理之invokeBeanFactoryPostProcessor详解》</a>中我们提到了一个方法<code>invokeBeanDefinitionRegistryPostProcessors()</code>。也说了这个方法最终会调用<code>ConfigurationClassPostProcessor</code>类中的<code>postProcessBeanDefinitionRegistry</code>方法。并且在这个方法中会解析<code>@Import</code>、<code>@Component</code>等注解和创建<code>CGLIB</code>动态代理。那么这一篇我们来详细看一下这个调用链中的方法。</p>
-<p>先找到<code>refresh()</code>方法中的<code>invokeBeanFactoryPostProcessors()</code>，然后找到方法中的<code>invokeBeanDefinitionRegistryPostProcessors</code>方法。</p>
-<p><img src="/archives/8d05e930/image-20210828140340723.png" alt="PostProcessorRegistrationDelegate#invokeBeanFactoryPostProcessors"></p>
-<p>然后<code>Ctrl+鼠标左键</code>进入到该方法中</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">invokeBeanDefinitionRegistryPostProcessors</span><span class="params">(Collection&lt;? extends BeanDefinitionRegistryPostProcessor&gt; postProcessors, BeanDefinitionRegistry registry)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">for</span> (BeanDefinitionRegistryPostProcessor postProcessor : postProcessors) &#123;</span><br><span class="line">		<span class="comment">/** 这里调用ConfigutationClassPostProcessor处理beanDefinitionMap中的bean定义 */</span></span><br><span class="line">		postProcessor.postProcessBeanDefinitionRegistry(registry);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>循环遍历了传进来的<code>postProcessors</code>，不过<code>postProcessors</code>中只有一个类是<code>ConfigurationClassPostProcessor</code>。然后调用<code>postProcessBeanDefinitionRegistry</code>。</p>
-<p><img src="/archives/8d05e930/image-20210828141408341.png" alt="Debug-invokeBeanDefinitionRegistryPostProcessors"></p>
-<blockquote>
-<p>这里还有一个点，就是<code>postProcessBeanDefinitionRegistry</code>方法，这个方法是<code>BeanDefinitionRegistryPostProcessor</code>接口中的方法，所以要想看方法内的实现逻辑只能找实现类中该方法的实现逻辑；通过上面的调试图片我们可以知道，<code>postProcessor</code>是<code>ConfigurationClassPostProcessor</code>类型，而<code>ConfigurationClassPostProcessor</code>切好也实现了<code>BeanDefinitionRegistryPostProcessors</code>接口，当然也实现了这个接口中的方法。所以这里我们只要去<code>ConfigurationClassPostProcessor</code>类中去找方法即可。</p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">postProcessBeanDefinitionRegistry</span><span class="params">(BeanDefinitionRegistry registry)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">int</span> registryId = System.identityHashCode(registry);</span><br><span class="line">	<span class="keyword">if</span> (<span class="keyword">this</span>.registriesPostProcessed.contains(registryId)) &#123;</span><br><span class="line">		<span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(</span><br><span class="line">				<span class="string">&quot;postProcessBeanDefinitionRegistry already called on this post-processor against &quot;</span> + registry);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (<span class="keyword">this</span>.factoriesPostProcessed.contains(registryId)) &#123;</span><br><span class="line">		<span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(</span><br><span class="line">				<span class="string">&quot;postProcessBeanFactory already called on this post-processor against &quot;</span> + registry);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">this</span>.registriesPostProcessed.add(registryId);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/** 这里会解析配置类的一些注解，例如<span class="doctag">@Configutation</span>、<span class="doctag">@Component</span>、<span class="doctag">@Import</span>等配置注解 */</span></span><br><span class="line">	processConfigBeanDefinitions(registry);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>在<code>postProcessBeanDefinitionRegistry</code>方法中，我们直接看到最后一行，调用了<code>processConfigBeanDefinitions(registry)</code>，这个方法主要是解析<code>@Component</code>、<code>@Import</code>等配置注解。<a href="/archives/79103379">想要了解<code>processConfigBeanDefinitioins</code>中具体流程可以查看这一篇。</a></p>
-]]></content>
-      <categories>
-        <category>Spring源码</category>
-      </categories>
-      <tags>
-        <tag>Spring源码</tag>
       </tags>
   </entry>
   <entry>
@@ -1533,25 +1552,6 @@
       </tags>
   </entry>
   <entry>
-    <title>vmare_workstation16许可证秘钥</title>
-    <url>/archives/59b9c4e6/</url>
-    <content><![CDATA[<p><code>vmare workstation16 player</code>虚拟机许可秘钥</p>
-<blockquote>
-<p>ZF3R0-FHED2-M80TY-8QYGC-NPKYF<br>YF390-0HF8P-M81RQ-2DXQE-M2UT6<br>ZF71R-DMX85-08DQY-8YMNC-PPHV8</p>
-</blockquote>
-<p>如果上面三个已经失效可以使用下面这个秘钥</p>
-<blockquote>
-<p>FA1M0-89YE3-081TQ-AFNX9-NKUC0</p>
-</blockquote>
-]]></content>
-      <categories>
-        <category>软件破解</category>
-      </categories>
-      <tags>
-        <tag>软件破解</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>二叉树增删改查操作</title>
     <url>/archives/6d5957d3/</url>
     <content><![CDATA[<h2 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h2><p>通过代码实现下面二叉树的构建，并且实现二叉树的增删改查操作。<br><img src="/archives/6d5957d3/image-20211114225038889.png" alt="二叉树"></p>
@@ -1571,8 +1571,29 @@
 <li>要删除的节点左子树不为空，右子树为空</li>
 <li>要删除的节点左子树不为空，右子树也不为空</li>
 </ol>
-<p>第一种情况比较简单，直接删除节点即可。</p>
+<p>第一种情况比较简单，直接删除节点即可。如下图，如果删除叶子节点B，则直接将节点A的右子树设置为null</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">A.right = <span class="keyword">null</span>;</span><br></pre></td></tr></table></figure>
+
+
+
 <p><img src="/archives/6d5957d3/image-20211120144141294.png" alt="删除叶子节点"></p>
+<p>删除叶子节点代码实现如下：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 删除叶子节点</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">boolean</span> <span class="title">rmLeafNode</span><span class="params">(TreeNode root,TreeNode rmNode)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">	TreeNode parentNode = getParentNode(root,rmNode);</span><br><span class="line">	<span class="keyword">if</span> (parentNode.getLeft() != <span class="keyword">null</span> &amp;&amp; parentNode.getLeft().getData() == rmNode.getData()) &#123;</span><br><span class="line">		parentNode.setLeft(<span class="keyword">null</span>);</span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (parentNode.getRight() != <span class="keyword">null</span> &amp;&amp; parentNode.getRight().getData() == rmNode.getData()) &#123;</span><br><span class="line">		parentNode.setRight(<span class="keyword">null</span>);</span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>第二种：“要删除的节点左子树为空，右子树不为空”。</p>
+<p>删除节点G，因为节点G只有右子树节点，所以删除G节点时，需要将G的右节点F设置到G节点位置，删除G节点。</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">E.right = G.right;</span><br><span class="line">G.right = <span class="keyword">null</span>;</span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/6d5957d3/image-20211120230615101.png" alt="要删除的节点左子树为空，右子树不为空"></p>
+<p>删除节点G完整代码如下：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 删除节点，该节点只有右子树有叶子节点，左子树为空</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">boolean</span> <span class="title">rmNodeWithRightNode</span><span class="params">(TreeNode root, TreeNode rmNode)</span> </span>&#123;</span><br><span class="line">	TreeNode rightNode = rmNode.getRight();</span><br><span class="line">	rmNode.setData(rightNode.getData());</span><br><span class="line">	rmNode.setLeft(<span class="keyword">null</span>);</span><br><span class="line">	rmNode.setRight(<span class="keyword">null</span>);</span><br><span class="line">	<span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>第三种：“要删除的节点左子树不为空，右子树为空”</p>
+<p>例如删除节点L，删除步骤和第二种情况步骤基本一样；将L节点的左子树与K节点的连接断开，并且将M节点（L节点的父节点）的左子树节点设置为K，即可删除L节点。</p>
+<p><img src="/archives/6d5957d3/image-20211120232251303.png" alt="要删除的节点左子树不为空，右子树为空"></p>
+<p>删除节点完整代码：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 删除节点，该节点只有左子树有叶子节点，右子树没有节点</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">boolean</span> <span class="title">rmNodeWithLeftNode</span><span class="params">(TreeNode root, TreeNode rmNode)</span> </span>&#123;</span><br><span class="line">	TreeNode leftNode = rmNode.getLeft();</span><br><span class="line">	rmNode.setData(leftNode.getData());</span><br><span class="line">	rmNode.setLeft(<span class="keyword">null</span>);</span><br><span class="line">	rmNode.setRight(<span class="keyword">null</span>);</span><br><span class="line">	<span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
 ]]></content>
       <categories>
         <category>数据结构</category>
@@ -1797,28 +1818,6 @@
       </tags>
   </entry>
   <entry>
-    <title>排序算法——归并排序</title>
-    <url>/archives/4e99e3ae/</url>
-    <content><![CDATA[<h2 id="基本思想"><a href="#基本思想" class="headerlink" title="基本思想"></a>基本思想</h2><p>把一个序列切分成左右两个子序列，然后分别再切分左右两个子序列，一次切分下去，直到每个序列不能再切分为止，也就是只剩一个元素。这是一个递归的过程。然后将每个子序列排序合并，最后合并成一个完整的有序的序列。</p>
-<p>图解如下：</p>
-<p><img src="/archives/4e99e3ae/%E5%BD%92%E5%B9%B6%E6%8E%92%E5%BA%8F%E5%9B%BE%E8%A7%A3.png" alt="归并排序图解"></p>
-<p>归并过程如下动态图：</p>
-<p><img src="/archives/4e99e3ae/mergeSort.gif" alt="归并排序流程"></p>
-<h2 id="代码实现"><a href="#代码实现" class="headerlink" title="代码实现"></a>代码实现</h2><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> java.util.*;</span><br><span class="line"><span class="keyword">import</span> java.lang.*;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Rextester</span></span></span><br><span class="line"><span class="class"></span>&#123;  </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">		  <span class="keyword">int</span>[] data = &#123;<span class="number">3</span>,<span class="number">44</span>,<span class="number">38</span>,<span class="number">5</span>,<span class="number">47</span>,<span class="number">15</span>,<span class="number">36</span>,<span class="number">26</span>,<span class="number">27</span>,<span class="number">2</span>,<span class="number">46</span>,<span class="number">4</span>,<span class="number">19</span>,<span class="number">50</span>,<span class="number">48</span>&#125;;</span><br><span class="line">		  mergeSort(data,<span class="number">0</span>,data.length - <span class="number">1</span>);</span><br><span class="line">		  System.out.println(<span class="string">&quot;归并排序结果：&quot;</span> + Arrays.toString(data));</span><br><span class="line">    &#125;</span><br><span class="line">	</span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * 归并排序</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> data 数组</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> left 数组起始位置</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> right 数组结束位置</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">mergeSort</span><span class="params">(<span class="keyword">int</span>[] data,<span class="keyword">int</span> left,<span class="keyword">int</span> right)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">if</span>(left &lt; right) &#123;</span><br><span class="line">			<span class="comment">// 将数组从中间切分成左右两个子数组</span></span><br><span class="line">			<span class="keyword">int</span> mid = (left + right) / <span class="number">2</span>;</span><br><span class="line">			<span class="comment">// 递归切分左边子数组</span></span><br><span class="line">			mergeSort(data, left, mid);</span><br><span class="line">			<span class="comment">// 递归切分右边子数组</span></span><br><span class="line">			mergeSort(data, mid+<span class="number">1</span>, right);</span><br><span class="line">			<span class="comment">// 开始将切分的子数组排序合并</span></span><br><span class="line">			merge(data, left, mid, right);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * 对子数组进行合并排序</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> data 数组</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> left 数组起始位置</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> mid 数组中间位置</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> right 数组结束位置</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">merge</span><span class="params">(<span class="keyword">int</span>[] data, <span class="keyword">int</span> left, <span class="keyword">int</span> mid, <span class="keyword">int</span> right)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">int</span>[] tmp = <span class="keyword">new</span> <span class="keyword">int</span>[data.length];</span><br><span class="line">		<span class="comment">// 左边子数组开始位置</span></span><br><span class="line">		<span class="keyword">int</span> leftPointer = left;</span><br><span class="line">		<span class="comment">// 右边子数组开始位置</span></span><br><span class="line">		<span class="keyword">int</span> rightPointer = mid + <span class="number">1</span>;</span><br><span class="line">		<span class="comment">// 临时数组的游标指针，起始位置为left</span></span><br><span class="line">		<span class="keyword">int</span> loc = left;</span><br><span class="line">		<span class="keyword">while</span>(leftPointer &lt;= mid &amp;&amp; rightPointer &lt;= right) &#123;</span><br><span class="line">			<span class="keyword">if</span>(data[leftPointer] &lt; data[rightPointer]) &#123;</span><br><span class="line">				<span class="comment">// 如果左边的数小于右边的数，就将左边小的数放入到临时数组中</span></span><br><span class="line">				<span class="comment">// 并且将loc++,leftPointer++</span></span><br><span class="line">				tmp[loc++] = data[leftPointer++];</span><br><span class="line">			&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">				<span class="comment">// 如果左边的数大于等于右边的数，就将右边的数放入到临时数组中</span></span><br><span class="line">				<span class="comment">// 并且将loc++,rightPointer++</span></span><br><span class="line">				tmp[loc++] = data[rightPointer++];</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="comment">// 将左边没有放入临时数组的数放入到临时数组中</span></span><br><span class="line">		<span class="keyword">while</span>(leftPointer &lt;= mid) &#123;</span><br><span class="line">			tmp[loc++] = data[leftPointer++];</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="comment">// 将右边没有放入临时数组的数放入到临时数组中</span></span><br><span class="line">		<span class="keyword">while</span>(rightPointer &lt;= right) &#123;</span><br><span class="line">			tmp[loc++] = data[rightPointer++];</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="comment">// 将临时数组中排好序的元素放到data中</span></span><br><span class="line">		<span class="keyword">for</span>(<span class="keyword">int</span> i = left; i &lt;= right; i++) &#123;</span><br><span class="line">			data[i] = tmp[i];</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="复杂度"><a href="#复杂度" class="headerlink" title="复杂度"></a>复杂度</h2><ul>
-<li><strong>时间复杂度：O(nLogn)</strong></li>
-<li><strong>空间复杂度：T(N)</strong> ，归并排序过程中创建了一个与原来数组一样大小的临时数组。</li>
-</ul>
-]]></content>
-      <categories>
-        <category>算法</category>
-      </categories>
-      <tags>
-        <tag>归并排序</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>排序算法——快速排序</title>
     <url>/archives/a4803490/</url>
     <content><![CDATA[<h2 id="算法思想"><a href="#算法思想" class="headerlink" title="算法思想"></a>算法思想</h2><ol>
@@ -1845,6 +1844,28 @@
       </categories>
       <tags>
         <tag>快速排序</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>排序算法——归并排序</title>
+    <url>/archives/4e99e3ae/</url>
+    <content><![CDATA[<h2 id="基本思想"><a href="#基本思想" class="headerlink" title="基本思想"></a>基本思想</h2><p>把一个序列切分成左右两个子序列，然后分别再切分左右两个子序列，一次切分下去，直到每个序列不能再切分为止，也就是只剩一个元素。这是一个递归的过程。然后将每个子序列排序合并，最后合并成一个完整的有序的序列。</p>
+<p>图解如下：</p>
+<p><img src="/archives/4e99e3ae/%E5%BD%92%E5%B9%B6%E6%8E%92%E5%BA%8F%E5%9B%BE%E8%A7%A3.png" alt="归并排序图解"></p>
+<p>归并过程如下动态图：</p>
+<p><img src="/archives/4e99e3ae/mergeSort.gif" alt="归并排序流程"></p>
+<h2 id="代码实现"><a href="#代码实现" class="headerlink" title="代码实现"></a>代码实现</h2><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> java.util.*;</span><br><span class="line"><span class="keyword">import</span> java.lang.*;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Rextester</span></span></span><br><span class="line"><span class="class"></span>&#123;  </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">		  <span class="keyword">int</span>[] data = &#123;<span class="number">3</span>,<span class="number">44</span>,<span class="number">38</span>,<span class="number">5</span>,<span class="number">47</span>,<span class="number">15</span>,<span class="number">36</span>,<span class="number">26</span>,<span class="number">27</span>,<span class="number">2</span>,<span class="number">46</span>,<span class="number">4</span>,<span class="number">19</span>,<span class="number">50</span>,<span class="number">48</span>&#125;;</span><br><span class="line">		  mergeSort(data,<span class="number">0</span>,data.length - <span class="number">1</span>);</span><br><span class="line">		  System.out.println(<span class="string">&quot;归并排序结果：&quot;</span> + Arrays.toString(data));</span><br><span class="line">    &#125;</span><br><span class="line">	</span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * 归并排序</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> data 数组</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> left 数组起始位置</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> right 数组结束位置</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">mergeSort</span><span class="params">(<span class="keyword">int</span>[] data,<span class="keyword">int</span> left,<span class="keyword">int</span> right)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">if</span>(left &lt; right) &#123;</span><br><span class="line">			<span class="comment">// 将数组从中间切分成左右两个子数组</span></span><br><span class="line">			<span class="keyword">int</span> mid = (left + right) / <span class="number">2</span>;</span><br><span class="line">			<span class="comment">// 递归切分左边子数组</span></span><br><span class="line">			mergeSort(data, left, mid);</span><br><span class="line">			<span class="comment">// 递归切分右边子数组</span></span><br><span class="line">			mergeSort(data, mid+<span class="number">1</span>, right);</span><br><span class="line">			<span class="comment">// 开始将切分的子数组排序合并</span></span><br><span class="line">			merge(data, left, mid, right);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * 对子数组进行合并排序</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> data 数组</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> left 数组起始位置</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> mid 数组中间位置</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> right 数组结束位置</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">merge</span><span class="params">(<span class="keyword">int</span>[] data, <span class="keyword">int</span> left, <span class="keyword">int</span> mid, <span class="keyword">int</span> right)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">int</span>[] tmp = <span class="keyword">new</span> <span class="keyword">int</span>[data.length];</span><br><span class="line">		<span class="comment">// 左边子数组开始位置</span></span><br><span class="line">		<span class="keyword">int</span> leftPointer = left;</span><br><span class="line">		<span class="comment">// 右边子数组开始位置</span></span><br><span class="line">		<span class="keyword">int</span> rightPointer = mid + <span class="number">1</span>;</span><br><span class="line">		<span class="comment">// 临时数组的游标指针，起始位置为left</span></span><br><span class="line">		<span class="keyword">int</span> loc = left;</span><br><span class="line">		<span class="keyword">while</span>(leftPointer &lt;= mid &amp;&amp; rightPointer &lt;= right) &#123;</span><br><span class="line">			<span class="keyword">if</span>(data[leftPointer] &lt; data[rightPointer]) &#123;</span><br><span class="line">				<span class="comment">// 如果左边的数小于右边的数，就将左边小的数放入到临时数组中</span></span><br><span class="line">				<span class="comment">// 并且将loc++,leftPointer++</span></span><br><span class="line">				tmp[loc++] = data[leftPointer++];</span><br><span class="line">			&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">				<span class="comment">// 如果左边的数大于等于右边的数，就将右边的数放入到临时数组中</span></span><br><span class="line">				<span class="comment">// 并且将loc++,rightPointer++</span></span><br><span class="line">				tmp[loc++] = data[rightPointer++];</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="comment">// 将左边没有放入临时数组的数放入到临时数组中</span></span><br><span class="line">		<span class="keyword">while</span>(leftPointer &lt;= mid) &#123;</span><br><span class="line">			tmp[loc++] = data[leftPointer++];</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="comment">// 将右边没有放入临时数组的数放入到临时数组中</span></span><br><span class="line">		<span class="keyword">while</span>(rightPointer &lt;= right) &#123;</span><br><span class="line">			tmp[loc++] = data[rightPointer++];</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="comment">// 将临时数组中排好序的元素放到data中</span></span><br><span class="line">		<span class="keyword">for</span>(<span class="keyword">int</span> i = left; i &lt;= right; i++) &#123;</span><br><span class="line">			data[i] = tmp[i];</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="复杂度"><a href="#复杂度" class="headerlink" title="复杂度"></a>复杂度</h2><ul>
+<li><strong>时间复杂度：O(nLogn)</strong></li>
+<li><strong>空间复杂度：T(N)</strong> ，归并排序过程中创建了一个与原来数组一样大小的临时数组。</li>
+</ul>
+]]></content>
+      <categories>
+        <category>算法</category>
+      </categories>
+      <tags>
+        <tag>归并排序</tag>
       </tags>
   </entry>
   <entry>
