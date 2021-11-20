@@ -69,208 +69,6 @@
       </tags>
   </entry>
   <entry>
-    <title>Redis持久化</title>
-    <url>/archives/119ed1dc/</url>
-    <content><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>Redis目前提供了三种持久化的方式：</p>
-<blockquote>
-<ul>
-<li>RDB快照(snapshot)持久化</li>
-<li>AOF(append-only-file)持久化</li>
-<li>混合持久化方式(Redis 4.0后加入的新特性)</li>
-</ul>
-</blockquote>
-<h2 id="RDB快照-snapshot"><a href="#RDB快照-snapshot" class="headerlink" title="RDB快照(snapshot)"></a>RDB快照(snapshot)</h2><p>在默认情况下，Redis将内存数据库快照保存在名字为dump.rdb的二进制文件中。当然可以对Redis进行设置，可以让它在“N秒内数据集至少有M个改动”，这一条件被满足时，自动保存一次数据。比如说，以下设置会让Redis在满足“60秒内有至少1000个键被改动”这一条件时，自动保存一次数据。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">save 60 1000 # 关闭RDB只需要将所有的save保存策略注释掉即可</span><br></pre></td></tr></table></figure>
-<p>当然还可以手动执行命令生成RDB快照，进入Redis客户端执行命令<code>save</code>或<code>bgsave</code>可以生成dump.rdb文件，每次命令执行都会将所有Redis内存快照到一个新的rdb文件里，并覆盖原有的rdb快照文件。</p>
-<h3 id="bgsave的写时复制-COW-机制"><a href="#bgsave的写时复制-COW-机制" class="headerlink" title="bgsave的写时复制(COW)机制"></a>bgsave的写时复制(COW)机制</h3><p>Redis借助操作系统提供的写时复制技术(Copy-On-Write，COW)，在生成快照的同时，依然可以正常处理写命令。简单来说，就是<code>bgsave</code>子进程是由主线程<code>fork</code>生成的，可以共享主线程的所有内存数据。<code>bgsave</code>子进程运行后，开始读取主线程的内存数据，并把他们写入RDB文件。此时，如果主线程对这些数据也都是读操作，那么，主线程和<code>bgsave</code>子线程相互不影响。但是，如果主线程要修改一块数据，那么这块数据就会被复制一份，生成改数据的一个副本。然后，<code>bgsave</code>子线程会把这个副本数据写入到RDB文件，而在这个过程中，主线程仍然可以修改原来的数据。</p>
-<blockquote>
-<p><strong>save与bgsave区别</strong></p>
-<table style="width:100%;" cellpadding="2" cellspacing="0" align="center" border="1" bordercolor="#000000">
-  <tbody>
-            <tr>
-                <td style="text-align:center;">
-                    命令
-                </td>
-                <td style="text-align:center;">
-                    save
-                </td>
-                <td style="text-align:center;">
-                    bgsave
-                </td>
-            </tr>
-            <tr>
-                <td style="text-align:center;">
-                    I/O类型
-                </td>
-                <td style="text-align:center;">
-                    同步
-                </td>
-                <td style="text-align:center;">
-                    异步
-                </td>
-            </tr>
-            <tr>
-                <td style="text-align:center;">
-                    是否阻塞Redis其他命令
-                </td>
-                <td style="text-align:center;">
-                    是
-                </td>
-                <td style="text-align:center;">
-                    否(在生成子进程调用fork函数时会短暂阻塞)
-                </td>
-            </tr>
-            <tr>
-                <td style="text-align:center;">
-                    复杂度
-                </td>
-                <td style="text-align:center;">
-                    O(n)
-                </td>
-                <td style="text-align:center;">
-                    O(n)
-                </td>
-            </tr>
-            <tr>
-                <td style="text-align:center;">
-                    优点
-                </td>
-                <td style="text-align:center;">
-                    不会消耗额外内存
-                </td>
-                <td style="text-align:center;">
-                    不阻塞客户端命令
-                </td>
-            </tr>
-            <tr>
-                <td style="text-align:center;">
-                    缺点
-                </td>
-                <td style="text-align:center;">
-                    阻塞客户端命令
-                </td>
-                <td style="text-align:center;">
-                    需要fork子进程，消耗内存
-                </td>
-            </tr>
-        </tbody>
-</table>
-
-<p><strong>配置自动生成rdb文件后台使用的是bgsave方式</strong></p>
-</blockquote>
-<h2 id="AOF-append-only-file-快照"><a href="#AOF-append-only-file-快照" class="headerlink" title="AOF(append-only-file)快照"></a>AOF(append-only-file)快照</h2><p>快照功能并不是非常耐久(durable)：如果Redis因为某些原因造成故障停机，那么服务器将丢失最近写入、且仍未保存到快照中的那些数据。从1.1版本开始，Redis增加了一种完全耐久的持久化方式：AOF持久化，将修改的每一条指令记录到文件<code>appendonly.aof</code>中(先写入OS Cache，每隔一段时间sync到磁盘)</p>
-<p>比如执行<code>set append-only-file true</code>，aof文件里会记录如下数据</p>
-<p><img src="/archives/119ed1dc/image-20210916110754085.png" alt="执行结果"></p>
-<p>AOF功能可以通过以下方式来开启和关闭</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">appendonly yes/no  # yes开启  no关闭</span><br></pre></td></tr></table></figure>
-
-<p>这里也可以配置AOF的持久化策略，默认的话是每秒持久化一次，这样既保证了速度也保证了数据安全。</p>
-<blockquote>
-<ul>
-<li><code>appendfsync always</code>：每次有新命令追加到AOF文件时，都会执行一次fsync，非常慢，也非常安全</li>
-<li><code>appendfsync everysec</code>：每秒fsync一次，足够快，并且在故障时只会就是1秒钟的数据</li>
-<li><code>appendfsync no</code>：从不fsync，将数据交给操作系统来处理。更快，也更安全的选择</li>
-</ul>
-</blockquote>
-<h3 id="AOF重写"><a href="#AOF重写" class="headerlink" title="AOF重写"></a>AOF重写</h3><p>AOF文件中如果有太多没有用的指令时，AOF会定期根据<strong>内存的最新数据</strong>生成aof文件</p>
-<p>例如：在客户端执行了5次自增命令</p>
-<p><img src="/archives/119ed1dc/image-20210916111719187.png" alt="自增命令"></p>
-<p>在aof文件重写之前中显示如下</p>
-<p><img src="/archives/119ed1dc/image-20210916112017276.png" alt="AOF文件重写前数据"></p>
-<p>重写之后aof文件变为了</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">*3</span><br><span class="line">$3</span><br><span class="line">SET</span><br><span class="line">$2</span><br><span class="line">count</span><br><span class="line">$1</span><br><span class="line">5</span><br></pre></td></tr></table></figure>
-
-<p>这里有两个配置可以设置AOF自动重写频率</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">auto-aof-rewrite-min-size 64mb #aof文件至少达到64M才会自动重写，文件太小重写的速度很快，重写意义不大</span><br><span class="line">auto-aof-rewrite-percentage 100 #aof文件自上次重写之后至少增长100%(增长一倍),才会再次触发重写</span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<p>当然AOF可以手动重写，进入redis客户端执行命令<code>bgrewriteaof</code>重写AOF。</p>
-<p><strong>注意：AOF重写redis会fork出一个子进程去做(和bgsave命令类似)，不会对redis正常命令处理有太多影响</strong></p>
-</blockquote>
-<h3 id="RDB和AOF对比"><a href="#RDB和AOF对比" class="headerlink" title="RDB和AOF对比"></a>RDB和AOF对比</h3><table style="width:100%;" cellpadding="2" cellspacing="0" align="center" border="1" bordercolor="#000000">
-  <tbody>
-        <tr>
-            <td style="text-align:center;">
-                命令
-            </td>
-            <td style="text-align:center;">
-                RDB
-            </td>
-            <td style="text-align:center;">
-                AOF
-            </td>
-        </tr>
-        <tr>
-            <td style="text-align:center;">
-                启动优先级
-            </td>
-            <td style="text-align:center;">
-                低
-            </td>
-            <td style="text-align:center;">
-                高
-            </td>
-        </tr>
-        <tr>
-            <td style="text-align:center;">
-                体积
-            </td>
-            <td style="text-align:center;">
-                小
-            </td>
-            <td style="text-align:center;">
-                大
-            </td>
-        </tr>
-        <tr>
-            <td style="text-align:center;">
-                恢复速度
-            </td>
-            <td style="text-align:center;">
-                块
-            </td>
-            <td style="text-align:center;">
-                慢
-            </td>
-        </tr>
-        <tr>
-            <td style="text-align:center;">
-                数据安全性
-            </td>
-            <td style="text-align:center;">
-                容易丢数据
-            </td>
-            <td style="text-align:center;">
-                根据策略决定
-            </td>
-        </tr>
-    </tbody>
-</table>
-
-
-
-<p>生产环境可以都启用，redis启动时如果既有rdb文件又有aof文件则优先选择aof文件恢复数据，因为aof一般来说数据更全一点。</p>
-<h2 id="Redis4-0-混合持久化"><a href="#Redis4-0-混合持久化" class="headerlink" title="Redis4.0 混合持久化"></a>Redis4.0 混合持久化</h2><p>重启Redis时，我们很少使用RDB来恢复内存中数据，因为会丢失大量数据。我们通常使用AOF日志重放，但是重放AOF日志性能相对RDB来说要慢。这样在Redis实例很大的情况下，启动需要花费很长的时间。Redis 4.0 为了解决这个问题，加入了一个新的持久化方案——<strong>混合持久化</strong></p>
-<p>通过如下配置可以开启混合持久化(<strong>必须先开启aof</strong>)：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">aof-use-rdb-preamble yes</span><br></pre></td></tr></table></figure>
-
-<p>如果开启了混合持久化，<strong>AOF在重写时</strong>，不再是单纯的将内存数据转化为RESP命令写入AOF文件，而是<strong>将这一刻之前</strong>的内存数据做RDB快照处理，并且将RDB快照内容和<strong>增量AOF</strong>修改内存数据的命令保存在一起，都写入新的aof文件，新的文件开始不叫<code>appendonly.aof</code>，等重写完新的AOF文件才会进行改名，覆盖原来的AOF文件，完成新就两个AOF文件的替换。在Redis重启的时候，可以先加载RDB的内容，然后在重放AOF日志就可以完全替代之前的AOF全量文件重放，因此重启效率大幅得到提升。</p>
-<p><img src="/archives/119ed1dc/image-20210916122222002.png" alt="混合持久化appendonly.aof文件数据结构"></p>
-<h3 id="Redis数据备份策略"><a href="#Redis数据备份策略" class="headerlink" title="Redis数据备份策略"></a>Redis数据备份策略</h3><ol>
-<li>写<code>crontab</code>定时调度脚本，每小时都<code>copy</code>一份rdb或者aof的备份到一个目录中去，仅仅保留最近48小时的备份</li>
-<li>每天都保留一份当天的数据备份到一个目录中去，可以保留近一个月的数据备份</li>
-<li>每次<code>copy</code>备份的时候，把太旧的备份给删掉</li>
-<li>每天晚上将当前机器上的备份复制一份到其他机器上，以防止机器损坏</li>
-</ol>
-]]></content>
-      <categories>
-        <category>Redis</category>
-      </categories>
-      <tags>
-        <tag>Redis</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Netty核心源码解析</title>
     <url>/archives/b4dafe2/</url>
     <content><![CDATA[<h2 id="Netty线程模型图"><a href="#Netty线程模型图" class="headerlink" title="Netty线程模型图"></a>Netty线程模型图</h2><p><img src="/archives/b4dafe2/Netty%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B%E5%9B%BE.png" alt="Netty线程模型图"></p>
@@ -481,6 +279,208 @@
 </ol>
 <p><strong>总结：</strong></p>
 <p>以上针对的都是<strong>读多写少</strong>的情况加入缓存提高性能，如果是<strong>写多读多</strong>的情况又不能容忍缓存数据不一致，那就没有必要加缓存了，可以直接操作数据库。放入缓存的数据应该是对实时性、一致性要求不是很高的数据。切记不要为了用缓存，同时又要保证绝对的一致性做大量的过度设计和控制，增加系统的复杂性！</p>
+]]></content>
+      <categories>
+        <category>Redis</category>
+      </categories>
+      <tags>
+        <tag>Redis</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Redis持久化</title>
+    <url>/archives/119ed1dc/</url>
+    <content><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>Redis目前提供了三种持久化的方式：</p>
+<blockquote>
+<ul>
+<li>RDB快照(snapshot)持久化</li>
+<li>AOF(append-only-file)持久化</li>
+<li>混合持久化方式(Redis 4.0后加入的新特性)</li>
+</ul>
+</blockquote>
+<h2 id="RDB快照-snapshot"><a href="#RDB快照-snapshot" class="headerlink" title="RDB快照(snapshot)"></a>RDB快照(snapshot)</h2><p>在默认情况下，Redis将内存数据库快照保存在名字为dump.rdb的二进制文件中。当然可以对Redis进行设置，可以让它在“N秒内数据集至少有M个改动”，这一条件被满足时，自动保存一次数据。比如说，以下设置会让Redis在满足“60秒内有至少1000个键被改动”这一条件时，自动保存一次数据。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">save 60 1000 # 关闭RDB只需要将所有的save保存策略注释掉即可</span><br></pre></td></tr></table></figure>
+<p>当然还可以手动执行命令生成RDB快照，进入Redis客户端执行命令<code>save</code>或<code>bgsave</code>可以生成dump.rdb文件，每次命令执行都会将所有Redis内存快照到一个新的rdb文件里，并覆盖原有的rdb快照文件。</p>
+<h3 id="bgsave的写时复制-COW-机制"><a href="#bgsave的写时复制-COW-机制" class="headerlink" title="bgsave的写时复制(COW)机制"></a>bgsave的写时复制(COW)机制</h3><p>Redis借助操作系统提供的写时复制技术(Copy-On-Write，COW)，在生成快照的同时，依然可以正常处理写命令。简单来说，就是<code>bgsave</code>子进程是由主线程<code>fork</code>生成的，可以共享主线程的所有内存数据。<code>bgsave</code>子进程运行后，开始读取主线程的内存数据，并把他们写入RDB文件。此时，如果主线程对这些数据也都是读操作，那么，主线程和<code>bgsave</code>子线程相互不影响。但是，如果主线程要修改一块数据，那么这块数据就会被复制一份，生成改数据的一个副本。然后，<code>bgsave</code>子线程会把这个副本数据写入到RDB文件，而在这个过程中，主线程仍然可以修改原来的数据。</p>
+<blockquote>
+<p><strong>save与bgsave区别</strong></p>
+<table style="width:100%;" cellpadding="2" cellspacing="0" align="center" border="1" bordercolor="#000000">
+  <tbody>
+            <tr>
+                <td style="text-align:center;">
+                    命令
+                </td>
+                <td style="text-align:center;">
+                    save
+                </td>
+                <td style="text-align:center;">
+                    bgsave
+                </td>
+            </tr>
+            <tr>
+                <td style="text-align:center;">
+                    I/O类型
+                </td>
+                <td style="text-align:center;">
+                    同步
+                </td>
+                <td style="text-align:center;">
+                    异步
+                </td>
+            </tr>
+            <tr>
+                <td style="text-align:center;">
+                    是否阻塞Redis其他命令
+                </td>
+                <td style="text-align:center;">
+                    是
+                </td>
+                <td style="text-align:center;">
+                    否(在生成子进程调用fork函数时会短暂阻塞)
+                </td>
+            </tr>
+            <tr>
+                <td style="text-align:center;">
+                    复杂度
+                </td>
+                <td style="text-align:center;">
+                    O(n)
+                </td>
+                <td style="text-align:center;">
+                    O(n)
+                </td>
+            </tr>
+            <tr>
+                <td style="text-align:center;">
+                    优点
+                </td>
+                <td style="text-align:center;">
+                    不会消耗额外内存
+                </td>
+                <td style="text-align:center;">
+                    不阻塞客户端命令
+                </td>
+            </tr>
+            <tr>
+                <td style="text-align:center;">
+                    缺点
+                </td>
+                <td style="text-align:center;">
+                    阻塞客户端命令
+                </td>
+                <td style="text-align:center;">
+                    需要fork子进程，消耗内存
+                </td>
+            </tr>
+        </tbody>
+</table>
+
+<p><strong>配置自动生成rdb文件后台使用的是bgsave方式</strong></p>
+</blockquote>
+<h2 id="AOF-append-only-file-快照"><a href="#AOF-append-only-file-快照" class="headerlink" title="AOF(append-only-file)快照"></a>AOF(append-only-file)快照</h2><p>快照功能并不是非常耐久(durable)：如果Redis因为某些原因造成故障停机，那么服务器将丢失最近写入、且仍未保存到快照中的那些数据。从1.1版本开始，Redis增加了一种完全耐久的持久化方式：AOF持久化，将修改的每一条指令记录到文件<code>appendonly.aof</code>中(先写入OS Cache，每隔一段时间sync到磁盘)</p>
+<p>比如执行<code>set append-only-file true</code>，aof文件里会记录如下数据</p>
+<p><img src="/archives/119ed1dc/image-20210916110754085.png" alt="执行结果"></p>
+<p>AOF功能可以通过以下方式来开启和关闭</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">appendonly yes/no  # yes开启  no关闭</span><br></pre></td></tr></table></figure>
+
+<p>这里也可以配置AOF的持久化策略，默认的话是每秒持久化一次，这样既保证了速度也保证了数据安全。</p>
+<blockquote>
+<ul>
+<li><code>appendfsync always</code>：每次有新命令追加到AOF文件时，都会执行一次fsync，非常慢，也非常安全</li>
+<li><code>appendfsync everysec</code>：每秒fsync一次，足够快，并且在故障时只会就是1秒钟的数据</li>
+<li><code>appendfsync no</code>：从不fsync，将数据交给操作系统来处理。更快，也更安全的选择</li>
+</ul>
+</blockquote>
+<h3 id="AOF重写"><a href="#AOF重写" class="headerlink" title="AOF重写"></a>AOF重写</h3><p>AOF文件中如果有太多没有用的指令时，AOF会定期根据<strong>内存的最新数据</strong>生成aof文件</p>
+<p>例如：在客户端执行了5次自增命令</p>
+<p><img src="/archives/119ed1dc/image-20210916111719187.png" alt="自增命令"></p>
+<p>在aof文件重写之前中显示如下</p>
+<p><img src="/archives/119ed1dc/image-20210916112017276.png" alt="AOF文件重写前数据"></p>
+<p>重写之后aof文件变为了</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">*3</span><br><span class="line">$3</span><br><span class="line">SET</span><br><span class="line">$2</span><br><span class="line">count</span><br><span class="line">$1</span><br><span class="line">5</span><br></pre></td></tr></table></figure>
+
+<p>这里有两个配置可以设置AOF自动重写频率</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">auto-aof-rewrite-min-size 64mb #aof文件至少达到64M才会自动重写，文件太小重写的速度很快，重写意义不大</span><br><span class="line">auto-aof-rewrite-percentage 100 #aof文件自上次重写之后至少增长100%(增长一倍),才会再次触发重写</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>当然AOF可以手动重写，进入redis客户端执行命令<code>bgrewriteaof</code>重写AOF。</p>
+<p><strong>注意：AOF重写redis会fork出一个子进程去做(和bgsave命令类似)，不会对redis正常命令处理有太多影响</strong></p>
+</blockquote>
+<h3 id="RDB和AOF对比"><a href="#RDB和AOF对比" class="headerlink" title="RDB和AOF对比"></a>RDB和AOF对比</h3><table style="width:100%;" cellpadding="2" cellspacing="0" align="center" border="1" bordercolor="#000000">
+  <tbody>
+        <tr>
+            <td style="text-align:center;">
+                命令
+            </td>
+            <td style="text-align:center;">
+                RDB
+            </td>
+            <td style="text-align:center;">
+                AOF
+            </td>
+        </tr>
+        <tr>
+            <td style="text-align:center;">
+                启动优先级
+            </td>
+            <td style="text-align:center;">
+                低
+            </td>
+            <td style="text-align:center;">
+                高
+            </td>
+        </tr>
+        <tr>
+            <td style="text-align:center;">
+                体积
+            </td>
+            <td style="text-align:center;">
+                小
+            </td>
+            <td style="text-align:center;">
+                大
+            </td>
+        </tr>
+        <tr>
+            <td style="text-align:center;">
+                恢复速度
+            </td>
+            <td style="text-align:center;">
+                块
+            </td>
+            <td style="text-align:center;">
+                慢
+            </td>
+        </tr>
+        <tr>
+            <td style="text-align:center;">
+                数据安全性
+            </td>
+            <td style="text-align:center;">
+                容易丢数据
+            </td>
+            <td style="text-align:center;">
+                根据策略决定
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+
+<p>生产环境可以都启用，redis启动时如果既有rdb文件又有aof文件则优先选择aof文件恢复数据，因为aof一般来说数据更全一点。</p>
+<h2 id="Redis4-0-混合持久化"><a href="#Redis4-0-混合持久化" class="headerlink" title="Redis4.0 混合持久化"></a>Redis4.0 混合持久化</h2><p>重启Redis时，我们很少使用RDB来恢复内存中数据，因为会丢失大量数据。我们通常使用AOF日志重放，但是重放AOF日志性能相对RDB来说要慢。这样在Redis实例很大的情况下，启动需要花费很长的时间。Redis 4.0 为了解决这个问题，加入了一个新的持久化方案——<strong>混合持久化</strong></p>
+<p>通过如下配置可以开启混合持久化(<strong>必须先开启aof</strong>)：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">aof-use-rdb-preamble yes</span><br></pre></td></tr></table></figure>
+
+<p>如果开启了混合持久化，<strong>AOF在重写时</strong>，不再是单纯的将内存数据转化为RESP命令写入AOF文件，而是<strong>将这一刻之前</strong>的内存数据做RDB快照处理，并且将RDB快照内容和<strong>增量AOF</strong>修改内存数据的命令保存在一起，都写入新的aof文件，新的文件开始不叫<code>appendonly.aof</code>，等重写完新的AOF文件才会进行改名，覆盖原来的AOF文件，完成新就两个AOF文件的替换。在Redis重启的时候，可以先加载RDB的内容，然后在重放AOF日志就可以完全替代之前的AOF全量文件重放，因此重启效率大幅得到提升。</p>
+<p><img src="/archives/119ed1dc/image-20210916122222002.png" alt="混合持久化appendonly.aof文件数据结构"></p>
+<h3 id="Redis数据备份策略"><a href="#Redis数据备份策略" class="headerlink" title="Redis数据备份策略"></a>Redis数据备份策略</h3><ol>
+<li>写<code>crontab</code>定时调度脚本，每小时都<code>copy</code>一份rdb或者aof的备份到一个目录中去，仅仅保留最近48小时的备份</li>
+<li>每天都保留一份当天的数据备份到一个目录中去，可以保留近一个月的数据备份</li>
+<li>每次<code>copy</code>备份的时候，把太旧的备份给删掉</li>
+<li>每天晚上将当前机器上的备份复制一份到其他机器上，以防止机器损坏</li>
+</ol>
 ]]></content>
       <categories>
         <category>Redis</category>
@@ -1405,31 +1405,6 @@
       </tags>
   </entry>
   <entry>
-    <title>invokeBeanDefinitionRegistryPostProcessors方法解析</title>
-    <url>/archives/8d05e930/</url>
-    <content><![CDATA[<p>在上一篇<a href="/archives/e74be873">《Spring-IOC原理之invokeBeanFactoryPostProcessor详解》</a>中我们提到了一个方法<code>invokeBeanDefinitionRegistryPostProcessors()</code>。也说了这个方法最终会调用<code>ConfigurationClassPostProcessor</code>类中的<code>postProcessBeanDefinitionRegistry</code>方法。并且在这个方法中会解析<code>@Import</code>、<code>@Component</code>等注解和创建<code>CGLIB</code>动态代理。那么这一篇我们来详细看一下这个调用链中的方法。</p>
-<p>先找到<code>refresh()</code>方法中的<code>invokeBeanFactoryPostProcessors()</code>，然后找到方法中的<code>invokeBeanDefinitionRegistryPostProcessors</code>方法。</p>
-<p><img src="/archives/8d05e930/image-20210828140340723.png" alt="PostProcessorRegistrationDelegate#invokeBeanFactoryPostProcessors"></p>
-<p>然后<code>Ctrl+鼠标左键</code>进入到该方法中</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">invokeBeanDefinitionRegistryPostProcessors</span><span class="params">(Collection&lt;? extends BeanDefinitionRegistryPostProcessor&gt; postProcessors, BeanDefinitionRegistry registry)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">for</span> (BeanDefinitionRegistryPostProcessor postProcessor : postProcessors) &#123;</span><br><span class="line">		<span class="comment">/** 这里调用ConfigutationClassPostProcessor处理beanDefinitionMap中的bean定义 */</span></span><br><span class="line">		postProcessor.postProcessBeanDefinitionRegistry(registry);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>循环遍历了传进来的<code>postProcessors</code>，不过<code>postProcessors</code>中只有一个类是<code>ConfigurationClassPostProcessor</code>。然后调用<code>postProcessBeanDefinitionRegistry</code>。</p>
-<p><img src="/archives/8d05e930/image-20210828141408341.png" alt="Debug-invokeBeanDefinitionRegistryPostProcessors"></p>
-<blockquote>
-<p>这里还有一个点，就是<code>postProcessBeanDefinitionRegistry</code>方法，这个方法是<code>BeanDefinitionRegistryPostProcessor</code>接口中的方法，所以要想看方法内的实现逻辑只能找实现类中该方法的实现逻辑；通过上面的调试图片我们可以知道，<code>postProcessor</code>是<code>ConfigurationClassPostProcessor</code>类型，而<code>ConfigurationClassPostProcessor</code>切好也实现了<code>BeanDefinitionRegistryPostProcessors</code>接口，当然也实现了这个接口中的方法。所以这里我们只要去<code>ConfigurationClassPostProcessor</code>类中去找方法即可。</p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">postProcessBeanDefinitionRegistry</span><span class="params">(BeanDefinitionRegistry registry)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">int</span> registryId = System.identityHashCode(registry);</span><br><span class="line">	<span class="keyword">if</span> (<span class="keyword">this</span>.registriesPostProcessed.contains(registryId)) &#123;</span><br><span class="line">		<span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(</span><br><span class="line">				<span class="string">&quot;postProcessBeanDefinitionRegistry already called on this post-processor against &quot;</span> + registry);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (<span class="keyword">this</span>.factoriesPostProcessed.contains(registryId)) &#123;</span><br><span class="line">		<span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(</span><br><span class="line">				<span class="string">&quot;postProcessBeanFactory already called on this post-processor against &quot;</span> + registry);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">this</span>.registriesPostProcessed.add(registryId);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/** 这里会解析配置类的一些注解，例如<span class="doctag">@Configutation</span>、<span class="doctag">@Component</span>、<span class="doctag">@Import</span>等配置注解 */</span></span><br><span class="line">	processConfigBeanDefinitions(registry);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>在<code>postProcessBeanDefinitionRegistry</code>方法中，我们直接看到最后一行，调用了<code>processConfigBeanDefinitions(registry)</code>，这个方法主要是解析<code>@Component</code>、<code>@Import</code>等配置注解。<a href="/archives/79103379">想要了解<code>processConfigBeanDefinitioins</code>中具体流程可以查看这一篇。</a></p>
-]]></content>
-      <categories>
-        <category>Spring源码</category>
-      </categories>
-      <tags>
-        <tag>Spring源码</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>netty实现简单聊天室功能</title>
     <url>/archives/8839ad77/</url>
     <content><![CDATA[<p>首先看一下项目目录结构</p>
@@ -1455,6 +1430,31 @@
       </categories>
       <tags>
         <tag>Netty</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>invokeBeanDefinitionRegistryPostProcessors方法解析</title>
+    <url>/archives/8d05e930/</url>
+    <content><![CDATA[<p>在上一篇<a href="/archives/e74be873">《Spring-IOC原理之invokeBeanFactoryPostProcessor详解》</a>中我们提到了一个方法<code>invokeBeanDefinitionRegistryPostProcessors()</code>。也说了这个方法最终会调用<code>ConfigurationClassPostProcessor</code>类中的<code>postProcessBeanDefinitionRegistry</code>方法。并且在这个方法中会解析<code>@Import</code>、<code>@Component</code>等注解和创建<code>CGLIB</code>动态代理。那么这一篇我们来详细看一下这个调用链中的方法。</p>
+<p>先找到<code>refresh()</code>方法中的<code>invokeBeanFactoryPostProcessors()</code>，然后找到方法中的<code>invokeBeanDefinitionRegistryPostProcessors</code>方法。</p>
+<p><img src="/archives/8d05e930/image-20210828140340723.png" alt="PostProcessorRegistrationDelegate#invokeBeanFactoryPostProcessors"></p>
+<p>然后<code>Ctrl+鼠标左键</code>进入到该方法中</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">invokeBeanDefinitionRegistryPostProcessors</span><span class="params">(Collection&lt;? extends BeanDefinitionRegistryPostProcessor&gt; postProcessors, BeanDefinitionRegistry registry)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">for</span> (BeanDefinitionRegistryPostProcessor postProcessor : postProcessors) &#123;</span><br><span class="line">		<span class="comment">/** 这里调用ConfigutationClassPostProcessor处理beanDefinitionMap中的bean定义 */</span></span><br><span class="line">		postProcessor.postProcessBeanDefinitionRegistry(registry);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>循环遍历了传进来的<code>postProcessors</code>，不过<code>postProcessors</code>中只有一个类是<code>ConfigurationClassPostProcessor</code>。然后调用<code>postProcessBeanDefinitionRegistry</code>。</p>
+<p><img src="/archives/8d05e930/image-20210828141408341.png" alt="Debug-invokeBeanDefinitionRegistryPostProcessors"></p>
+<blockquote>
+<p>这里还有一个点，就是<code>postProcessBeanDefinitionRegistry</code>方法，这个方法是<code>BeanDefinitionRegistryPostProcessor</code>接口中的方法，所以要想看方法内的实现逻辑只能找实现类中该方法的实现逻辑；通过上面的调试图片我们可以知道，<code>postProcessor</code>是<code>ConfigurationClassPostProcessor</code>类型，而<code>ConfigurationClassPostProcessor</code>切好也实现了<code>BeanDefinitionRegistryPostProcessors</code>接口，当然也实现了这个接口中的方法。所以这里我们只要去<code>ConfigurationClassPostProcessor</code>类中去找方法即可。</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">postProcessBeanDefinitionRegistry</span><span class="params">(BeanDefinitionRegistry registry)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">int</span> registryId = System.identityHashCode(registry);</span><br><span class="line">	<span class="keyword">if</span> (<span class="keyword">this</span>.registriesPostProcessed.contains(registryId)) &#123;</span><br><span class="line">		<span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(</span><br><span class="line">				<span class="string">&quot;postProcessBeanDefinitionRegistry already called on this post-processor against &quot;</span> + registry);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (<span class="keyword">this</span>.factoriesPostProcessed.contains(registryId)) &#123;</span><br><span class="line">		<span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(</span><br><span class="line">				<span class="string">&quot;postProcessBeanFactory already called on this post-processor against &quot;</span> + registry);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">this</span>.registriesPostProcessed.add(registryId);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/** 这里会解析配置类的一些注解，例如<span class="doctag">@Configutation</span>、<span class="doctag">@Component</span>、<span class="doctag">@Import</span>等配置注解 */</span></span><br><span class="line">	processConfigBeanDefinitions(registry);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在<code>postProcessBeanDefinitionRegistry</code>方法中，我们直接看到最后一行，调用了<code>processConfigBeanDefinitions(registry)</code>，这个方法主要是解析<code>@Component</code>、<code>@Import</code>等配置注解。<a href="/archives/79103379">想要了解<code>processConfigBeanDefinitioins</code>中具体流程可以查看这一篇。</a></p>
+]]></content>
+      <categories>
+        <category>Spring源码</category>
+      </categories>
+      <tags>
+        <tag>Spring源码</tag>
       </tags>
   </entry>
   <entry>
@@ -1559,7 +1559,7 @@
 <figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 二叉树结构</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TreeNode</span> </span>&#123;</span><br><span class="line">  <span class="comment">/** 数据 */</span></span><br><span class="line">	<span class="keyword">private</span> <span class="keyword">char</span> data;</span><br><span class="line">  <span class="comment">/** 左子树节点 */</span></span><br><span class="line">	<span class="keyword">private</span> TreeNode left;</span><br><span class="line">  <span class="comment">/** 右子树节点 */</span></span><br><span class="line">	<span class="keyword">private</span> TreeNode right;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="title">TreeNode</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		<span class="keyword">this</span>.data = <span class="string">&#x27; &#x27;</span>;</span><br><span class="line">		<span class="keyword">this</span>.left = <span class="keyword">null</span>;</span><br><span class="line">		<span class="keyword">this</span>.right = <span class="keyword">null</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="title">TreeNode</span><span class="params">(<span class="keyword">char</span> data, TreeNode left, TreeNode right)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">this</span>.data = data;</span><br><span class="line">		<span class="keyword">this</span>.left = left;</span><br><span class="line">		<span class="keyword">this</span>.right = right;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setData</span><span class="params">(<span class="keyword">char</span> data)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">this</span>.data = data;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">char</span> <span class="title">getData</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		<span class="keyword">return</span> data;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setLeft</span><span class="params">(TreeNode left)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">this</span>.left = left;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">public</span> TreeNode <span class="title">getLeft</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		<span class="keyword">return</span> left;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setRight</span><span class="params">(TreeNode right)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">this</span>.right = right;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">public</span> TreeNode <span class="title">getRight</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		<span class="keyword">return</span> right;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <p>二叉树操作类：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">* 二叉树相关操作，增删改查</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">BinaryTreeOptional</span> </span>&#123;</span><br><span class="line">	<span class="comment">// 前序遍历 根左右  </span></span><br><span class="line">	<span class="comment">// 时间复杂度O(2n) =&gt; O(n)</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">pre</span><span class="params">(TreeNode root)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">if</span> (root != <span class="keyword">null</span>) &#123;</span><br><span class="line">			print(root);</span><br><span class="line">			<span class="keyword">if</span> (root.getLeft() != <span class="keyword">null</span>) &#123;</span><br><span class="line">				pre(root.getLeft());</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">if</span> (root.getRight() != <span class="keyword">null</span>) &#123;</span><br><span class="line">				pre(root.getRight());				</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 中序遍历 左根右</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">mid</span><span class="params">(TreeNode root)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">if</span>(root != <span class="keyword">null</span>) &#123;</span><br><span class="line">			<span class="keyword">if</span>(root.getLeft() != <span class="keyword">null</span>) &#123;</span><br><span class="line">				mid(root.getLeft());</span><br><span class="line">			&#125;</span><br><span class="line">			print(root);</span><br><span class="line">			<span class="keyword">if</span> (root.getRight() != <span class="keyword">null</span>) &#123;</span><br><span class="line">				mid(root.getRight());</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 后序遍历 左右根</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">post</span><span class="params">(TreeNode root)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">if</span>(root != <span class="keyword">null</span>) &#123;</span><br><span class="line">			<span class="keyword">if</span>(root.getLeft() != <span class="keyword">null</span>) &#123;</span><br><span class="line">				post(root.getLeft());</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">if</span>(root.getRight() != <span class="keyword">null</span>) &#123;</span><br><span class="line">				post(root.getRight());</span><br><span class="line">			&#125;</span><br><span class="line">			print(root);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 添加节点</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">add</span><span class="params">(TreeNode root, TreeNode node)</span> </span>&#123;</span><br><span class="line">		Assert.notNull(root, <span class="string">&quot;二叉树不能为空&quot;</span>);</span><br><span class="line">		Assert.notNull(node, <span class="string">&quot;添加的节点不能为空&quot;</span>);</span><br><span class="line">		<span class="keyword">if</span>(node.getData() &lt;= root.getData()) &#123;</span><br><span class="line">			<span class="keyword">if</span>(root.getLeft() == <span class="keyword">null</span>) &#123;</span><br><span class="line">				root.setLeft(node);</span><br><span class="line">			&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">				add(root.getLeft(),node);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">			<span class="keyword">if</span>(root.getRight() == <span class="keyword">null</span>) &#123;</span><br><span class="line">				root.setRight(node);</span><br><span class="line">			&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">				add(root.getRight(),node);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 删除节点</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">remove</span><span class="params">(TreeNode root,TreeNode rmNode)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">if</span> (rmNode.getLeft() == <span class="keyword">null</span> &amp;&amp; rmNode.getRight() == <span class="keyword">null</span>) &#123;</span><br><span class="line">			rmLeafNode(root,rmNode);</span><br><span class="line">		&#125; <span class="keyword">else</span> <span class="keyword">if</span> (rmNode.getLeft() == <span class="keyword">null</span> &amp;&amp; rmNode.getRight() != <span class="keyword">null</span>) &#123;</span><br><span class="line">			rmNodeWithRightNode(root,rmNode);</span><br><span class="line">		&#125; <span class="keyword">else</span> <span class="keyword">if</span> (rmNode.getLeft() != <span class="keyword">null</span> &amp;&amp; rmNode.getRight() == <span class="keyword">null</span>) &#123;</span><br><span class="line">			rmNodeWithLeftNode(root,rmNode);</span><br><span class="line">		&#125; <span class="keyword">else</span> <span class="keyword">if</span> (rmNode.getLeft() != <span class="keyword">null</span> &amp;&amp; rmNode.getRight() != <span class="keyword">null</span>) &#123;</span><br><span class="line">			rmNode(root,rmNode);</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 寻找当前节点的父节点</span></span><br><span class="line">	<span class="function"><span class="keyword">private</span> TreeNode <span class="title">getParentNode</span><span class="params">(TreeNode root,TreeNode node)</span> </span>&#123;</span><br><span class="line">		TreeNode treeNode = root;</span><br><span class="line">		<span class="keyword">if</span>(root != <span class="keyword">null</span> &amp;&amp; root.getLeft() != <span class="keyword">null</span> &amp;&amp; root.getLeft().getData() == node.getData()) &#123;</span><br><span class="line">			System.out.println(<span class="string">&quot;left = &quot;</span> + root);</span><br><span class="line">			<span class="keyword">return</span> treeNode;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">if</span>(root != <span class="keyword">null</span> &amp;&amp; root.getRight() != <span class="keyword">null</span> &amp;&amp; root.getRight().getData() == node.getData()) &#123;</span><br><span class="line">			System.out.println(<span class="string">&quot;Right = &quot;</span> + root.getData());</span><br><span class="line">			<span class="keyword">return</span> treeNode;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span> root.getData() &gt;= node.getData() ? getParentNode(root.getLeft(), node) : getParentNode(root.getRight(), node);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 删除叶子节点</span></span><br><span class="line">	<span class="function"><span class="keyword">private</span> <span class="keyword">boolean</span> <span class="title">rmLeafNode</span><span class="params">(TreeNode root,TreeNode rmNode)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">		TreeNode parentNode = getParentNode(root,rmNode);</span><br><span class="line">		<span class="keyword">if</span> (parentNode.getLeft() != <span class="keyword">null</span> &amp;&amp; parentNode.getLeft().getData() == rmNode.getData()) &#123;</span><br><span class="line">			parentNode.setLeft(<span class="keyword">null</span>);</span><br><span class="line">			<span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">if</span> (parentNode.getRight() != <span class="keyword">null</span> &amp;&amp; parentNode.getRight().getData() == rmNode.getData()) &#123;</span><br><span class="line">			parentNode.setRight(<span class="keyword">null</span>);</span><br><span class="line">			<span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 删除节点，该节点只有左子树有叶子节点，右子树没有节点</span></span><br><span class="line">	<span class="function"><span class="keyword">private</span> <span class="keyword">boolean</span> <span class="title">rmNodeWithLeftNode</span><span class="params">(TreeNode root, TreeNode rmNode)</span> </span>&#123;</span><br><span class="line">		TreeNode leftNode = rmNode.getLeft();</span><br><span class="line">		rmNode.setData(leftNode.getData());</span><br><span class="line">		rmNode.setLeft(<span class="keyword">null</span>);</span><br><span class="line">		rmNode.setRight(<span class="keyword">null</span>);</span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 删除节点，该节点只有右子树有叶子节点，左子树为空</span></span><br><span class="line">	<span class="function"><span class="keyword">private</span> <span class="keyword">boolean</span> <span class="title">rmNodeWithRightNode</span><span class="params">(TreeNode root, TreeNode rmNode)</span> </span>&#123;</span><br><span class="line">		TreeNode rightNode = rmNode.getRight();</span><br><span class="line">		rmNode.setData(rightNode.getData());</span><br><span class="line">		rmNode.setLeft(<span class="keyword">null</span>);</span><br><span class="line">		rmNode.setRight(<span class="keyword">null</span>);</span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 删除节点，该节点既有左子树又有右子树</span></span><br><span class="line">	<span class="function"><span class="keyword">private</span> <span class="keyword">boolean</span> <span class="title">rmNode</span><span class="params">(TreeNode root, TreeNode rmNode)</span> </span>&#123;</span><br><span class="line">		TreeNode parentNode = getParentNode(root, rmNode);</span><br><span class="line">		TreeNode firstMaxNode = findFirstMax(rmNode);</span><br><span class="line">		TreeNode firstMaxParentNode = getParentNode(rmNode, firstMaxNode);</span><br><span class="line">		<span class="keyword">if</span> (parentNode.getLeft().getData() == rmNode.getData()) &#123;</span><br><span class="line">			parentNode.setLeft(firstMaxNode);</span><br><span class="line">			firstMaxNode.setLeft(rmNode.getLeft());</span><br><span class="line">			firstMaxNode.setRight(rmNode.getRight());</span><br><span class="line">			firstMaxParentNode.setLeft(<span class="keyword">null</span>);</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">if</span> (parentNode.getRight().getData() == rmNode.getData()) &#123;</span><br><span class="line">			parentNode.setRight(firstMaxNode);</span><br><span class="line">			firstMaxNode.setLeft(rmNode.getLeft());</span><br><span class="line">			firstMaxNode.setRight(rmNode.getRight());</span><br><span class="line">			firstMaxParentNode.setLeft(<span class="keyword">null</span>);</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">  &#125;</span><br><span class="line">		<span class="comment">// 添加节点</span></span><br><span class="line">		<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">add</span><span class="params">(TreeNode root, TreeNode node)</span> </span>&#123;</span><br><span class="line">			Assert.notNull(root, <span class="string">&quot;二叉树不能为空&quot;</span>);</span><br><span class="line">			Assert.notNull(node, <span class="string">&quot;添加的节点不能为空&quot;</span>);</span><br><span class="line">			<span class="keyword">if</span>(node.getData() &lt;= root.getData()) &#123;</span><br><span class="line">				<span class="keyword">if</span>(root.getLeft() == <span class="keyword">null</span>) &#123;</span><br><span class="line">					root.setLeft(node);</span><br><span class="line">				&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">					add(root.getLeft(),node);</span><br><span class="line">				&#125;</span><br><span class="line">			&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">				<span class="keyword">if</span>(root.getRight() == <span class="keyword">null</span>) &#123;</span><br><span class="line">					root.setRight(node);</span><br><span class="line">				&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">					add(root.getRight(),node);</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line"></span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="comment">// 删除节点</span></span><br><span class="line">		<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">remove</span><span class="params">(TreeNode node)</span> </span>&#123;</span><br><span class="line">			Assert.notNull(node,<span class="string">&quot;节点不能为空&quot;</span>);</span><br><span class="line">			</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="comment">// 寻找当前节点的父节点</span></span><br><span class="line">		<span class="function"><span class="keyword">public</span> TreeNode <span class="title">getParentNode</span><span class="params">(TreeNode root,TreeNode node)</span> </span>&#123;</span><br><span class="line">			TreeNode treeNode = root;</span><br><span class="line">			<span class="keyword">if</span>(root != <span class="keyword">null</span> &amp;&amp; root.getLeft() != <span class="keyword">null</span> &amp;&amp; root.getLeft().getData() == node.getData()) &#123;</span><br><span class="line">				System.out.println(<span class="string">&quot;left = &quot;</span> + root);</span><br><span class="line">				<span class="keyword">return</span> treeNode;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">if</span>(root != <span class="keyword">null</span> &amp;&amp; root.getRight() != <span class="keyword">null</span> &amp;&amp; root.getRight().getData() == node.getData()) &#123;</span><br><span class="line">				System.out.println(<span class="string">&quot;Right = &quot;</span> + root.getData());</span><br><span class="line">				<span class="keyword">return</span> treeNode;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">return</span> root.getData() &gt;= node.getData() ? getParentNode(root.getLeft(), node) : getParentNode(root.getRight(), node);</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="comment">// 删除叶子节点</span></span><br><span class="line">		<span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">rmLeafNode</span><span class="params">(TreeNode root,TreeNode rmNode)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">			TreeNode parentNode = getParentNode(root,rmNode);</span><br><span class="line">			<span class="keyword">if</span> (parentNode.getLeft() != <span class="keyword">null</span> &amp;&amp; parentNode.getLeft().getData() == rmNode.getData()) &#123;</span><br><span class="line">				parentNode.setLeft(<span class="keyword">null</span>);</span><br><span class="line">				<span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">if</span> (parentNode.getRight() != <span class="keyword">null</span> &amp;&amp; parentNode.getRight().getData() == rmNode.getData()) &#123;</span><br><span class="line">				parentNode.setRight(<span class="keyword">null</span>);</span><br><span class="line">				<span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 找到第一个大于要删除节点的那个节点</span></span><br><span class="line">	<span class="function"><span class="keyword">private</span> TreeNode <span class="title">findFirstMax</span><span class="params">(TreeNode rmNode)</span> </span>&#123;</span><br><span class="line">		TreeNode firstMaxNode = rmNode.getRight();</span><br><span class="line">		<span class="keyword">while</span>(firstMaxNode != <span class="keyword">null</span> &amp;&amp; firstMaxNode.getLeft() != <span class="keyword">null</span>) &#123;</span><br><span class="line">			<span class="keyword">if</span>(firstMaxNode.getLeft().getData() &lt; firstMaxNode.getData()) &#123;</span><br><span class="line">				firstMaxNode = firstMaxNode.getLeft();</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span> firstMaxNode;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">print</span><span class="params">(TreeNode node)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">if</span> (node != <span class="keyword">null</span>) &#123;</span><br><span class="line">			System.out.print(node.getData());	</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">* 二叉树相关操作，增删改查</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">BinaryTreeOptional</span> </span>&#123;</span><br><span class="line">	<span class="comment">// 前序遍历 根左右  </span></span><br><span class="line">	<span class="comment">// 时间复杂度O(2n) =&gt; O(n)</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">pre</span><span class="params">(TreeNode root)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">if</span> (root != <span class="keyword">null</span>) &#123;</span><br><span class="line">			print(root);</span><br><span class="line">			<span class="keyword">if</span> (root.getLeft() != <span class="keyword">null</span>) &#123;</span><br><span class="line">				pre(root.getLeft());</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">if</span> (root.getRight() != <span class="keyword">null</span>) &#123;</span><br><span class="line">				pre(root.getRight());				</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 中序遍历 左根右</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">mid</span><span class="params">(TreeNode root)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">if</span>(root != <span class="keyword">null</span>) &#123;</span><br><span class="line">			<span class="keyword">if</span>(root.getLeft() != <span class="keyword">null</span>) &#123;</span><br><span class="line">				mid(root.getLeft());</span><br><span class="line">			&#125;</span><br><span class="line">			print(root);</span><br><span class="line">			<span class="keyword">if</span> (root.getRight() != <span class="keyword">null</span>) &#123;</span><br><span class="line">				mid(root.getRight());</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 后序遍历 左右根</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">post</span><span class="params">(TreeNode root)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">if</span>(root != <span class="keyword">null</span>) &#123;</span><br><span class="line">			<span class="keyword">if</span>(root.getLeft() != <span class="keyword">null</span>) &#123;</span><br><span class="line">				post(root.getLeft());</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">if</span>(root.getRight() != <span class="keyword">null</span>) &#123;</span><br><span class="line">				post(root.getRight());</span><br><span class="line">			&#125;</span><br><span class="line">			print(root);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 添加节点</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">add</span><span class="params">(TreeNode root, TreeNode node)</span> </span>&#123;</span><br><span class="line">		Assert.notNull(root, <span class="string">&quot;二叉树不能为空&quot;</span>);</span><br><span class="line">		Assert.notNull(node, <span class="string">&quot;添加的节点不能为空&quot;</span>);</span><br><span class="line">		<span class="keyword">if</span>(node.getData() &lt;= root.getData()) &#123;</span><br><span class="line">			<span class="keyword">if</span>(root.getLeft() == <span class="keyword">null</span>) &#123;</span><br><span class="line">				root.setLeft(node);</span><br><span class="line">			&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">				add(root.getLeft(),node);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">			<span class="keyword">if</span>(root.getRight() == <span class="keyword">null</span>) &#123;</span><br><span class="line">				root.setRight(node);</span><br><span class="line">			&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">				add(root.getRight(),node);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 删除节点</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">remove</span><span class="params">(TreeNode root,TreeNode rmNode)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">if</span> (rmNode.getLeft() == <span class="keyword">null</span> &amp;&amp; rmNode.getRight() == <span class="keyword">null</span>) &#123;</span><br><span class="line">			rmLeafNode(root,rmNode);</span><br><span class="line">		&#125; <span class="keyword">else</span> <span class="keyword">if</span> (rmNode.getLeft() == <span class="keyword">null</span> &amp;&amp; rmNode.getRight() != <span class="keyword">null</span>) &#123;</span><br><span class="line">			rmNodeWithRightNode(root,rmNode);</span><br><span class="line">		&#125; <span class="keyword">else</span> <span class="keyword">if</span> (rmNode.getLeft() != <span class="keyword">null</span> &amp;&amp; rmNode.getRight() == <span class="keyword">null</span>) &#123;</span><br><span class="line">			rmNodeWithLeftNode(root,rmNode);</span><br><span class="line">		&#125; <span class="keyword">else</span> <span class="keyword">if</span> (rmNode.getLeft() != <span class="keyword">null</span> &amp;&amp; rmNode.getRight() != <span class="keyword">null</span>) &#123;</span><br><span class="line">			rmNode(root,rmNode);</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 寻找当前节点的父节点</span></span><br><span class="line">	<span class="function"><span class="keyword">private</span> TreeNode <span class="title">getParentNode</span><span class="params">(TreeNode root,TreeNode node)</span> </span>&#123;</span><br><span class="line">		TreeNode treeNode = root;</span><br><span class="line">		<span class="keyword">if</span>(root != <span class="keyword">null</span> &amp;&amp; root.getLeft() != <span class="keyword">null</span> &amp;&amp; root.getLeft().getData() == node.getData()) &#123;</span><br><span class="line">			System.out.println(<span class="string">&quot;left = &quot;</span> + root);</span><br><span class="line">			<span class="keyword">return</span> treeNode;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">if</span>(root != <span class="keyword">null</span> &amp;&amp; root.getRight() != <span class="keyword">null</span> &amp;&amp; root.getRight().getData() == node.getData()) &#123;</span><br><span class="line">			System.out.println(<span class="string">&quot;Right = &quot;</span> + root.getData());</span><br><span class="line">			<span class="keyword">return</span> treeNode;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span> root.getData() &gt;= node.getData() ? getParentNode(root.getLeft(), node) : getParentNode(root.getRight(), node);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 删除叶子节点</span></span><br><span class="line">	<span class="function"><span class="keyword">private</span> <span class="keyword">boolean</span> <span class="title">rmLeafNode</span><span class="params">(TreeNode root,TreeNode rmNode)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">		TreeNode parentNode = getParentNode(root,rmNode);</span><br><span class="line">		<span class="keyword">if</span> (parentNode.getLeft() != <span class="keyword">null</span> &amp;&amp; parentNode.getLeft().getData() == rmNode.getData()) &#123;</span><br><span class="line">			parentNode.setLeft(<span class="keyword">null</span>);</span><br><span class="line">			<span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">if</span> (parentNode.getRight() != <span class="keyword">null</span> &amp;&amp; parentNode.getRight().getData() == rmNode.getData()) &#123;</span><br><span class="line">			parentNode.setRight(<span class="keyword">null</span>);</span><br><span class="line">			<span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 删除节点，该节点只有左子树有叶子节点，右子树没有节点</span></span><br><span class="line">	<span class="function"><span class="keyword">private</span> <span class="keyword">boolean</span> <span class="title">rmNodeWithLeftNode</span><span class="params">(TreeNode root, TreeNode rmNode)</span> </span>&#123;</span><br><span class="line">		TreeNode leftNode = rmNode.getLeft();</span><br><span class="line">		rmNode.setData(leftNode.getData());</span><br><span class="line">		rmNode.setLeft(<span class="keyword">null</span>);</span><br><span class="line">		rmNode.setRight(<span class="keyword">null</span>);</span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 删除节点，该节点只有右子树有叶子节点，左子树为空</span></span><br><span class="line">	<span class="function"><span class="keyword">private</span> <span class="keyword">boolean</span> <span class="title">rmNodeWithRightNode</span><span class="params">(TreeNode root, TreeNode rmNode)</span> </span>&#123;</span><br><span class="line">		TreeNode rightNode = rmNode.getRight();</span><br><span class="line">		rmNode.setData(rightNode.getData());</span><br><span class="line">		rmNode.setLeft(<span class="keyword">null</span>);</span><br><span class="line">		rmNode.setRight(<span class="keyword">null</span>);</span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 删除节点，该节点既有左子树又有右子树</span></span><br><span class="line">	<span class="function"><span class="keyword">private</span> <span class="keyword">boolean</span> <span class="title">rmNode</span><span class="params">(TreeNode root, TreeNode rmNode)</span> </span>&#123;</span><br><span class="line">		TreeNode parentNode = getParentNode(root, rmNode);</span><br><span class="line">		TreeNode firstMaxNode = findFirstMax(rmNode);</span><br><span class="line">		TreeNode firstMaxParentNode = getParentNode(rmNode, firstMaxNode);</span><br><span class="line">		<span class="keyword">if</span> (parentNode.getLeft().getData() == rmNode.getData()) &#123;</span><br><span class="line">			parentNode.setLeft(firstMaxNode);</span><br><span class="line">			firstMaxNode.setLeft(rmNode.getLeft());</span><br><span class="line">			firstMaxNode.setRight(rmNode.getRight());</span><br><span class="line">			firstMaxParentNode.setLeft(<span class="keyword">null</span>);</span><br><span class="line">			<span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">if</span> (parentNode.getRight().getData() == rmNode.getData()) &#123;</span><br><span class="line">			parentNode.setRight(firstMaxNode);</span><br><span class="line">			firstMaxNode.setLeft(rmNode.getLeft());</span><br><span class="line">			firstMaxNode.setRight(rmNode.getRight());</span><br><span class="line">			firstMaxParentNode.setLeft(<span class="keyword">null</span>);</span><br><span class="line">			<span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// 添加节点</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">add</span><span class="params">(TreeNode root, TreeNode node)</span> </span>&#123;</span><br><span class="line">		Assert.notNull(root, <span class="string">&quot;二叉树不能为空&quot;</span>);</span><br><span class="line">		Assert.notNull(node, <span class="string">&quot;添加的节点不能为空&quot;</span>);</span><br><span class="line">		<span class="keyword">if</span>(node.getData() &lt;= root.getData()) &#123;</span><br><span class="line">			<span class="keyword">if</span>(root.getLeft() == <span class="keyword">null</span>) &#123;</span><br><span class="line">				root.setLeft(node);</span><br><span class="line">			&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">				add(root.getLeft(),node);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">			<span class="keyword">if</span>(root.getRight() == <span class="keyword">null</span>) &#123;</span><br><span class="line">				root.setRight(node);</span><br><span class="line">			&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">				add(root.getRight(),node);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 寻找当前节点的父节点</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> TreeNode <span class="title">getParentNode</span><span class="params">(TreeNode root,TreeNode node)</span> </span>&#123;</span><br><span class="line">		TreeNode treeNode = root;</span><br><span class="line">		<span class="keyword">if</span>(root != <span class="keyword">null</span> &amp;&amp; root.getLeft() != <span class="keyword">null</span> &amp;&amp; root.getLeft().getData() == node.getData()) &#123;</span><br><span class="line">			System.out.println(<span class="string">&quot;left = &quot;</span> + root);</span><br><span class="line">			<span class="keyword">return</span> treeNode;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">if</span>(root != <span class="keyword">null</span> &amp;&amp; root.getRight() != <span class="keyword">null</span> &amp;&amp; root.getRight().getData() == node.getData()) &#123;</span><br><span class="line">			System.out.println(<span class="string">&quot;Right = &quot;</span> + root.getData());</span><br><span class="line">			<span class="keyword">return</span> treeNode;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span> root.getData() &gt;= node.getData() ? getParentNode(root.getLeft(), node) : getParentNode(root.getRight(), node);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 删除叶子节点</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">rmLeafNode</span><span class="params">(TreeNode root,TreeNode rmNode)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">		TreeNode parentNode = getParentNode(root,rmNode);</span><br><span class="line">		<span class="keyword">if</span> (parentNode.getLeft() != <span class="keyword">null</span> &amp;&amp; parentNode.getLeft().getData() == rmNode.getData()) &#123;</span><br><span class="line">			parentNode.setLeft(<span class="keyword">null</span>);</span><br><span class="line">			<span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">if</span> (parentNode.getRight() != <span class="keyword">null</span> &amp;&amp; parentNode.getRight().getData() == rmNode.getData()) &#123;</span><br><span class="line">			parentNode.setRight(<span class="keyword">null</span>);</span><br><span class="line">			<span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 找到第一个大于要删除节点的那个节点</span></span><br><span class="line">	<span class="function"><span class="keyword">private</span> TreeNode <span class="title">findFirstMax</span><span class="params">(TreeNode rmNode)</span> </span>&#123;</span><br><span class="line">		TreeNode firstMaxNode = rmNode.getRight();</span><br><span class="line">		<span class="keyword">while</span>(firstMaxNode != <span class="keyword">null</span> &amp;&amp; firstMaxNode.getLeft() != <span class="keyword">null</span>) &#123;</span><br><span class="line">			<span class="keyword">if</span>(firstMaxNode.getLeft().getData() &lt; firstMaxNode.getData()) &#123;</span><br><span class="line">				firstMaxNode = firstMaxNode.getLeft();</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span> firstMaxNode;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">print</span><span class="params">(TreeNode node)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">if</span> (node != <span class="keyword">null</span>) &#123;</span><br><span class="line">			System.out.print(node.getData());	</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <p>测试主类：</p>
 <figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TreeMain</span> </span>&#123;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">		TreeNode node_D = <span class="keyword">new</span> TreeNode(<span class="string">&#x27;D&#x27;</span>,<span class="keyword">null</span>,<span class="keyword">null</span>);</span><br><span class="line">		TreeNode node_F = <span class="keyword">new</span> TreeNode(<span class="string">&#x27;F&#x27;</span>,<span class="keyword">null</span>,<span class="keyword">null</span>);</span><br><span class="line">		TreeNode node_G = <span class="keyword">new</span> TreeNode(<span class="string">&#x27;G&#x27;</span>,node_F,<span class="keyword">null</span>);</span><br><span class="line">		TreeNode node_B = <span class="keyword">new</span> TreeNode(<span class="string">&#x27;B&#x27;</span>,<span class="keyword">null</span>,<span class="keyword">null</span>);</span><br><span class="line">		TreeNode node_L = <span class="keyword">new</span> TreeNode(<span class="string">&#x27;L&#x27;</span>,<span class="keyword">null</span>,<span class="keyword">null</span>);</span><br><span class="line">		TreeNode node_M = <span class="keyword">new</span> TreeNode(<span class="string">&#x27;M&#x27;</span>,node_L,<span class="keyword">null</span>);</span><br><span class="line">		TreeNode node_A = <span class="keyword">new</span> TreeNode(<span class="string">&#x27;A&#x27;</span>,<span class="keyword">null</span>,node_B);</span><br><span class="line">		TreeNode node_C = <span class="keyword">new</span> TreeNode(<span class="string">&#x27;C&#x27;</span>,node_A,node_D);</span><br><span class="line">		TreeNode node_E = <span class="keyword">new</span> TreeNode(<span class="string">&#x27;E&#x27;</span>,node_C,node_G);</span><br><span class="line">		TreeNode root_H = <span class="keyword">new</span> TreeNode(<span class="string">&#x27;H&#x27;</span>,node_E,node_M);</span><br><span class="line"></span><br><span class="line">		BinaryTreeOptional treeOption = <span class="keyword">new</span> BinaryTreeOptional();</span><br><span class="line">		<span class="comment">// 前序遍历</span></span><br><span class="line">		System.out.print(<span class="string">&quot;前序遍历：&quot;</span>);</span><br><span class="line">		treeOption.pre(root_H);</span><br><span class="line">		System.out.println();</span><br><span class="line">		<span class="comment">// 中序遍历</span></span><br><span class="line">		System.out.print(<span class="string">&quot;中序遍历：&quot;</span>);</span><br><span class="line">		treeOption.mid(root_H);</span><br><span class="line">		System.out.println();</span><br><span class="line">		<span class="comment">// 后序遍历</span></span><br><span class="line">		System.out.print(<span class="string">&quot;后序遍历: &quot;</span>);</span><br><span class="line">		treeOption.post(root_H);</span><br><span class="line">		System.out.println();</span><br><span class="line">		<span class="comment">// 添加节点</span></span><br><span class="line">		TreeNode node_K = <span class="keyword">new</span> TreeNode(<span class="string">&#x27;K&#x27;</span>,<span class="keyword">null</span>,<span class="keyword">null</span>);</span><br><span class="line">		TreeNode node_I = <span class="keyword">new</span> TreeNode(<span class="string">&#x27;I&#x27;</span>,<span class="keyword">null</span>,<span class="keyword">null</span>);</span><br><span class="line">		TreeNode node_N = <span class="keyword">new</span> TreeNode(<span class="string">&#x27;N&#x27;</span>,<span class="keyword">null</span>,<span class="keyword">null</span>);</span><br><span class="line">		TreeNode node_W = <span class="keyword">new</span> TreeNode(<span class="string">&#x27;W&#x27;</span>,node_N,<span class="keyword">null</span>);</span><br><span class="line">		TreeNode node_X = <span class="keyword">new</span> TreeNode(<span class="string">&#x27;X&#x27;</span>,<span class="keyword">null</span>,<span class="keyword">null</span>);</span><br><span class="line">		TreeNode node_Y = <span class="keyword">new</span> TreeNode(<span class="string">&#x27;Y&#x27;</span>,<span class="keyword">null</span>,<span class="keyword">null</span>);</span><br><span class="line">		System.out.println(<span class="string">&quot;添加节点: &quot;</span> + node_K.getData() + <span class="string">&quot;,&quot;</span> + node_I.getData());</span><br><span class="line">		treeOption.add(root_H, node_K);</span><br><span class="line">		treeOption.add(root_H, node_W);</span><br><span class="line">		treeOption.add(root_H, node_X);</span><br><span class="line">		treeOption.add(root_H, node_Y);</span><br><span class="line">		System.out.print(<span class="string">&quot;添加节点后的前序遍历是：&quot;</span>);</span><br><span class="line">		treeOption.mid(root_H);</span><br><span class="line">		System.out.println();</span><br><span class="line">		<span class="comment">// 删除叶子节点</span></span><br><span class="line">		<span class="comment">// treeOption.remove(root_H, node_G);</span></span><br><span class="line">		<span class="comment">// System.out.print(&quot;前序遍历：&quot;);</span></span><br><span class="line">		<span class="comment">// treeOption.pre(root_H);</span></span><br><span class="line">		<span class="comment">// System.out.println();</span></span><br><span class="line"></span><br><span class="line">		TreeNode s = treeOption.findFirstMax(node_E);</span><br><span class="line">		System.out.println(<span class="string">&quot;第一个比根节点大的数： &quot;</span> + s.getData());</span><br><span class="line">		treeOption.rmLeafNode(root_H, node_G);</span><br><span class="line">		System.out.print(<span class="string">&quot;前序遍历：&quot;</span>);</span><br><span class="line">		treeOption.pre(root_H);</span><br><span class="line">		System.out.println();</span><br><span class="line"></span><br><span class="line">		<span class="comment">// 删除中间节点</span></span><br><span class="line">		treeOption.remove(root_H, node_M);</span><br><span class="line">		System.out.print(<span class="string">&quot;删除中间节点后的前序遍历是：&quot;</span>);</span><br><span class="line">		treeOption.pre(root_H);</span><br><span class="line">		System.out.println();</span><br><span class="line">		System.out.print(<span class="string">&quot;删除中间节点后的中序序遍历是：&quot;</span>);</span><br><span class="line">		treeOption.mid(root_H);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
@@ -1788,28 +1788,6 @@
       </tags>
   </entry>
   <entry>
-    <title>排序算法——归并排序</title>
-    <url>/archives/4e99e3ae/</url>
-    <content><![CDATA[<h2 id="基本思想"><a href="#基本思想" class="headerlink" title="基本思想"></a>基本思想</h2><p>把一个序列切分成左右两个子序列，然后分别再切分左右两个子序列，一次切分下去，直到每个序列不能再切分为止，也就是只剩一个元素。这是一个递归的过程。然后将每个子序列排序合并，最后合并成一个完整的有序的序列。</p>
-<p>图解如下：</p>
-<p><img src="/archives/4e99e3ae/%E5%BD%92%E5%B9%B6%E6%8E%92%E5%BA%8F%E5%9B%BE%E8%A7%A3.png" alt="归并排序图解"></p>
-<p>归并过程如下动态图：</p>
-<p><img src="/archives/4e99e3ae/mergeSort.gif" alt="归并排序流程"></p>
-<h2 id="代码实现"><a href="#代码实现" class="headerlink" title="代码实现"></a>代码实现</h2><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> java.util.*;</span><br><span class="line"><span class="keyword">import</span> java.lang.*;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Rextester</span></span></span><br><span class="line"><span class="class"></span>&#123;  </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">		  <span class="keyword">int</span>[] data = &#123;<span class="number">3</span>,<span class="number">44</span>,<span class="number">38</span>,<span class="number">5</span>,<span class="number">47</span>,<span class="number">15</span>,<span class="number">36</span>,<span class="number">26</span>,<span class="number">27</span>,<span class="number">2</span>,<span class="number">46</span>,<span class="number">4</span>,<span class="number">19</span>,<span class="number">50</span>,<span class="number">48</span>&#125;;</span><br><span class="line">		  mergeSort(data,<span class="number">0</span>,data.length - <span class="number">1</span>);</span><br><span class="line">		  System.out.println(<span class="string">&quot;归并排序结果：&quot;</span> + Arrays.toString(data));</span><br><span class="line">    &#125;</span><br><span class="line">	</span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * 归并排序</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> data 数组</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> left 数组起始位置</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> right 数组结束位置</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">mergeSort</span><span class="params">(<span class="keyword">int</span>[] data,<span class="keyword">int</span> left,<span class="keyword">int</span> right)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">if</span>(left &lt; right) &#123;</span><br><span class="line">			<span class="comment">// 将数组从中间切分成左右两个子数组</span></span><br><span class="line">			<span class="keyword">int</span> mid = (left + right) / <span class="number">2</span>;</span><br><span class="line">			<span class="comment">// 递归切分左边子数组</span></span><br><span class="line">			mergeSort(data, left, mid);</span><br><span class="line">			<span class="comment">// 递归切分右边子数组</span></span><br><span class="line">			mergeSort(data, mid+<span class="number">1</span>, right);</span><br><span class="line">			<span class="comment">// 开始将切分的子数组排序合并</span></span><br><span class="line">			merge(data, left, mid, right);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * 对子数组进行合并排序</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> data 数组</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> left 数组起始位置</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> mid 数组中间位置</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> right 数组结束位置</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">merge</span><span class="params">(<span class="keyword">int</span>[] data, <span class="keyword">int</span> left, <span class="keyword">int</span> mid, <span class="keyword">int</span> right)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">int</span>[] tmp = <span class="keyword">new</span> <span class="keyword">int</span>[data.length];</span><br><span class="line">		<span class="comment">// 左边子数组开始位置</span></span><br><span class="line">		<span class="keyword">int</span> leftPointer = left;</span><br><span class="line">		<span class="comment">// 右边子数组开始位置</span></span><br><span class="line">		<span class="keyword">int</span> rightPointer = mid + <span class="number">1</span>;</span><br><span class="line">		<span class="comment">// 临时数组的游标指针，起始位置为left</span></span><br><span class="line">		<span class="keyword">int</span> loc = left;</span><br><span class="line">		<span class="keyword">while</span>(leftPointer &lt;= mid &amp;&amp; rightPointer &lt;= right) &#123;</span><br><span class="line">			<span class="keyword">if</span>(data[leftPointer] &lt; data[rightPointer]) &#123;</span><br><span class="line">				<span class="comment">// 如果左边的数小于右边的数，就将左边小的数放入到临时数组中</span></span><br><span class="line">				<span class="comment">// 并且将loc++,leftPointer++</span></span><br><span class="line">				tmp[loc++] = data[leftPointer++];</span><br><span class="line">			&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">				<span class="comment">// 如果左边的数大于等于右边的数，就将右边的数放入到临时数组中</span></span><br><span class="line">				<span class="comment">// 并且将loc++,rightPointer++</span></span><br><span class="line">				tmp[loc++] = data[rightPointer++];</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="comment">// 将左边没有放入临时数组的数放入到临时数组中</span></span><br><span class="line">		<span class="keyword">while</span>(leftPointer &lt;= mid) &#123;</span><br><span class="line">			tmp[loc++] = data[leftPointer++];</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="comment">// 将右边没有放入临时数组的数放入到临时数组中</span></span><br><span class="line">		<span class="keyword">while</span>(rightPointer &lt;= right) &#123;</span><br><span class="line">			tmp[loc++] = data[rightPointer++];</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="comment">// 将临时数组中排好序的元素放到data中</span></span><br><span class="line">		<span class="keyword">for</span>(<span class="keyword">int</span> i = left; i &lt;= right; i++) &#123;</span><br><span class="line">			data[i] = tmp[i];</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="复杂度"><a href="#复杂度" class="headerlink" title="复杂度"></a>复杂度</h2><ul>
-<li><strong>时间复杂度：O(nLogn)</strong></li>
-<li><strong>空间复杂度：T(N)</strong> ，归并排序过程中创建了一个与原来数组一样大小的临时数组。</li>
-</ul>
-]]></content>
-      <categories>
-        <category>算法</category>
-      </categories>
-      <tags>
-        <tag>归并排序</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>排序算法——快速排序</title>
     <url>/archives/a4803490/</url>
     <content><![CDATA[<h2 id="算法思想"><a href="#算法思想" class="headerlink" title="算法思想"></a>算法思想</h2><ol>
@@ -1836,6 +1814,28 @@
       </categories>
       <tags>
         <tag>快速排序</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>排序算法——归并排序</title>
+    <url>/archives/4e99e3ae/</url>
+    <content><![CDATA[<h2 id="基本思想"><a href="#基本思想" class="headerlink" title="基本思想"></a>基本思想</h2><p>把一个序列切分成左右两个子序列，然后分别再切分左右两个子序列，一次切分下去，直到每个序列不能再切分为止，也就是只剩一个元素。这是一个递归的过程。然后将每个子序列排序合并，最后合并成一个完整的有序的序列。</p>
+<p>图解如下：</p>
+<p><img src="/archives/4e99e3ae/%E5%BD%92%E5%B9%B6%E6%8E%92%E5%BA%8F%E5%9B%BE%E8%A7%A3.png" alt="归并排序图解"></p>
+<p>归并过程如下动态图：</p>
+<p><img src="/archives/4e99e3ae/mergeSort.gif" alt="归并排序流程"></p>
+<h2 id="代码实现"><a href="#代码实现" class="headerlink" title="代码实现"></a>代码实现</h2><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> java.util.*;</span><br><span class="line"><span class="keyword">import</span> java.lang.*;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Rextester</span></span></span><br><span class="line"><span class="class"></span>&#123;  </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">		  <span class="keyword">int</span>[] data = &#123;<span class="number">3</span>,<span class="number">44</span>,<span class="number">38</span>,<span class="number">5</span>,<span class="number">47</span>,<span class="number">15</span>,<span class="number">36</span>,<span class="number">26</span>,<span class="number">27</span>,<span class="number">2</span>,<span class="number">46</span>,<span class="number">4</span>,<span class="number">19</span>,<span class="number">50</span>,<span class="number">48</span>&#125;;</span><br><span class="line">		  mergeSort(data,<span class="number">0</span>,data.length - <span class="number">1</span>);</span><br><span class="line">		  System.out.println(<span class="string">&quot;归并排序结果：&quot;</span> + Arrays.toString(data));</span><br><span class="line">    &#125;</span><br><span class="line">	</span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * 归并排序</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> data 数组</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> left 数组起始位置</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> right 数组结束位置</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">mergeSort</span><span class="params">(<span class="keyword">int</span>[] data,<span class="keyword">int</span> left,<span class="keyword">int</span> right)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">if</span>(left &lt; right) &#123;</span><br><span class="line">			<span class="comment">// 将数组从中间切分成左右两个子数组</span></span><br><span class="line">			<span class="keyword">int</span> mid = (left + right) / <span class="number">2</span>;</span><br><span class="line">			<span class="comment">// 递归切分左边子数组</span></span><br><span class="line">			mergeSort(data, left, mid);</span><br><span class="line">			<span class="comment">// 递归切分右边子数组</span></span><br><span class="line">			mergeSort(data, mid+<span class="number">1</span>, right);</span><br><span class="line">			<span class="comment">// 开始将切分的子数组排序合并</span></span><br><span class="line">			merge(data, left, mid, right);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * 对子数组进行合并排序</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> data 数组</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> left 数组起始位置</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> mid 数组中间位置</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> right 数组结束位置</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">merge</span><span class="params">(<span class="keyword">int</span>[] data, <span class="keyword">int</span> left, <span class="keyword">int</span> mid, <span class="keyword">int</span> right)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">int</span>[] tmp = <span class="keyword">new</span> <span class="keyword">int</span>[data.length];</span><br><span class="line">		<span class="comment">// 左边子数组开始位置</span></span><br><span class="line">		<span class="keyword">int</span> leftPointer = left;</span><br><span class="line">		<span class="comment">// 右边子数组开始位置</span></span><br><span class="line">		<span class="keyword">int</span> rightPointer = mid + <span class="number">1</span>;</span><br><span class="line">		<span class="comment">// 临时数组的游标指针，起始位置为left</span></span><br><span class="line">		<span class="keyword">int</span> loc = left;</span><br><span class="line">		<span class="keyword">while</span>(leftPointer &lt;= mid &amp;&amp; rightPointer &lt;= right) &#123;</span><br><span class="line">			<span class="keyword">if</span>(data[leftPointer] &lt; data[rightPointer]) &#123;</span><br><span class="line">				<span class="comment">// 如果左边的数小于右边的数，就将左边小的数放入到临时数组中</span></span><br><span class="line">				<span class="comment">// 并且将loc++,leftPointer++</span></span><br><span class="line">				tmp[loc++] = data[leftPointer++];</span><br><span class="line">			&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">				<span class="comment">// 如果左边的数大于等于右边的数，就将右边的数放入到临时数组中</span></span><br><span class="line">				<span class="comment">// 并且将loc++,rightPointer++</span></span><br><span class="line">				tmp[loc++] = data[rightPointer++];</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="comment">// 将左边没有放入临时数组的数放入到临时数组中</span></span><br><span class="line">		<span class="keyword">while</span>(leftPointer &lt;= mid) &#123;</span><br><span class="line">			tmp[loc++] = data[leftPointer++];</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="comment">// 将右边没有放入临时数组的数放入到临时数组中</span></span><br><span class="line">		<span class="keyword">while</span>(rightPointer &lt;= right) &#123;</span><br><span class="line">			tmp[loc++] = data[rightPointer++];</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="comment">// 将临时数组中排好序的元素放到data中</span></span><br><span class="line">		<span class="keyword">for</span>(<span class="keyword">int</span> i = left; i &lt;= right; i++) &#123;</span><br><span class="line">			data[i] = tmp[i];</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="复杂度"><a href="#复杂度" class="headerlink" title="复杂度"></a>复杂度</h2><ul>
+<li><strong>时间复杂度：O(nLogn)</strong></li>
+<li><strong>空间复杂度：T(N)</strong> ，归并排序过程中创建了一个与原来数组一样大小的临时数组。</li>
+</ul>
+]]></content>
+      <categories>
+        <category>算法</category>
+      </categories>
+      <tags>
+        <tag>归并排序</tag>
       </tags>
   </entry>
   <entry>
