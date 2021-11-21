@@ -95,7 +95,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">2k</span>
+            <span class="post-count">2.2k</span>
         </span>
     </span>
 
@@ -104,7 +104,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-book-open-line"></i>
             <span class="post-meta-item-text"> 阅读时长≈</span>
-            <span class="post-count">10 分钟</span>
+            <span class="post-count">11 分钟</span>
         </span>
     </span>
 </div>
@@ -149,15 +149,21 @@
 <p>删除节点G，因为节点G只有右子树节点，所以删除G节点时，需要将G的右节点F设置到G节点位置，删除G节点。</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">E.right = G.right;</span><br><span class="line">G.right = <span class="keyword">null</span>;</span><br></pre></td></tr></table></figure>
 
-<p><img src="/archives/6d5957d3/image-20211120230615101.png" alt="要删除的节点左子树为空，右子树不为空"></p>
+<p><img src="/archives/6d5957d3/%E5%B7%A6%E5%AD%90%E6%A0%91%E4%B8%BA%E7%A9%BA%EF%BC%8C%E5%8F%B3%E5%AD%90%E6%A0%91%E4%B8%8D%E4%B8%BA%E7%A9%BA.png" alt="要删除的节点左子树为空，右子树不为空"></p>
 <p>删除节点G完整代码如下：</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 删除节点，该节点只有右子树有叶子节点，左子树为空</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">boolean</span> <span class="title">rmNodeWithRightNode</span><span class="params">(TreeNode root, TreeNode rmNode)</span> </span>&#123;</span><br><span class="line">	TreeNode rightNode = rmNode.getRight();</span><br><span class="line">	rmNode.setData(rightNode.getData());</span><br><span class="line">	rmNode.setLeft(<span class="keyword">null</span>);</span><br><span class="line">	rmNode.setRight(<span class="keyword">null</span>);</span><br><span class="line">	<span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <p>第三种：“要删除的节点左子树不为空，右子树为空”</p>
 <p>例如删除节点L，删除步骤和第二种情况步骤基本一样；将L节点的左子树与K节点的连接断开，并且将M节点（L节点的父节点）的左子树节点设置为K，即可删除L节点。</p>
-<p><img src="/archives/6d5957d3/image-20211120232251303.png" alt="要删除的节点左子树不为空，右子树为空"></p>
+<p><img src="/archives/6d5957d3/%E5%B7%A6%E5%AD%90%E6%A0%91%E4%B8%8D%E4%B8%BA%E7%A9%BA%EF%BC%8C%E5%8F%B3%E5%AD%90%E6%A0%91%E4%B8%BA%E7%A9%BA.png" alt="要删除的节点左子树不为空，右子树为空"></p>
 <p>删除节点完整代码：</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 删除节点，该节点只有左子树有叶子节点，右子树没有节点</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">boolean</span> <span class="title">rmNodeWithLeftNode</span><span class="params">(TreeNode root, TreeNode rmNode)</span> </span>&#123;</span><br><span class="line">	TreeNode leftNode = rmNode.getLeft();</span><br><span class="line">	rmNode.setData(leftNode.getData());</span><br><span class="line">	rmNode.setLeft(<span class="keyword">null</span>);</span><br><span class="line">	rmNode.setRight(<span class="keyword">null</span>);</span><br><span class="line">	<span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>第四种：“要删除的节点左子树和右子树都不为空”</p>
+<p>例如删除节点M，因为节点M既有左子树，又有右子树。所以在删除节点M的时候需要在M节点的右子树下找到地第一个大于M节点的节点，即N节点。然后将N节点放在M节点的位置，删除M节点。</p>
+<p><img src="/archives/6d5957d3/%E5%B7%A6%E5%AD%90%E6%A0%91%E4%B8%8D%E4%B8%BA%E7%A9%BA%EF%BC%8C%E5%8F%B3%E5%AD%90%E6%A0%91%E4%B8%8D%E4%B8%BA%E7%A9%BA.png" alt="左子树不为空，右子树不为空"></p>
+<p>删除代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 删除节点，该节点既有左子树又有右子树</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">boolean</span> <span class="title">rmNode</span><span class="params">(TreeNode root, TreeNode rmNode)</span> </span>&#123;</span><br><span class="line">	TreeNode parentNode = getParentNode(root, rmNode);</span><br><span class="line">	TreeNode firstMaxNode = findFirstMax(rmNode);</span><br><span class="line">	TreeNode firstMaxParentNode = getParentNode(rmNode, firstMaxNode);</span><br><span class="line">	<span class="keyword">if</span> (parentNode.getLeft().getData() == rmNode.getData()) &#123;</span><br><span class="line">		parentNode.setLeft(firstMaxNode);</span><br><span class="line">		firstMaxNode.setLeft(rmNode.getLeft());</span><br><span class="line">		firstMaxNode.setRight(rmNode.getRight());</span><br><span class="line">		firstMaxParentNode.setLeft(<span class="keyword">null</span>);</span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (parentNode.getRight().getData() == rmNode.getData()) &#123;</span><br><span class="line">		parentNode.setRight(firstMaxNode);</span><br><span class="line">		firstMaxNode.setLeft(rmNode.getLeft());</span><br><span class="line">		firstMaxNode.setRight(rmNode.getRight());</span><br><span class="line">		firstMaxParentNode.setLeft(<span class="keyword">null</span>);</span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
  
       <!-- reward -->
