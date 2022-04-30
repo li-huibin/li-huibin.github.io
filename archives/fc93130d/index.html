@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+  
+
+    <head>
+      <meta charset="utf-8" />
+       
+      <meta
+        name="keywords"
+        content="图,深度优先遍历，广度优先遍历,小李子的博客,lihuibin,lhb,Java,hexo+github,spring,springboot,springcloud,nacos,jvm,mysql,k8s,docker,gateway,springcloudAlibaba"
+      />
+       
+      <meta name="description" content="学习，生活分享" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>数据结构——图论基础 |  小李子的博客</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/favicon.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css"
+      />
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+       
+ 
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <script src="https://cdn.jsdelivr.net/npm/mermaid@8.9.2/dist/mermaid.min.js"></script>
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    <link rel="alternate" href="/atom.xml" title="小李子的博客" type="application/atom+xml">
+</head>
+  </html>
+</html>
+
+
+<body>
+  <div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-数据结构——图论基础"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  数据结构——图论基础
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/archives/fc93130d/" class="article-date">
+  <time datetime="2021-11-30T08:16:56.000Z" itemprop="datePublished">2021-11-30</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/">数据结构</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">4.8k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">20 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h2 id="什么是图"><a href="#什么是图" class="headerlink" title="什么是图"></a>什么是图</h2><ul>
+<li><p>图形结构是一种比树形结构更复杂的<strong>非线性结构</strong>。在树形结构中，结点间具有分支层次关系，每一层的结点 只能和上一层中的至多一个结点相关，但可能和下一层的多个结点相关。而在图形结构中，任意两个结点之间都可能相关，即结点之间的领接关系可以是任意的。</p>
+</li>
+<li><p>图可以分为两种：有向图和无向图</p>
+<p><img src="/archives/fc93130d/image-20211130163803330.png" alt="有向图"><br><img src="/archives/fc93130d/image-20211130163945297.png" alt="无向图"></p>
+</li>
+</ul>
+<h2 id="图的相关术语"><a href="#图的相关术语" class="headerlink" title="图的相关术语"></a>图的相关术语</h2><ol>
+<li><strong>顶点：</strong> 途中的任何一个结点，都可以称作顶点，<strong>在图中不允许没有顶点，线性表可以是空表，树可以是空树，但是图不可以是空图，图可以没有边，但至少要有一个顶点</strong> </li>
+<li><strong>边：</strong> 连接到顶点的线就是边，即顶点到顶点之间的连线</li>
+<li><strong>顶点的度：</strong> 连接该顶点的边的条数</li>
+<li><strong>出度：</strong> 箭头从这个顶点指出去的就是出度</li>
+<li><strong>入度：</strong> 箭头方向指向这个顶点的就是入度</li>
+<li><strong>有向图：</strong> 顶点与顶点之间的关系是有方向的</li>
+<li><strong>无向图：</strong> 顶点与顶点之间的关系没有方向的</li>
+</ol>
+<h2 id="图的存储"><a href="#图的存储" class="headerlink" title="图的存储"></a>图的存储</h2><h3 id="使用邻接矩阵-二维数组-来存储图形结构"><a href="#使用邻接矩阵-二维数组-来存储图形结构" class="headerlink" title="使用邻接矩阵(二维数组)来存储图形结构"></a>使用邻接矩阵(二维数组)来存储图形结构</h3><p>1、如果有N个节点，那么我们就需要使用N*N的矩阵来存储</p>
+<p><img src="/archives/fc93130d/image-20211130163803330.png" alt="有向图"></p>
+<p>在上面的有向图中共有7个顶点，那么我们就需要使用一个7*7的二维数组来进行存储，我们将A-G转为0-6对应的数组下标，二维数组的横坐标代表当前的节点，纵坐标代表其他节点，如果当前的值为1，表示两个点之间存在关联，否则没有关联。如下：</p>
+<p>  (1) A[0][1] = 1 :  第0个元素和第1个元素是有关联的（即A和B有联系）</p>
+<p>  (2) A[1][0] = 0 : 第1个元素和第0个元素没有关联（即B和A之间没有联系，因为是有向图）</p>
+<p>  (3) A[1][2] = 1 : 第1个元素和第二个元素有关联（即B和C之间有联系）</p>
+<p>……依次进行映射，得到如下的图</p>
+<p><img src="/archives/fc93130d/image-20211130173220434.png" alt="邻接矩阵"></p>
+<blockquote>
+<p>这里会有一个稀疏矩阵的概念：矩阵中各个顶点之间的关联很少（即存在大量0，只有很少的值为1），这样就会有一个问题——保存图形结构的二维数组中大量空间被浪费掉的情况，为了减少这种不必要的浪费，可以使用<strong>邻接表</strong>来存储图形</p>
+</blockquote>
+<h3 id="使用领接表-链表-来存储图形结构"><a href="#使用领接表-链表-来存储图形结构" class="headerlink" title="使用领接表(链表)来存储图形结构"></a>使用领接表(链表)来存储图形结构</h3><p>使用邻接表(链表)的方式来存储图形和Map中存储entity元素有点类似。</p>
+<p><img src="/archives/fc93130d/image-20211130163803330.png" alt="有向图"></p>
+<p>接下来我们利用链表将上述有向图存储起来</p>
+<p><img src="/archives/fc93130d/image-20211130175554541.png" alt="使用邻接表(链表)保存图形结构"></p>
+<h3 id="两种存储方式对比"><a href="#两种存储方式对比" class="headerlink" title="两种存储方式对比"></a>两种存储方式对比</h3><ul>
+<li><strong>领接矩阵(数组)：</strong> 浪费空间，但是操作都是在内存中进行，速度快。<strong>合适处理数据量不大的场景</strong></li>
+<li><strong>邻接表(链表)：</strong> 节省空间，速度比较慢，<strong>适合大数据量场景</strong></li>
+</ul>
+<h2 id="图形的遍历"><a href="#图形的遍历" class="headerlink" title="图形的遍历"></a>图形的遍历</h2><p>图形的遍历算法有两种：深度优先算法(DFS)和广度优先算法(BFS)</p>
+<blockquote>
+<p><strong>核心关键：</strong> </p>
+<ul>
+<li><strong>队列(queue)：每次需要<code>pop()</code>取队列头元素，并且将头元素有关的节点全部加入队列。</strong></li>
+<li><strong>标记数组mark：每次将遍历过的结点打标记，下次遍历将不会再遍历有标记的结点。<code>深度优先算法中，由于使用递归，存在回溯操作，所以在递归完后需要将结点标记取消</code></strong> </li>
+<li>以上两步操作参考下面代码部分</li>
+</ul>
+</blockquote>
+<h3 id="广度优先算法-BFS"><a href="#广度优先算法-BFS" class="headerlink" title="广度优先算法(BFS)"></a>广度优先算法(BFS)</h3><p>广度优先遍历就是类似于树的层次遍历，利用一个队列，先找到一个点，然后我们把这个点加入到队列中，从队列中取出一个值，依次找出这个点的关联结点加入到队列中，循环这个操作，知道队列为空，此时我们就已经完成了整个图的遍历。</p>
+<blockquote>
+<p><strong>注意：</strong> 这里同样我们需要对遍历过的点进行标记，如果这个点在队列中加入过，则不能再继续添加到队列中。比如：A→B，B→A，此时如果不做标记，A走到B，尝试B的时候，因为B到A又要尝试A一遍，会陷入死循环（有点类似Spring中的循环依赖）。</p>
+</blockquote>
+<p>例如：将下面有向图做广度遍历</p>
+<p><img src="/archives/fc93130d/image-20211130163803330.png" alt="有向图"></p>
+<p>广度优先遍历<br>1、取一个点出来，这里我们从A开始，将A点放入队列中<br>2、从对头取出一个元素<br>3、将与A有关的所有结点放入队列中<br>4、标记A为遍历过的点，被标记过的结点不会再走</p>
+<table>
+<thead>
+<tr>
+<th align="center">队列</th>
+<th align="center">入队结点</th>
+<th align="center">标记结点</th>
+<th align="center">出队结点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">[A]</td>
+<td align="center">A</td>
+<td align="center">A</td>
+<td align="center">A</td>
+</tr>
+<tr>
+<td align="center">[B]</td>
+<td align="center">B</td>
+<td align="center">A,B</td>
+<td align="center">B</td>
+</tr>
+<tr>
+<td align="center">[C,F]</td>
+<td align="center">C,F</td>
+<td align="center">A,B,C,F</td>
+<td align="center">C</td>
+</tr>
+<tr>
+<td align="center">[F,E]</td>
+<td align="center">E</td>
+<td align="center">A,B,C,F,E</td>
+<td align="center">F</td>
+</tr>
+<tr>
+<td align="center">[E,G]</td>
+<td align="center">G</td>
+<td align="center">A,B,C,F,E,G</td>
+<td align="center">E</td>
+</tr>
+<tr>
+<td align="center">[G,D]</td>
+<td align="center">D(B结点已经被标记，不会再入队)</td>
+<td align="center">A,B,C,F,E,G,D</td>
+<td align="center">G</td>
+</tr>
+<tr>
+<td align="center">[D]</td>
+<td align="center">没有，G结点下没有关联结点</td>
+<td align="center">A,B,C,F,E,G,D</td>
+<td align="center">D</td>
+</tr>
+<tr>
+<td align="center">[]</td>
+<td align="center">没有，队列为空，结束遍历</td>
+<td align="center">A,B,C,F,E,G,D</td>
+<td align="center"></td>
+</tr>
+</tbody></table>
+<p>最终上面有向图的广度遍历结果为：<code>ABCFEGD</code></p>
+<h3 id="深度优先算法-DFS"><a href="#深度优先算法-DFS" class="headerlink" title="深度优先算法(DFS)"></a>深度优先算法(DFS)</h3><p>深度优先算法可以想象成是走迷宫，我们会选择一个方向一路走到底，直到不能走了然后再返回上一步继续尝试其他方向，在代码中就是递归+回溯，这就是深度优先遍历。同样，我们需要标记已经走过的点，原因和广度优先遍历一样，防止陷入死循环。</p>
+<blockquote>
+<p>在深度优先算法中有一个重要的优化手段就是<strong>剪枝</strong> 。</p>
+</blockquote>
+<p>举例说明：</p>
+<p><img src="/archives/fc93130d/image-20211130163803330.png" alt="有向图"></p>
+<p>找到一个节点，先按照一个方向一致走下去(反映到代码中就是递归)，并且将走过的点进行标记，下次不再走标记过的点，如果没有与当前点有关联的点了，就一步一步往会返(代码中就是回溯操作)。</p>
+<table>
+<thead>
+<tr>
+<th align="center">路径</th>
+<th align="center">标记点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">A</td>
+<td align="center">A</td>
+</tr>
+<tr>
+<td align="center">A-&gt;B</td>
+<td align="center">A,B</td>
+</tr>
+<tr>
+<td align="center">A-&gt;B-&gt;E</td>
+<td align="center">A,B,E</td>
+</tr>
+<tr>
+<td align="center">A-&gt;B-&gt;E-&gt;D</td>
+<td align="center">A,B,E,D</td>
+</tr>
+<tr>
+<td align="center">A-&gt;B-&gt;E-&gt;D-&gt;C</td>
+<td align="center">A,B,E,D,C</td>
+</tr>
+<tr>
+<td align="center">A-&gt;B-&gt;E-&gt;D(回溯，因为跟C有关的点都被标记了)</td>
+<td align="center">A,B,E,D,C</td>
+</tr>
+<tr>
+<td align="center">A-&gt;B-&gt;E(回溯，跟D有关的点都被标记)</td>
+<td align="center">A,B,E,D,C</td>
+</tr>
+<tr>
+<td align="center">A-&gt;B(回溯，跟E有关的点都被标记)</td>
+<td align="center">A,B,E,D,C</td>
+</tr>
+<tr>
+<td align="center">A-&gt;B-&gt;F(C被标记，不用走)</td>
+<td align="center">A,B,E,D,C,F</td>
+</tr>
+<tr>
+<td align="center">A-&gt;B-&gt;F-&gt;G</td>
+<td align="center">A,B,E,D,C,F,G</td>
+</tr>
+</tbody></table>
+<p>上面我们是对节点的遍历，如果我们需要的是所有的路径，则在回退节点的时候，<strong>还应该将已经遍历过的标记的点也进行回退，这样我们就可以实现全部路径的遍历，可以参考后面的算法示例</strong></p>
+<h2 id="案例"><a href="#案例" class="headerlink" title="案例"></a>案例</h2><h3 id="解救美女1-使用BFS广度优先算法解决"><a href="#解救美女1-使用BFS广度优先算法解决" class="headerlink" title="解救美女1 (使用BFS广度优先算法解决)"></a>解救美女1 (使用BFS广度优先算法解决)</h3><p>有一天，小美和你去玩迷宫。但是方向感不好的小美很快就迷路了，你得知后便去解救无助的小美，你已经弄清楚了迷宫的地图，现在你要知道从你当前位置出发你是否能够达到小美的位置？</p>
+<p><img src="/archives/fc93130d/image-20211201110711135.png" alt="使用BFS广度优先算法解决"></p>
+<blockquote>
+<ul>
+<li><p>1表示地图上的障碍物，0表示有路可以走</p>
+</li>
+<li><p>邻接矩阵（二维数组）：</p>
+<p>0(你)    0    1    0</p>
+<p>0    0    0    0</p>
+<p>0    0    1    0</p>
+<p>0    1    0(小美)    0</p>
+<p>0    0    0    1</p>
+</li>
+</ul>
+</blockquote>
+<h4 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br><span class="line">224</span><br><span class="line">225</span><br><span class="line">226</span><br><span class="line">227</span><br><span class="line">228</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lhb.test;</span><br><span class="line"><span class="keyword">import</span> java.util.Queue;</span><br><span class="line"><span class="keyword">import</span> java.util.Scanner;</span><br><span class="line"><span class="keyword">import</span> java.util.concurrent.ArrayBlockingQueue;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * - 有一天，小美和你去玩迷宫，但是方向感不好的小美很快就迷路了，你得知之后便去营救，你已经弄清楚了迷宫的地图，现在你要知道你从当前位置出发是否能够到达小美的位置</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * - 1表示地图上的障碍物，0表示有路可以走</span></span><br><span class="line"><span class="comment"> * - 邻接矩阵（二维数组）：</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * 0（你） 0 1 0</span></span><br><span class="line"><span class="comment"> * 0         0 0 0</span></span><br><span class="line"><span class="comment"> * 0 0 1 0</span></span><br><span class="line"><span class="comment"> * 0 1 0（小美） 0</span></span><br><span class="line"><span class="comment"> * 0 0 0 1</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">BFS</span> </span>&#123;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 用来表示地图总共有几行</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> n;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 用来表示地图总共有几列</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> m;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 目标的横坐标</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> dx;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 目标的纵坐标</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> dy;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 用来存储邻接矩阵</span></span><br><span class="line"><span class="comment">     * 就是地图</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> data[][];</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 用来标记数据，走过的点，不能再重复入BFS的队列，避免死循环</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">boolean</span> mark[][];</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 构造函数</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">BFS</span><span class="params">(<span class="keyword">int</span> row, <span class="keyword">int</span> col, <span class="keyword">int</span> dx, <span class="keyword">int</span> dy, <span class="keyword">int</span> data[][], <span class="keyword">boolean</span> mark[][])</span> </span>&#123;</span><br><span class="line">        n = row;</span><br><span class="line">        m = col;</span><br><span class="line">        <span class="keyword">this</span>.dx = dx;</span><br><span class="line">        <span class="keyword">this</span>.dy = dy;</span><br><span class="line">        <span class="keyword">this</span>.data = data;</span><br><span class="line">        <span class="keyword">this</span>.mark = mark;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 找寻过程函数</span></span><br><span class="line"><span class="comment">     * 思路就是我们将当前点的相邻的节点全部入队列，依次从队列中取值，然后循环这个操作，直至队列为空，这就是BFS（广度优先）遍历全部图的节点</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> x X表示自己当前位置的横坐标</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> y y表示自己当前位置的纵坐标</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">bfs</span><span class="params">(<span class="keyword">int</span> x, <span class="keyword">int</span> y)</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 判断是否当前位置越界</span></span><br><span class="line">        <span class="keyword">if</span> (x &lt; <span class="number">1</span> || x &gt; n || y &lt; <span class="number">1</span> || y &gt; m) &#123;</span><br><span class="line">            <span class="comment">// 表示当前已经下标越界</span></span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 判断是否当前自己的位置就是目标的位置</span></span><br><span class="line">        <span class="keyword">if</span> (x == dx &amp;&amp; y == dy) &#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;当前位置就是目标位置: X: &quot;</span> + x + <span class="string">&quot;, Y: &quot;</span> + y);</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 将当前自己的节点进行标记，下次不会再进行处理</span></span><br><span class="line">        mark[x][y] = <span class="keyword">true</span>;</span><br><span class="line">        <span class="comment">// 声明一个广度遍历的队列（BFS就是借助队列实现的）,队列的大小是邻接矩阵的长乘宽</span></span><br><span class="line">        Queue&lt;Point&gt; queue = <span class="keyword">new</span> ArrayBlockingQueue&lt;&gt;(n * m);</span><br><span class="line">        <span class="comment">// 将自己当前的位置封装成Point对象</span></span><br><span class="line">        Point start = <span class="keyword">new</span> Point();</span><br><span class="line">        start.x = x;</span><br><span class="line">        start.y = y;</span><br><span class="line">        <span class="comment">// 将自己现在这个节点添加到BFS的队列中</span></span><br><span class="line">        queue.add(start);</span><br><span class="line">        <span class="comment">// 这个是个经典，以后都可以考虑，因为我们是用二维数组对其进行存储，且我们只能上下左右走，无法斜着走，所以我们应该四个方向进行判断</span></span><br><span class="line">        <span class="comment">// 这里定义了一个二维数组，这四个元素和我们当前的位置的横纵坐标相加，就会得到我们上下左右的点</span></span><br><span class="line">        <span class="keyword">int</span> next[][] = &#123;&#123;<span class="number">0</span>, <span class="number">1</span>&#125;, &#123;<span class="number">1</span>, <span class="number">0</span>&#125;, &#123;<span class="number">0</span>, -<span class="number">1</span>&#125;, &#123;-<span class="number">1</span>, <span class="number">0</span>&#125;&#125;;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 开始遍历队列，若当前队列中不为空继续循环</span></span><br><span class="line">        <span class="keyword">while</span> (!queue.isEmpty())&#123;</span><br><span class="line">            <span class="comment">// 取出队列中的第一个元素</span></span><br><span class="line">            Point point = queue.poll();</span><br><span class="line">            <span class="comment">// 开始对当前节点的上下左右节点的处理，将其入队列，利用BFS遍历</span></span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">4</span>; i++) &#123;</span><br><span class="line">                <span class="comment">// 新的横坐标</span></span><br><span class="line">                <span class="keyword">int</span> nextx = point.x + next[i][<span class="number">0</span>];</span><br><span class="line">                <span class="comment">// 新的纵坐标</span></span><br><span class="line">                <span class="keyword">int</span> nexty = point.y + next[i][<span class="number">1</span>];</span><br><span class="line">                <span class="comment">// 判断新的位置的横纵坐标是否越界</span></span><br><span class="line">                <span class="keyword">if</span> (nextx &lt; <span class="number">1</span> || nextx &gt; n || nexty &lt; <span class="number">1</span> || nexty &gt; m)&#123;</span><br><span class="line">                    <span class="keyword">continue</span>;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="comment">// data中的值若是1 表示障碍物，不能走</span></span><br><span class="line">                <span class="comment">// 还要判断是否该点已经被标记，如果标记也不用走，避免重复入队，死循环</span></span><br><span class="line">                <span class="keyword">if</span> (data[nextx][nexty] == <span class="number">0</span> &amp;&amp; !mark[nextx][nexty]) &#123;</span><br><span class="line">                    <span class="comment">// 此时是表示可以继续走</span></span><br><span class="line">                    <span class="comment">// 判断是否已经到达目标点</span></span><br><span class="line">                    <span class="keyword">if</span> (nextx == dx &amp;&amp; nexty == dy) &#123;</span><br><span class="line">                        System.out.println(<span class="string">&quot;已经找到目标位置: X: &quot;</span> + nextx + <span class="string">&quot;, Y: &quot;</span> + nexty);</span><br><span class="line">                        <span class="keyword">return</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                    <span class="comment">// 赋值新的Point</span></span><br><span class="line">                    Point newPoint = <span class="keyword">new</span> Point();</span><br><span class="line">                    newPoint.x = nextx;</span><br><span class="line">                    newPoint.y = nexty;</span><br><span class="line">                    <span class="comment">// 将当前节点进行标记，避免下次重复入队列</span></span><br><span class="line">                    mark[nextx][nexty] = <span class="keyword">true</span>;</span><br><span class="line">                    <span class="comment">// 入队</span></span><br><span class="line">                    queue.add(newPoint);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        System.out.println(<span class="string">&quot;无法找到目标点&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * 我的思路， </span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">bfs</span><span class="params">(Pointer pointer)</span> </span>&#123;</span><br><span class="line">		ArrayBlockingQueue&lt;Pointer&gt; queue = <span class="keyword">new</span> ArrayBlockingQueue&lt;Pointer&gt;(n * m);</span><br><span class="line">		queue.add(pointer);</span><br><span class="line">		mark[pointer.x][pointer.y] = <span class="keyword">true</span>;</span><br><span class="line">		<span class="keyword">while</span> (!queue.isEmpty()) &#123;</span><br><span class="line">			Pointer point = queue.poll();</span><br><span class="line">			<span class="comment">// 向下走</span></span><br><span class="line">			<span class="keyword">if</span> (point.x + <span class="number">1</span> &lt; m &amp;&amp; point.y &lt; n &amp;&amp; data[point.x + <span class="number">1</span>][point.y] == <span class="number">0</span> &amp;&amp; !mark[point.x + <span class="number">1</span>][point.y]) &#123;</span><br><span class="line">				mark[point.x + <span class="number">1</span>][point.y] = <span class="keyword">true</span>;</span><br><span class="line">				<span class="keyword">if</span> (point.x + <span class="number">1</span> == dy &amp;&amp; point.y == dx) &#123;</span><br><span class="line">					System.out.println(<span class="string">&quot;向下走： &quot;</span> + <span class="keyword">new</span> Pointer(point.x+<span class="number">1</span>,point.y));</span><br><span class="line">					<span class="keyword">return</span>;</span><br><span class="line">				&#125;</span><br><span class="line">				queue.add(<span class="keyword">new</span> Pointer(point.x + <span class="number">1</span>, point.y));</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="comment">// 向上走</span></span><br><span class="line">			<span class="keyword">if</span> (point.x - <span class="number">1</span> &gt; <span class="number">0</span> &amp;&amp; point.y &lt; n &amp;&amp; data[point.x - <span class="number">1</span>][point.y] == <span class="number">0</span> &amp;&amp; !mark[point.x - <span class="number">1</span>][point.y]) &#123;</span><br><span class="line">				mark[point.x - <span class="number">1</span>][point.y] = <span class="keyword">true</span>;</span><br><span class="line">				<span class="keyword">if</span> (point.x - <span class="number">1</span> == dy &amp;&amp; point.y == dx) &#123;</span><br><span class="line">					System.out.println(<span class="string">&quot;向上走： &quot;</span> + <span class="keyword">new</span> Pointer(point.x-<span class="number">1</span>,point.y));</span><br><span class="line">					System.out.println(Arrays.asList(mark));</span><br><span class="line">					<span class="keyword">return</span>;</span><br><span class="line">				&#125;</span><br><span class="line">				queue.add(<span class="keyword">new</span> Pointer(point.x - <span class="number">1</span>, point.y));</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="comment">// 向右走</span></span><br><span class="line">			<span class="keyword">if</span> (point.y + <span class="number">1</span> &lt; n &amp;&amp; point.x &lt; m &amp;&amp; data[point.x][point.y + <span class="number">1</span>] == <span class="number">0</span> &amp;&amp; !mark[point.x][point.y + <span class="number">1</span>]) &#123;</span><br><span class="line">				mark[point.x][point.y + <span class="number">1</span>] = <span class="keyword">true</span>;</span><br><span class="line">				<span class="keyword">if</span> (point.x == dy &amp;&amp; point.y + <span class="number">1</span> == dx) &#123;</span><br><span class="line">					System.out.println(<span class="string">&quot;向右走： &quot;</span> + <span class="keyword">new</span> Pointer(point.x,point.y + <span class="number">1</span>));</span><br><span class="line">					<span class="keyword">return</span>;</span><br><span class="line">				&#125;</span><br><span class="line">				queue.add(<span class="keyword">new</span> Pointer(point.x, point.y + <span class="number">1</span>));</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="comment">// 向左走</span></span><br><span class="line">			<span class="keyword">if</span> (point.y - <span class="number">1</span> &gt; <span class="number">0</span> &amp;&amp; point.x &lt; m &amp;&amp; data[point.x][point.y - <span class="number">1</span>] == <span class="number">0</span> &amp;&amp; !mark[point.x][point.y - <span class="number">1</span>]) &#123;</span><br><span class="line">				mark[point.x][point.y - <span class="number">1</span>] = <span class="keyword">true</span>;</span><br><span class="line">				<span class="keyword">if</span> (point.x == dy &amp;&amp; point.y - <span class="number">1</span> == dx) &#123;</span><br><span class="line">					System.out.println(<span class="string">&quot;向左走： &quot;</span> + <span class="keyword">new</span> Pointer(point.x,point.y - <span class="number">1</span>));</span><br><span class="line">					<span class="keyword">return</span>;</span><br><span class="line">				&#125;</span><br><span class="line">				queue.add(<span class="keyword">new</span> Pointer(point.x, point.y - <span class="number">1</span>));</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 主函数，用来测试</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> args</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Scanner cin = <span class="keyword">new</span> Scanner(System.in);</span><br><span class="line">        <span class="keyword">int</span> n = <span class="number">5</span>;</span><br><span class="line">        <span class="keyword">int</span> m = <span class="number">4</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 新建BFS的队列</span></span><br><span class="line">        <span class="comment">// 加1是因为我们不用0有关的格子，我们相当于横纵坐标从1开始</span></span><br><span class="line">        <span class="keyword">int</span> data[][] = <span class="keyword">new</span> <span class="keyword">int</span>[n+<span class="number">1</span>][m+<span class="number">1</span>];</span><br><span class="line">        <span class="comment">// 初始化标记数组</span></span><br><span class="line">        <span class="keyword">boolean</span> mark[][] = <span class="keyword">new</span> <span class="keyword">boolean</span>[n+<span class="number">1</span>][m+<span class="number">1</span>];</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt;= n; i++) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">1</span>; j &lt;= m; j++) &#123;</span><br><span class="line">                data[i][j] = cin.nextInt();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 输入目标点</span></span><br><span class="line">        <span class="keyword">int</span> dx = cin.nextInt();</span><br><span class="line">        <span class="keyword">int</span> dy = cin.nextInt();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 赋值我们输入的起始和终止</span></span><br><span class="line">        <span class="keyword">int</span> x = cin.nextInt();</span><br><span class="line">        <span class="keyword">int</span> y = cin.nextInt();</span><br><span class="line"></span><br><span class="line">        BFS bfs = <span class="keyword">new</span> BFS(n, m ,dx, dy, data, mark);</span><br><span class="line">        bfs.bfs(x, y);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 定义一个下标类，其中里面就两个属性 X Y</span></span><br><span class="line"><span class="comment"> * 该类用来表示当前的位置</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Point</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 横坐标</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">int</span> x;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 纵坐标</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">int</span> y;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="解救美女2（DFS深度度优先算法解决）"><a href="#解救美女2（DFS深度度优先算法解决）" class="headerlink" title="解救美女2（DFS深度度优先算法解决）"></a>解救美女2（DFS深度度优先算法解决）</h3><p>有一天，小美和你去玩迷宫，但是方向感不好的小美很快就迷路了，你得知之后便去营救，你已经弄清楚了迷宫的地图，现在要求你以最快的速度去解救小美，你能计算出最快需要几步么？以及求出其最快的路径</p>
+<p><img src="/archives/fc93130d/image-20211201110711135.png" alt="使用DFS深度优先算法解决"></p>
+<blockquote>
+<ul>
+<li><p>1表示地图上的障碍物，0表示有路可以走</p>
+</li>
+<li><p>邻接矩阵（二维数组）：</p>
+<p>0(你)    0    1    0</p>
+<p>0    0    0    0</p>
+<p>0    0    1    0</p>
+<p>0    1    0(小美)    0</p>
+<p>0    0    0    1</p>
+</li>
+</ul>
+</blockquote>
+<h4 id="代码-1"><a href="#代码-1" class="headerlink" title="代码"></a>代码</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lhb.test;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> com.alibaba.fastjson.JSONObject;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.util.*;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * - 有一天，小美和你去玩迷宫，但是方向感不好的小美很快就迷路了，你得知之后便去营救，你已经弄清楚了迷宫的地图，现在要求你以最快的速度去解救小美，你能计算出最快需要几步么？以及求出其最快的路径</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * - 1表示地图上的障碍物，0表示有路可以走</span></span><br><span class="line"><span class="comment"> * - 邻接矩阵（二维数组）：</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * 0（你） 0 1 0</span></span><br><span class="line"><span class="comment"> * 0         0 0 0</span></span><br><span class="line"><span class="comment"> * 0 0 1 0</span></span><br><span class="line"><span class="comment"> * 0 1 0（小美） 0</span></span><br><span class="line"><span class="comment"> * 0 0 0 1</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"> </span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Point</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">int</span> x;</span><br><span class="line">	<span class="keyword">int</span> y;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">DFS</span> </span>&#123;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 用来表示地图总共有几行</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> n;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 用来表示地图总共有几列</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> m;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 目标的横坐标</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> dx;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 目标的纵坐标</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> dy;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 用来存储邻接矩阵</span></span><br><span class="line"><span class="comment">     * 就是地图</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> data[][];</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 用来标记数据，走过的点，不能再重复入BFS的队列，避免死循环</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">boolean</span> mark[][];</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 用来保存最小的步数 初始值设置为最大，求最小</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> minStep = Integer.MAX_VALUE;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 这个是个经典，以后都可以考虑，因为我们是用二维数组对其进行存储，且我们只能上下左右走，无法斜着走，所以我们应该四个方向进行判断</span></span><br><span class="line"><span class="comment">     * 这里定义了一个二维数组，这四个元素和我们当前的位置的横纵坐标相加，就会得到我们上下左右的点</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> next[][] = &#123;&#123;<span class="number">0</span>, <span class="number">1</span>&#125;, &#123;<span class="number">1</span>, <span class="number">0</span>&#125;, &#123;<span class="number">0</span>, -<span class="number">1</span>&#125;, &#123;-<span class="number">1</span>, <span class="number">0</span>&#125;&#125;;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 用来保存当前路线的路径</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    Stack&lt;Point&gt; stack = <span class="keyword">new</span> Stack&lt;&gt;();</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 用来保存所有的路径 其key是步数，value是list，因为可能有多种最短路径的实现</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    Map&lt;Integer, List&lt;Stack&lt;Point&gt;&gt;&gt; result = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 构造函数</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">DFS</span><span class="params">(<span class="keyword">int</span> row, <span class="keyword">int</span> col, <span class="keyword">int</span> dx, <span class="keyword">int</span> dy, <span class="keyword">int</span> data[][], <span class="keyword">boolean</span> mark[][])</span> </span>&#123;</span><br><span class="line">        n = row;</span><br><span class="line">        m = col;</span><br><span class="line">        <span class="keyword">this</span>.dx = dx;</span><br><span class="line">        <span class="keyword">this</span>.dy = dy;</span><br><span class="line">        <span class="keyword">this</span>.data = data;</span><br><span class="line">        <span class="keyword">this</span>.mark = mark;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * DFS深度遍历，通过深度遍历可以找到最小的步数，以及最小的路径</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> x 当前自己的位置的横坐标</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> y 当前自己的位置的纵坐标</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> step 当前已经走了多少步</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">dfs</span><span class="params">(<span class="keyword">int</span> x, <span class="keyword">int</span> y, <span class="keyword">int</span> step)</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 判断当前的位置是否就是目标位置</span></span><br><span class="line">        <span class="keyword">if</span> (x == dx &amp;&amp; y == dy) &#123;</span><br><span class="line">            <span class="keyword">if</span> (!result.containsKey(step)) &#123;</span><br><span class="line">                result.put(step, <span class="keyword">new</span> ArrayList&lt;&gt;());</span><br><span class="line">            &#125;</span><br><span class="line">            result.get(step).add((Stack&lt;Point&gt;) stack.clone());</span><br><span class="line">            <span class="comment">// 如果是当前的位置，判断这次找到目标的步数是否比我们设置的最小的步数小</span></span><br><span class="line">            <span class="keyword">if</span> (step &lt; minStep) &#123;</span><br><span class="line">                minStep = step;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 退出递归</span></span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 循环走四周的节点，上下左右</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">4</span>; i++) &#123;</span><br><span class="line">            <span class="comment">// 下一个位置的横坐标</span></span><br><span class="line">            <span class="keyword">int</span> nextx = x + next[i][<span class="number">0</span>];</span><br><span class="line">            <span class="comment">// 下一个位置的纵坐标</span></span><br><span class="line">            <span class="keyword">int</span> nexty = y + next[i][<span class="number">1</span>];</span><br><span class="line">            <span class="comment">// 判断是否下一个位置超过了二维数组的边界</span></span><br><span class="line">            <span class="keyword">if</span> (nextx &lt; <span class="number">1</span> || nextx &gt; n || nexty &lt; <span class="number">1</span> || nexty &gt; m) &#123;</span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 判断其下一个位置是否可以走，即判断下一个位置是否是障碍物 0不是 1 是</span></span><br><span class="line">            <span class="comment">// 判断下一个位置是否已经标记，已经标记的不能走</span></span><br><span class="line">            <span class="keyword">if</span> (data[nextx][nexty] == <span class="number">0</span> &amp;&amp; !mark[nextx][nexty]) &#123;</span><br><span class="line">                <span class="comment">// 如果此时完全正常 下一个位置可以走，则将其标志位先改为true</span></span><br><span class="line">                mark[nextx][nexty] = <span class="keyword">true</span>;</span><br><span class="line">                Point point = <span class="keyword">new</span> Point();</span><br><span class="line">                point.x = nextx;</span><br><span class="line">                point.y = nexty;</span><br><span class="line">                <span class="comment">// 将当前下标保存到栈中</span></span><br><span class="line">                stack.push(point);</span><br><span class="line">                <span class="comment">// 递归往下一个走，直到找到为止</span></span><br><span class="line">                dfs(nextx, nexty, step + <span class="number">1</span>);</span><br><span class="line">                <span class="comment">// 回溯，将当前的标志位取掉，因为我们回溯要假设这个位置没有走过</span></span><br><span class="line">                mark[nextx][nexty] = <span class="keyword">false</span>;</span><br><span class="line">                <span class="comment">// 因为回溯所以需要出栈</span></span><br><span class="line">                stack.pop();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Scanner cin = <span class="keyword">new</span> Scanner(System.in);</span><br><span class="line">        <span class="keyword">int</span> n = <span class="number">5</span>;</span><br><span class="line">        <span class="keyword">int</span> m = <span class="number">4</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">int</span>[][] data = <span class="keyword">new</span> <span class="keyword">int</span>[n + <span class="number">1</span>][m + <span class="number">1</span>];</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt;= n; i++) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">1</span>; j &lt;= m; j++) &#123;</span><br><span class="line">                data[i][j] = cin.nextInt();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">int</span> dx = cin.nextInt();</span><br><span class="line">        <span class="keyword">int</span> dy = cin.nextInt();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">boolean</span>[][] mark = <span class="keyword">new</span> <span class="keyword">boolean</span>[n + <span class="number">1</span>][m + <span class="number">1</span>];</span><br><span class="line">        <span class="keyword">int</span> x = cin.nextInt();</span><br><span class="line">        <span class="keyword">int</span> y = cin.nextInt();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 我的起始位置标记位true</span></span><br><span class="line">        mark[x][y] = <span class="keyword">true</span>;</span><br><span class="line">        DFS dfs = <span class="keyword">new</span> DFS(n,m,dx,dy,data,mark);</span><br><span class="line">        dfs.dfs(x,y,<span class="number">0</span>);</span><br><span class="line">        System.out.println(<span class="string">&quot;最小步数是：&quot;</span> + dfs.minStep + <span class="string">&quot;；一共有&quot;</span>+dfs.result.get(dfs.minStep).size()+<span class="string">&quot;种方案到达目标&quot;</span>);</span><br><span class="line"></span><br><span class="line">        List&lt;Stack&lt;Point&gt;&gt; stacks = dfs.result.get(dfs.minStep);</span><br><span class="line">        <span class="keyword">for</span> (Stack&lt;Point&gt; stack: stacks) &#123;</span><br><span class="line">            <span class="keyword">for</span> (Point point : stack) &#123;</span><br><span class="line">                System.out.print(<span class="string">&quot;-&gt;(&quot;</span> + point.x + <span class="string">&quot;,&quot;</span> + point.y + <span class="string">&quot;)&quot;</span>);</span><br><span class="line">            &#125;</span><br><span class="line">            System.out.println();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p><img src="/archives/fc93130d/image-20211201144148795.png" alt="深度优先代码运行结果"></p>
+<h2 id="图的应用"><a href="#图的应用" class="headerlink" title="图的应用"></a>图的应用</h2><ul>
+<li>知识图谱：推荐算法，数据挖掘</li>
+<li>社交网络：QQ推荐好友功能</li>
+<li>图数据库：Neo4j</li>
+<li>路径问题：导航软件</li>
+</ul>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://www.lihuibin.top/archives/fc93130d/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%9B%BE%E5%BD%A2%E7%BB%93%E6%9E%84/" rel="tag">图形结构</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+<div class="gitalk" id="gitalk-container"></div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.css">
+
+
+<script src="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+
+
+<script src="https://cdn.jsdelivr.net/npm/blueimp-md5@2.10.0/js/md5.min.js"></script>
+
+<script type="text/javascript">
+  var gitalk = new Gitalk({
+    clientID: 'c68fe380358330f9b911',
+    clientSecret: '7e15bb1a5ac60c8a9b8f4ac3a9ce0a997a383150',
+    repo: 'li-huibin.github.io',
+    owner: 'li-huibin',
+    admin: ['li-huibin'],
+    // id: location.pathname,      // Ensure uniqueness and length less than 50
+    id: md5(location.pathname),
+    distractionFreeMode: false,  // Facebook-like distraction free mode
+    pagerDirection: 'last'
+  })
+
+  gitalk.render('gitalk-container')
+</script>
+
+   
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2021-2022
+        <i class="ri-heart-fill heart_icon"></i> Li HuiBin
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>访问人数:<span id="busuanzi_value_site_uv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>浏览次数:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+        <li>
+          <a href="https://beian.miit.gov.cn/" target="_black" rel="nofollow">晋ICP备2021014677号</a>
+        </li>
+        
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://v1.cnzz.com/z_stat.php?id=1280277223&amp;web_id=1280277223'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>
+      <div class="float_btns">
+        <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+      </div>
+    </main>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/ayer-side.svg" alt="小李子的博客"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/friends">友链</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于我</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+      <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+        <i class="ri-rss-line"></i>
+      </a>
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/img/alipay.jpg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/img/wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css">
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+ <script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.6/unpacked/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>
+  var ayerConfig = {
+    mathjax: true,
+  };
+</script>
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+ 
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+ 
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+ 
+<script src="/js/dz.js"></script>
+ 
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>

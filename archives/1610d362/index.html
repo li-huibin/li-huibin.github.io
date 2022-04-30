@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+  
+
+    <head>
+      <meta charset="utf-8" />
+       
+      <meta
+        name="keywords"
+        content="pyecharts中显示浙江省所有县市区地图,小李子的博客,lihuibin,lhb,Java,hexo+github,spring,springboot,springcloud,nacos,jvm,mysql,k8s,docker,gateway,springcloudAlibaba"
+      />
+       
+      <meta name="description" content="学习，生活分享" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>pyecharts中显示浙江省所有县市区地图 |  小李子的博客</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/favicon.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css"
+      />
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+       
+ 
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <script src="https://cdn.jsdelivr.net/npm/mermaid@8.9.2/dist/mermaid.min.js"></script>
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    <link rel="alternate" href="/atom.xml" title="小李子的博客" type="application/atom+xml">
+</head>
+  </html>
+</html>
+
+
+<body>
+  <div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-pyecharts中显示浙江省所有县市区地图"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  pyecharts中显示浙江省所有县市区地图
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/archives/1610d362/" class="article-date">
+  <time datetime="2022-01-19T06:03:18.000Z" itemprop="datePublished">2022-01-19</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/python/">python</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">1.2k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">5 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>上一篇<a href="/archives/5c618354/">《pyecharts中自定义geojson来创建地图》</a>介绍了怎么通过自定义geojson来生成我们自定义的地图，这一篇我们来看看怎么通过自定义geojson生成全省各县市区的地图。</p>
+<blockquote>
+<p>PS： 如果使用pyecharts自带的库全省的地图最小显示到市级别，无法显示县区；如果遇到的特殊需求，显然使用默认pyecharts库的结果是无法满足的。这就需要我们重写pyecharts的库文件来实现我们的需求。</p>
+</blockquote>
+<h2 id="步骤"><a href="#步骤" class="headerlink" title="步骤"></a>步骤</h2><p>1、首先需要创建省以及各市的geojson数据文件，我们这里以浙江省以为例，首先创建zhejiang_geojson.json文件来存放浙江省中所有的市信息，然后在依次创建浙江省杭州市下的区县信息hangzhou_geojson.json,同样的操作创建其他市的geojson信息。这里省略。如果不知道怎么创建geojson数据，可以参考上一篇<a href="/archives/5c618354/">《pyecharts中自定义geojson来创建地图》</a></p>
+<p><img src="/archives/1610d362/image-20220119141823976.png" alt="创建全省、市 geojson"></p>
+<p>接着创建一份zhejiang_cities_districts_geojson.json，将全省geojson(zhejiang_geojson.json)以及各市geojson(hangzhou_geojson.json、huzhou_geojson.json……)拷贝到zhejiang_cities_districts_geojson.json文件中，需要注意json格式要正确</p>
+<p>2、编写python代码创建自定义地图</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">import</span> random</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> pyecharts.charts <span class="keyword">import</span> Map</span><br><span class="line"><span class="keyword">from</span> pyecharts <span class="keyword">import</span> options <span class="keyword">as</span> opts</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">values</span>(<span class="params">rge, start: <span class="built_in">int</span> = <span class="number">20</span>, end: <span class="built_in">int</span> = <span class="number">150</span></span>) -&gt; <span class="built_in">list</span>:</span></span><br><span class="line">    ar = [random.randint(start, end) <span class="keyword">for</span> _ <span class="keyword">in</span> <span class="built_in">range</span>(rge)]</span><br><span class="line">    <span class="built_in">print</span>(ar)</span><br><span class="line">    <span class="keyword">return</span> ar</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">hangzhou = [<span class="string">&quot;滨江区&quot;</span>, <span class="string">&quot;淳安县&quot;</span>, <span class="string">&quot;富阳区&quot;</span>, <span class="string">&quot;拱墅区&quot;</span>, <span class="string">&quot;建德市&quot;</span>, <span class="string">&quot;临安区&quot;</span>, <span class="string">&quot;临平区&quot;</span>, <span class="string">&quot;钱塘区&quot;</span>, <span class="string">&quot;上城区&quot;</span>, <span class="string">&quot;桐庐县&quot;</span>, <span class="string">&quot;西湖区&quot;</span>, <span class="string">&quot;萧山区&quot;</span>, <span class="string">&quot;临平区&quot;</span>, <span class="string">&quot;余杭区&quot;</span>]</span><br><span class="line">ningbo = [<span class="string">&quot;海曙区&quot;</span>, <span class="string">&quot;江北区&quot;</span>, <span class="string">&quot;北仑区&quot;</span>, <span class="string">&quot;镇海区&quot;</span>, <span class="string">&quot;鄞州区&quot;</span>, <span class="string">&quot;奉化区&quot;</span>, <span class="string">&quot;象山县&quot;</span>, <span class="string">&quot;宁海县&quot;</span>, <span class="string">&quot;余姚市&quot;</span>, <span class="string">&quot;慈溪市&quot;</span>]</span><br><span class="line">wenzhou = [<span class="string">&quot;鹿城区&quot;</span>, <span class="string">&quot;龙湾区&quot;</span>, <span class="string">&quot;瓯海区&quot;</span>, <span class="string">&quot;洞头区&quot;</span>, <span class="string">&quot;永嘉县&quot;</span>, <span class="string">&quot;平阳县&quot;</span>, <span class="string">&quot;苍南县&quot;</span>, <span class="string">&quot;文成县&quot;</span>, <span class="string">&quot;泰顺县&quot;</span>, <span class="string">&quot;瑞安市&quot;</span>, <span class="string">&quot;乐清市&quot;</span>, <span class="string">&quot;龙港市&quot;</span>]</span><br><span class="line">jiaxing = [<span class="string">&quot;南湖区&quot;</span>, <span class="string">&quot;秀洲区&quot;</span>, <span class="string">&quot;嘉善县&quot;</span>, <span class="string">&quot;海盐县&quot;</span>, <span class="string">&quot;海宁市&quot;</span>, <span class="string">&quot;平湖市&quot;</span>, <span class="string">&quot;桐乡市&quot;</span>]</span><br><span class="line">huzhou = [<span class="string">&quot;吴兴区&quot;</span>, <span class="string">&quot;南浔区&quot;</span>, <span class="string">&quot;德清县&quot;</span>, <span class="string">&quot;长兴县&quot;</span>, <span class="string">&quot;安吉县&quot;</span>]</span><br><span class="line">shaoxing = [<span class="string">&quot;越城区&quot;</span>, <span class="string">&quot;柯桥区&quot;</span>, <span class="string">&quot;上虞区&quot;</span>, <span class="string">&quot;新昌县&quot;</span>, <span class="string">&quot;诸暨市&quot;</span>, <span class="string">&quot;嵊州市&quot;</span>]</span><br><span class="line">jinhua = [<span class="string">&quot;婺城区&quot;</span>, <span class="string">&quot;武义县&quot;</span>, <span class="string">&quot;浦江县&quot;</span>, <span class="string">&quot;磐安县&quot;</span>, <span class="string">&quot;兰溪市&quot;</span>, <span class="string">&quot;义乌市&quot;</span>, <span class="string">&quot;东阳市&quot;</span>, <span class="string">&quot;永康市&quot;</span>, <span class="string">&quot;金东区&quot;</span>]</span><br><span class="line">quzhou = [<span class="string">&quot;柯城区&quot;</span>, <span class="string">&quot;衢江区&quot;</span>, <span class="string">&quot;常山县&quot;</span>, <span class="string">&quot;开化县&quot;</span>, <span class="string">&quot;龙游县&quot;</span>, <span class="string">&quot;江山市&quot;</span>]</span><br><span class="line">zhoushan = [<span class="string">&quot;定海区&quot;</span>, <span class="string">&quot;普陀区&quot;</span>, <span class="string">&quot;岱山县&quot;</span>, <span class="string">&quot;嵊泗县&quot;</span>]</span><br><span class="line">taizhou = [<span class="string">&quot;椒江区&quot;</span>, <span class="string">&quot;黄岩区&quot;</span>, <span class="string">&quot;路桥区&quot;</span>, <span class="string">&quot;三门县&quot;</span>, <span class="string">&quot;天台县&quot;</span>, <span class="string">&quot;仙居县&quot;</span>, <span class="string">&quot;温岭市&quot;</span>, <span class="string">&quot;临海市&quot;</span>, <span class="string">&quot;玉环市&quot;</span>]</span><br><span class="line">lishui = [<span class="string">&quot;莲都区&quot;</span>, <span class="string">&quot;青田县&quot;</span>, <span class="string">&quot;缙云县&quot;</span>, <span class="string">&quot;遂昌县&quot;</span>, <span class="string">&quot;松阳县&quot;</span>, <span class="string">&quot;云和县&quot;</span>, <span class="string">&quot;庆元县&quot;</span>, <span class="string">&quot;景宁畲族自治县&quot;</span>, <span class="string">&quot;龙泉市&quot;</span>]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 浙江省-市 映射表</span></span><br><span class="line">zhejiang_dic = &#123;</span><br><span class="line">    <span class="string">&#x27;hangzhou&#x27;</span>: <span class="string">&quot;杭州市&quot;</span>,</span><br><span class="line">    <span class="string">&#x27;ningbo&#x27;</span>: <span class="string">&quot;宁波市&quot;</span>,</span><br><span class="line">    <span class="string">&#x27;wenzhou&#x27;</span>: <span class="string">&quot;温州市&quot;</span>,</span><br><span class="line">    <span class="string">&#x27;jiaxing&#x27;</span>: <span class="string">&quot;嘉兴市&quot;</span>,</span><br><span class="line">    <span class="string">&#x27;huzhou&#x27;</span>: <span class="string">&quot;湖州市&quot;</span>,</span><br><span class="line">    <span class="string">&#x27;shaoxing&#x27;</span>: <span class="string">&quot;绍兴市&quot;</span>,</span><br><span class="line">    <span class="string">&#x27;jinhua&#x27;</span>: <span class="string">&quot;金华市&quot;</span>,</span><br><span class="line">    <span class="string">&#x27;quzhou&#x27;</span>: <span class="string">&quot;衢州市&quot;</span>,</span><br><span class="line">    <span class="string">&#x27;zhoushan&#x27;</span>: <span class="string">&quot;舟山市&quot;</span>,</span><br><span class="line">    <span class="string">&#x27;taizhou&#x27;</span>: <span class="string">&quot;台州市&quot;</span>,</span><br><span class="line">    <span class="string">&#x27;lishui&#x27;</span>: <span class="string">&quot;丽水市&quot;</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 市-区县 映射表</span></span><br><span class="line">zhejiang_city_dic = &#123;</span><br><span class="line">    <span class="string">&#x27;hangzhou&#x27;</span>: hangzhou,</span><br><span class="line">    <span class="string">&#x27;ningbo&#x27;</span>: ningbo,</span><br><span class="line">    <span class="string">&#x27;wenzhou&#x27;</span>: wenzhou,</span><br><span class="line">    <span class="string">&#x27;jiaxing&#x27;</span>: jiaxing,</span><br><span class="line">    <span class="string">&#x27;huzhou&#x27;</span>: huzhou,</span><br><span class="line">    <span class="string">&#x27;shaoxing&#x27;</span>: shaoxing,</span><br><span class="line">    <span class="string">&#x27;jinhua&#x27;</span>: jinhua,</span><br><span class="line">    <span class="string">&#x27;quzhou&#x27;</span>: quzhou,</span><br><span class="line">    <span class="string">&#x27;zhoushan&#x27;</span>: zhoushan,</span><br><span class="line">    <span class="string">&#x27;taizhou&#x27;</span>: taizhou,</span><br><span class="line">    <span class="string">&#x27;lishui&#x27;</span>: lishui</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 区县-数据映射 导入数据时全部将数据放在这个变量中</span></span><br><span class="line">dic_data = &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line"></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;正在导出浙江全省城市地图...&quot;</span>)</span><br><span class="line">    html_path = <span class="string">&quot;./html/map_zhejiang_all.html&quot;</span></span><br><span class="line">    <span class="keyword">if</span> os.path.exists(html_path):</span><br><span class="line">        os.remove(html_path)</span><br><span class="line">    <span class="comment"># 统计全省区县数量,并合并全省区县</span></span><br><span class="line">    <span class="keyword">with</span> <span class="built_in">open</span>(<span class="string">&quot;./geojson/zhejiang_cities_districts_geojson.json&quot;</span>, <span class="string">&quot;r&quot;</span>, encoding=<span class="string">&quot;utf-8&quot;</span>) <span class="keyword">as</span> file:</span><br><span class="line">        stream = file.read()</span><br><span class="line"></span><br><span class="line">    cities_dic = []</span><br><span class="line">    cities_dic_data = []</span><br><span class="line">    idx = <span class="number">0</span></span><br><span class="line">    <span class="keyword">for</span> city <span class="keyword">in</span> zhejiang_city_dic.values():</span><br><span class="line">        <span class="keyword">for</span> dic <span class="keyword">in</span> city.values():</span><br><span class="line">            cities_dic.append(dic)</span><br><span class="line">            cities_dic_data.append(random.randint(<span class="number">1</span>, <span class="number">100</span>))</span><br><span class="line">        cities_dic.append(zhejiang_city_dic.keys()[idx])</span><br><span class="line">        cities_dic_data.append(random.randint(<span class="number">1</span>, <span class="number">100</span>))</span><br><span class="line">        idx += <span class="number">1</span></span><br><span class="line"></span><br><span class="line">    map0 = Map(init_opts=opts.InitOpts(width=<span class="string">&#x27;900px&#x27;</span>, height=<span class="string">&#x27;800px&#x27;</span>)) \</span><br><span class="line">        .add_js_funcs(<span class="string">&quot;echarts.registerMap(&#x27;浙江省&#x27;,&#123;&#125;);&quot;</span>.<span class="built_in">format</span>(stream)) \</span><br><span class="line">        .add(<span class="string">&quot;商家A&quot;</span>, [<span class="built_in">list</span>(z) <span class="keyword">for</span> z <span class="keyword">in</span> <span class="built_in">zip</span>(cities_dic, cities_dic_data)],</span><br><span class="line">             <span class="string">&quot;浙江&quot;</span>, label_opts=opts.LabelOpts(font_size=<span class="number">10</span>)) \</span><br><span class="line">        .set_global_opts(</span><br><span class="line">        title_opts=opts.TitleOpts(title=<span class="string">&quot;Map-浙江省地图&quot;</span>), visualmap_opts=opts.VisualMapOpts(max_=<span class="number">100</span>, is_piecewise=<span class="literal">True</span>)</span><br><span class="line">    )</span><br><span class="line">    map0.render(html_path)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;浙江全省城市地图导出完成，文件路径:&#123;&#125;&quot;</span>.<span class="built_in">format</span>(html_path))</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>3、运行</p>
+<p>运行之后会在html文件夹下生成一个map_zhejiang_all.html文件，打开文件看结果</p>
+<p><img src="/archives/1610d362/image-20220119144203286.png" alt="全省各市县区地图"></p>
+<h3 id="完整工程代码"><a href="#完整工程代码" class="headerlink" title="完整工程代码"></a>完整工程代码</h3><p>工程代码在<a target="_blank" rel="noopener" href="https://github.com/li-huibin/pyecharts">github</a> 需要的可以自提。</p>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://www.lihuibin.top/archives/1610d362/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/pyecharts/" rel="tag">pyecharts</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+<div class="gitalk" id="gitalk-container"></div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.css">
+
+
+<script src="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+
+
+<script src="https://cdn.jsdelivr.net/npm/blueimp-md5@2.10.0/js/md5.min.js"></script>
+
+<script type="text/javascript">
+  var gitalk = new Gitalk({
+    clientID: 'c68fe380358330f9b911',
+    clientSecret: '7e15bb1a5ac60c8a9b8f4ac3a9ce0a997a383150',
+    repo: 'li-huibin.github.io',
+    owner: 'li-huibin',
+    admin: ['li-huibin'],
+    // id: location.pathname,      // Ensure uniqueness and length less than 50
+    id: md5(location.pathname),
+    distractionFreeMode: false,  // Facebook-like distraction free mode
+    pagerDirection: 'last'
+  })
+
+  gitalk.render('gitalk-container')
+</script>
+
+   
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2021-2022
+        <i class="ri-heart-fill heart_icon"></i> Li HuiBin
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>访问人数:<span id="busuanzi_value_site_uv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>浏览次数:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+        <li>
+          <a href="https://beian.miit.gov.cn/" target="_black" rel="nofollow">晋ICP备2021014677号</a>
+        </li>
+        
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://v1.cnzz.com/z_stat.php?id=1280277223&amp;web_id=1280277223'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>
+      <div class="float_btns">
+        <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+      </div>
+    </main>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/ayer-side.svg" alt="小李子的博客"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/friends">友链</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于我</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+      <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+        <i class="ri-rss-line"></i>
+      </a>
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/img/alipay.jpg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/img/wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css">
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+ <script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.6/unpacked/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>
+  var ayerConfig = {
+    mathjax: true,
+  };
+</script>
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+ 
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+ 
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+ 
+<script src="/js/dz.js"></script>
+ 
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>

@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
-  <title>不忘初心</title>
+  <title>小李子的博客</title>
   
   <subtitle>个人博客</subtitle>
   <link href="https://www.lihuibin.top/atom.xml" rel="self"/>
   
   <link href="https://www.lihuibin.top/"/>
-  <updated>2021-11-21T04:11:27.450Z</updated>
+  <updated>2022-04-30T15:21:55.150Z</updated>
   <id>https://www.lihuibin.top/</id>
   
   <author>
@@ -17,11 +17,287 @@
   <generator uri="https://hexo.io/">Hexo</generator>
   
   <entry>
+    <title>Java垃圾收集器之ZGC剖析</title>
+    <link href="https://www.lihuibin.top/archives/a87613ac/"/>
+    <id>https://www.lihuibin.top/archives/a87613ac/</id>
+    <published>2022-04-30T14:54:15.000Z</published>
+    <updated>2022-04-30T15:21:55.150Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h2 id=&quot;ZGC诞生背景&quot;&gt;&lt;a href=&quot;#ZGC诞生背景&quot; class=&quot;headerlink&quot; title=&quot;ZGC诞生背景&quot;&gt;&lt;/a&gt;ZGC诞生背景&lt;/h2&gt;&lt;p&gt;在Java中，JVM在进行垃圾回收的时候，有一个很大的问题，就是STW(Stop The</summary>
+        
+      
+    
+    
+    
+    <category term="垃圾收集器之ZGC" scheme="https://www.lihuibin.top/categories/%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%E4%B9%8BZGC/"/>
+    
+    
+    <category term="Java垃圾收集器" scheme="https://www.lihuibin.top/tags/Java%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>RPC和Http的区别</title>
+    <link href="https://www.lihuibin.top/archives/c71dc211/"/>
+    <id>https://www.lihuibin.top/archives/c71dc211/</id>
+    <published>2022-02-18T01:04:42.000Z</published>
+    <updated>2022-04-30T14:32:48.422Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h1 id=&quot;Rpc调用和Http调用区别&quot;&gt;&lt;a href=&quot;#Rpc调用和Http调用区别&quot; class=&quot;headerlink&quot;</summary>
+        
+      
+    
+    
+    
+    <category term="面试宝典" scheme="https://www.lihuibin.top/categories/%E9%9D%A2%E8%AF%95%E5%AE%9D%E5%85%B8/"/>
+    
+    
+    <category term="面试宝典" scheme="https://www.lihuibin.top/tags/%E9%9D%A2%E8%AF%95%E5%AE%9D%E5%85%B8/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>pyecharts实现全省各市区县数据动态显示地图</title>
+    <link href="https://www.lihuibin.top/archives/45e4dd0d/"/>
+    <id>https://www.lihuibin.top/archives/45e4dd0d/</id>
+    <published>2022-01-19T06:57:33.000Z</published>
+    <updated>2022-04-30T14:32:48.438Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h1 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h1&gt;&lt;p&gt;上一篇&lt;a</summary>
+        
+      
+    
+    
+    
+    <category term="python" scheme="https://www.lihuibin.top/categories/python/"/>
+    
+    
+    <category term="pyecharts" scheme="https://www.lihuibin.top/tags/pyecharts/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>pyecharts中显示浙江省所有县市区地图</title>
+    <link href="https://www.lihuibin.top/archives/1610d362/"/>
+    <id>https://www.lihuibin.top/archives/1610d362/</id>
+    <published>2022-01-19T06:03:18.000Z</published>
+    <updated>2022-04-30T14:32:48.424Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h1 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h1&gt;&lt;p&gt;上一篇&lt;a</summary>
+        
+      
+    
+    
+    
+    <category term="python" scheme="https://www.lihuibin.top/categories/python/"/>
+    
+    
+    <category term="pyecharts" scheme="https://www.lihuibin.top/tags/pyecharts/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>在pyecharts中自定义geojson创建地图</title>
+    <link href="https://www.lihuibin.top/archives/5c618354/"/>
+    <id>https://www.lihuibin.top/archives/5c618354/</id>
+    <published>2022-01-19T04:02:33.000Z</published>
+    <updated>2022-04-30T14:32:48.470Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h1 id=&quot;背景&quot;&gt;&lt;a href=&quot;#背景&quot; class=&quot;headerlink&quot;</summary>
+        
+      
+    
+    
+    
+    <category term="python" scheme="https://www.lihuibin.top/categories/python/"/>
+    
+    
+    <category term="pyecharts" scheme="https://www.lihuibin.top/tags/pyecharts/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>敏感词检测——基于DFA（有穷自动机）实现</title>
+    <link href="https://www.lihuibin.top/archives/930adced/"/>
+    <id>https://www.lihuibin.top/archives/930adced/</id>
+    <published>2021-12-06T09:47:29.000Z</published>
+    <updated>2022-04-30T14:32:48.483Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h2 id=&quot;背景&quot;&gt;&lt;a href=&quot;#背景&quot; class=&quot;headerlink&quot;</summary>
+        
+      
+    
+    
+    
+    <category term="算法" scheme="https://www.lihuibin.top/categories/%E7%AE%97%E6%B3%95/"/>
+    
+    
+    <category term="DFA(有穷自动机)" scheme="https://www.lihuibin.top/tags/DFA-%E6%9C%89%E7%A9%B7%E8%87%AA%E5%8A%A8%E6%9C%BA/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>最短路径算法——迪杰斯特拉算法</title>
+    <link href="https://www.lihuibin.top/archives/bb86941a/"/>
+    <id>https://www.lihuibin.top/archives/bb86941a/</id>
+    <published>2021-12-01T09:03:08.000Z</published>
+    <updated>2022-04-30T14:32:48.493Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h2 id=&quot;回顾&quot;&gt;&lt;a href=&quot;#回顾&quot; class=&quot;headerlink&quot;</summary>
+        
+      
+    
+    
+    
+    <category term="最短路径算法" scheme="https://www.lihuibin.top/categories/%E6%9C%80%E7%9F%AD%E8%B7%AF%E5%BE%84%E7%AE%97%E6%B3%95/"/>
+    
+    
+    <category term="迪杰斯特拉算法" scheme="https://www.lihuibin.top/tags/%E8%BF%AA%E6%9D%B0%E6%96%AF%E7%89%B9%E6%8B%89%E7%AE%97%E6%B3%95/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>数据结构——图论基础</title>
+    <link href="https://www.lihuibin.top/archives/fc93130d/"/>
+    <id>https://www.lihuibin.top/archives/fc93130d/</id>
+    <published>2021-11-30T08:16:56.000Z</published>
+    <updated>2022-04-30T14:32:48.488Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h2 id=&quot;什么是图&quot;&gt;&lt;a href=&quot;#什么是图&quot; class=&quot;headerlink&quot;</summary>
+        
+      
+    
+    
+    
+    <category term="数据结构" scheme="https://www.lihuibin.top/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/"/>
+    
+    
+    <category term="图形结构" scheme="https://www.lihuibin.top/tags/%E5%9B%BE%E5%BD%A2%E7%BB%93%E6%9E%84/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>java实现定时发布系统消息</title>
+    <link href="https://www.lihuibin.top/archives/4aa75d60/"/>
+    <id>https://www.lihuibin.top/archives/4aa75d60/</id>
+    <published>2021-11-30T03:25:27.000Z</published>
+    <updated>2022-04-30T14:32:48.423Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h2 id=&quot;业务场景描述&quot;&gt;&lt;a href=&quot;#业务场景描述&quot; class=&quot;headerlink&quot; title=&quot;业务场景描述&quot;&gt;&lt;/a&gt;业务场景描述&lt;/h2&gt;&lt;p&gt;管理员通过后台可以定时给系统推送消息；比如</summary>
+        
+      
+    
+    
+    
+    <category term="解决方案" scheme="https://www.lihuibin.top/categories/%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/"/>
+    
+    
+    <category term="解决方案" scheme="https://www.lihuibin.top/tags/%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>排序算法——堆排序</title>
+    <link href="https://www.lihuibin.top/archives/78985d23/"/>
+    <id>https://www.lihuibin.top/archives/78985d23/</id>
+    <published>2021-11-23T04:51:58.000Z</published>
+    <updated>2021-11-27T02:07:40.635Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h2 id=&quot;堆排序&quot;&gt;&lt;a href=&quot;#堆排序&quot; class=&quot;headerlink&quot; title=&quot;堆排序&quot;&gt;&lt;/a&gt;堆排序&lt;/h2&gt;&lt;p&gt;堆排序(Heapsort)是指利用堆这种数据结构进行的一种排序算法。堆排序的平均时间复杂度为O(nlogn)。&lt;/p&gt;
+&lt;h2</summary>
+        
+      
+    
+    
+    
+    <category term="算法" scheme="https://www.lihuibin.top/categories/%E7%AE%97%E6%B3%95/"/>
+    
+    
+    <category term="堆排序" scheme="https://www.lihuibin.top/tags/%E5%A0%86%E6%8E%92%E5%BA%8F/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>哈夫曼树</title>
+    <link href="https://www.lihuibin.top/archives/b0c16ae4/"/>
+    <id>https://www.lihuibin.top/archives/b0c16ae4/</id>
+    <published>2021-11-22T01:43:58.000Z</published>
+    <updated>2021-11-27T02:07:40.603Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h2 id=&quot;哈夫曼树-Huffman-Tree-描述&quot;&gt;&lt;a href=&quot;#哈夫曼树-Huffman-Tree-描述&quot; class=&quot;headerlink&quot; title=&quot;哈夫曼树(Huffman Tree)描述&quot;&gt;&lt;/a&gt;哈夫曼树(Huffman</summary>
+        
+      
+    
+    
+    
+    <category term="数据结构" scheme="https://www.lihuibin.top/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/"/>
+    
+    
+    <category term="哈夫曼树" scheme="https://www.lihuibin.top/tags/%E5%93%88%E5%A4%AB%E6%9B%BC%E6%A0%91/"/>
+    
+  </entry>
+  
+  <entry>
     <title>二叉树增删改查操作</title>
     <link href="https://www.lihuibin.top/archives/6d5957d3/"/>
     <id>https://www.lihuibin.top/archives/6d5957d3/</id>
     <published>2021-11-14T14:48:15.000Z</published>
-    <updated>2021-11-21T04:11:27.450Z</updated>
+    <updated>2021-11-27T02:07:40.597Z</updated>
     
     
       
@@ -238,290 +514,6 @@
     
     
     <category term="希尔排序" scheme="https://www.lihuibin.top/tags/%E5%B8%8C%E5%B0%94%E6%8E%92%E5%BA%8F/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>排序算法——插入排序</title>
-    <link href="https://www.lihuibin.top/archives/cd5503e2/"/>
-    <id>https://www.lihuibin.top/archives/cd5503e2/</id>
-    <published>2021-11-03T04:37:14.000Z</published>
-    <updated>2021-11-06T04:32:29.798Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;p&gt;题目：将该数组&lt;code&gt;int[] data = &amp;#123;8,5,7,4,1,3,2&amp;#125;&lt;/code&gt;进行排序，要求手写插入排序进行实现。&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;&lt;strong&gt;插入排序整体思想：&lt;/strong&gt;&lt;br&gt; </summary>
-        
-      
-    
-    
-    
-    <category term="算法" scheme="https://www.lihuibin.top/categories/%E7%AE%97%E6%B3%95/"/>
-    
-    
-    <category term="插入排序" scheme="https://www.lihuibin.top/tags/%E6%8F%92%E5%85%A5%E6%8E%92%E5%BA%8F/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>利用数组实现队列操作</title>
-    <link href="https://www.lihuibin.top/archives/ace10538/"/>
-    <id>https://www.lihuibin.top/archives/ace10538/</id>
-    <published>2021-11-02T02:33:48.000Z</published>
-    <updated>2021-11-06T04:11:06.773Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;p&gt;题目：利用数组来实现队列的入队，出队，队列扩容等操作，写出具体实现代码。&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;解析：&lt;/p&gt;
-&lt;p&gt;首先应该知道队列最大的特点就是先进先出(FIFO)，所以这里也就限制了队列只能进行入队，并且只能是从尾部入队，不能随意插入；出队也只能是从</summary>
-        
-      
-    
-    
-    
-    <category term="数据结构" scheme="https://www.lihuibin.top/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/"/>
-    
-    
-    <category term="队列" scheme="https://www.lihuibin.top/tags/%E9%98%9F%E5%88%97/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>手写LinkedList（简易版）</title>
-    <link href="https://www.lihuibin.top/archives/f9405533/"/>
-    <id>https://www.lihuibin.top/archives/f9405533/</id>
-    <published>2021-11-01T09:25:28.000Z</published>
-    <updated>2021-11-06T04:11:06.784Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;p&gt;MyLinked代码实现:&lt;/p&gt;
-&lt;figure class=&quot;highlight java&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span</summary>
-        
-      
-    
-    
-    
-    <category term="数据结构" scheme="https://www.lihuibin.top/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/"/>
-    
-    
-    <category term="链表" scheme="https://www.lihuibin.top/tags/%E9%93%BE%E8%A1%A8/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>使用栈数据结构实现简易计算器算法</title>
-    <link href="https://www.lihuibin.top/archives/12e6bc0/"/>
-    <id>https://www.lihuibin.top/archives/12e6bc0/</id>
-    <published>2021-11-01T08:23:09.000Z</published>
-    <updated>2021-11-06T04:11:06.758Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;p&gt;首先看一下设计思路：&lt;/p&gt;
-&lt;p&gt;&lt;img</summary>
-        
-      
-    
-    
-    
-    <category term="数据结构" scheme="https://www.lihuibin.top/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/"/>
-    
-    
-    <category term="栈" scheme="https://www.lihuibin.top/tags/%E6%A0%88/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Netty核心源码解析</title>
-    <link href="https://www.lihuibin.top/archives/b4dafe2/"/>
-    <id>https://www.lihuibin.top/archives/b4dafe2/</id>
-    <published>2021-10-29T04:22:33.000Z</published>
-    <updated>2021-11-06T04:11:06.607Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;h2 id=&quot;Netty线程模型图&quot;&gt;&lt;a href=&quot;#Netty线程模型图&quot; class=&quot;headerlink&quot; title=&quot;Netty线程模型图&quot;&gt;&lt;/a&gt;Netty线程模型图&lt;/h2&gt;&lt;p&gt;&lt;img</summary>
-        
-      
-    
-    
-    
-    <category term="Netty" scheme="https://www.lihuibin.top/categories/Netty/"/>
-    
-    
-    <category term="Netty" scheme="https://www.lihuibin.top/tags/Netty/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Java网络IO与Epoll模型</title>
-    <link href="https://www.lihuibin.top/archives/3449cc56/"/>
-    <id>https://www.lihuibin.top/archives/3449cc56/</id>
-    <published>2021-10-21T13:27:45.000Z</published>
-    <updated>2021-11-06T04:11:06.585Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;h1 id=&quot;IO网络模型&quot;&gt;&lt;a href=&quot;#IO网络模型&quot; class=&quot;headerlink&quot;</summary>
-        
-      
-    
-    
-    
-    <category term="Netty" scheme="https://www.lihuibin.top/categories/Netty/"/>
-    
-    
-    <category term="Netty" scheme="https://www.lihuibin.top/tags/Netty/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>maven打包main可运行jar包</title>
-    <link href="https://www.lihuibin.top/archives/15bfa942/"/>
-    <id>https://www.lihuibin.top/archives/15bfa942/</id>
-    <published>2021-10-11T06:20:49.000Z</published>
-    <updated>2021-10-21T13:24:47.005Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;p&gt;在pom.xml文件中加入以下代码：&lt;/p&gt;
-&lt;figure class=&quot;highlight xml&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span</summary>
-        
-      
-    
-    
-    
-    <category term="解决方案" scheme="https://www.lihuibin.top/categories/%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/"/>
-    
-    
-    <category term="解决方案" scheme="https://www.lihuibin.top/tags/%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>netty实现简单聊天室功能</title>
-    <link href="https://www.lihuibin.top/archives/8839ad77/"/>
-    <id>https://www.lihuibin.top/archives/8839ad77/</id>
-    <published>2021-10-11T04:54:54.000Z</published>
-    <updated>2021-10-21T13:24:47.020Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;p&gt;首先看一下项目目录结构&lt;/p&gt;
-&lt;p&gt;&lt;img src=&quot;/archives/8839ad77/image-20211011125748872.png&quot;</summary>
-        
-      
-    
-    
-    
-    <category term="Netty" scheme="https://www.lihuibin.top/categories/Netty/"/>
-    
-    
-    <category term="Netty" scheme="https://www.lihuibin.top/tags/Netty/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Zookeeper实战</title>
-    <link href="https://www.lihuibin.top/archives/e5bda741/"/>
-    <id>https://www.lihuibin.top/archives/e5bda741/</id>
-    <published>2021-10-03T04:11:12.000Z</published>
-    <updated>2021-10-03T14:17:42.049Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;h1 id=&quot;1、什么是Zookeeper&quot;&gt;&lt;a href=&quot;#1、什么是Zookeeper&quot; class=&quot;headerlink&quot;</summary>
-        
-      
-    
-    
-    
-    <category term="zookeeper" scheme="https://www.lihuibin.top/categories/zookeeper/"/>
-    
-    
-    <category term="zookeeper" scheme="https://www.lihuibin.top/tags/zookeeper/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Redis缓存那些事</title>
-    <link href="https://www.lihuibin.top/archives/cfd129cc/"/>
-    <id>https://www.lihuibin.top/archives/cfd129cc/</id>
-    <published>2021-10-01T13:48:18.000Z</published>
-    <updated>2021-10-02T14:22:27.596Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;h2 id=&quot;Redis有哪些特性？&quot;&gt;&lt;a href=&quot;#Redis有哪些特性？&quot; class=&quot;headerlink&quot;</summary>
-        
-      
-    
-    
-    
-    <category term="面试宝典" scheme="https://www.lihuibin.top/categories/%E9%9D%A2%E8%AF%95%E5%AE%9D%E5%85%B8/"/>
-    
-    
-    <category term="面试宝典" scheme="https://www.lihuibin.top/tags/%E9%9D%A2%E8%AF%95%E5%AE%9D%E5%85%B8/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Redis键值设计规范与性能优化</title>
-    <link href="https://www.lihuibin.top/archives/c0eb8ebf/"/>
-    <id>https://www.lihuibin.top/archives/c0eb8ebf/</id>
-    <published>2021-09-30T06:47:37.000Z</published>
-    <updated>2021-10-01T13:46:40.136Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;h2 id=&quot;一、键值设计&quot;&gt;&lt;a href=&quot;#一、键值设计&quot; class=&quot;headerlink&quot; title=&quot;一、键值设计&quot;&gt;&lt;/a&gt;一、键值设计&lt;/h2&gt;&lt;h3 id=&quot;1、key名设计&quot;&gt;&lt;a href=&quot;#1、key名设计&quot; class=&quot;headerlink&quot;</summary>
-        
-      
-    
-    
-    
-    <category term="Redis" scheme="https://www.lihuibin.top/categories/Redis/"/>
-    
-    
-    <category term="Redis" scheme="https://www.lihuibin.top/tags/Redis/"/>
     
   </entry>
   

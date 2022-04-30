@@ -7,7 +7,7 @@
     <head>
       <meta charset="utf-8" />
        
-      <meta name="keywords" content="lihuibin,lhb,Java,hexo+github,spring,springboot,springcloud,nacos,jvm,mysql,k8s,docker,gateway,springcloudAlibaba" />
+      <meta name="keywords" content="小李子的博客,lihuibin,lhb,Java,hexo+github,spring,springboot,springcloud,nacos,jvm,mysql,k8s,docker,gateway,springcloudAlibaba" />
        
       <meta name="description" content="学习，生活分享" />
       
@@ -15,7 +15,7 @@
         name="viewport"
         content="width=device-width, initial-scale=1, maximum-scale=1"
       />
-      <title>算法 |  不忘初心</title>
+      <title>算法 |  小李子的博客</title>
   <meta name="generator" content="hexo-theme-ayer">
       
       <link rel="shortcut icon" href="/favicon.ico" />
@@ -48,7 +48,7 @@
           font-size: 1.6rem;
         }
       </style>
-    <link rel="alternate" href="/atom.xml" title="不忘初心" type="application/atom+xml">
+    <link rel="alternate" href="/atom.xml" title="小李子的博客" type="application/atom+xml">
 </head>
   </html>
 </html>
@@ -80,6 +80,60 @@
     </div>
     <div class="archives">
       
+      <article class="archive-article archive-type-post">
+  <div class="archive-article-inner">
+    <header class="archive-article-header">
+      <a href="/archives/930adced/" class="archive-article-date">
+  <time datetime="2021-12-06T09:47:29.000Z" itemprop="datePublished">12/06</time>
+</a>
+       
+<h2 itemprop="name">
+  <a class="archive-article-title" href="/archives/930adced/"
+    >敏感词检测——基于DFA（有穷自动机）实现</a> 
+</h2>
+ 
+
+    </header>
+    
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E7%AE%97%E6%B3%95/">算法</a>
+  </div>
+
+    
+    
+  </div>
+</article>
+      
+  
+  
+      <article class="archive-article archive-type-post">
+  <div class="archive-article-inner">
+    <header class="archive-article-header">
+      <a href="/archives/78985d23/" class="archive-article-date">
+  <time datetime="2021-11-23T04:51:58.000Z" itemprop="datePublished">11/23</time>
+</a>
+       
+<h2 itemprop="name">
+  <a class="archive-article-title" href="/archives/78985d23/"
+    >排序算法——堆排序</a> 
+</h2>
+ 
+
+    </header>
+    
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E7%AE%97%E6%B3%95/">算法</a>
+  </div>
+
+    
+    
+  </div>
+</article>
+      
+  
+  
       <article class="archive-article archive-type-post">
   <div class="archive-article-inner">
     <header class="archive-article-header">
@@ -294,33 +348,6 @@
   </div>
 </article>
       
-  
-  
-      <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/archives/cd5503e2/" class="archive-article-date">
-  <time datetime="2021-11-03T04:37:14.000Z" itemprop="datePublished">11/03</time>
-</a>
-       
-<h2 itemprop="name">
-  <a class="archive-article-title" href="/archives/cd5503e2/"
-    >排序算法——插入排序</a> 
-</h2>
- 
-
-    </header>
-    
-      
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E7%AE%97%E6%B3%95/">算法</a>
-  </div>
-
-    
-    
-  </div>
-</article>
-      
       
     </div>
   </div>
@@ -328,13 +355,18 @@
   
 
   
+  <nav class="page-nav">
+    
+    <span class="page-number current">1</span><a class="page-number" href="/categories/%E7%AE%97%E6%B3%95/page/2/">2</a><a class="extend next" rel="next" href="/categories/%E7%AE%97%E6%B3%95/page/2/">下一页</a>
+  </nav>
+  
 </section>
       <footer class="footer">
   <div class="outer">
     <ul>
       <li>
         Copyrights &copy;
-        2021
+        2021-2022
         <i class="ri-heart-fill heart_icon"></i> Li HuiBin
       </li>
     </ul>
@@ -391,7 +423,7 @@
 <nav class="navbar">
   
   <div class="logo">
-    <a href="/"><img src="/images/ayer-side.svg" alt="不忘初心"></a>
+    <a href="/"><img src="/images/ayer-side.svg" alt="小李子的博客"></a>
   </div>
   
   <ul class="nav nav-main">
@@ -590,6 +622,29 @@
     viewer_init()
 </script> 
 <!-- MathJax -->
+ <script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.6/unpacked/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>
+  var ayerConfig = {
+    mathjax: true,
+  };
+</script>
 
 <!-- Katex -->
 
@@ -662,7 +717,9 @@
 </script>
  
 <!-- CanvasBackground -->
-
+ 
+<script src="/js/dz.js"></script>
+ 
 <script>
   if (window.mermaid) {
     mermaid.initialize({ theme: "forest" });

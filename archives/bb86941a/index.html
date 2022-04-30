@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+  
+
+    <head>
+      <meta charset="utf-8" />
+       
+      <meta
+        name="keywords"
+        content="最短路径,迪杰斯特拉算法,小李子的博客,lihuibin,lhb,Java,hexo+github,spring,springboot,springcloud,nacos,jvm,mysql,k8s,docker,gateway,springcloudAlibaba"
+      />
+       
+      <meta name="description" content="学习，生活分享" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>最短路径算法——迪杰斯特拉算法 |  小李子的博客</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/favicon.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/css/remixicon.min.css"
+      />
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+       
+ 
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <script src="https://cdn.jsdelivr.net/npm/mermaid@8.9.2/dist/mermaid.min.js"></script>
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    <link rel="alternate" href="/atom.xml" title="小李子的博客" type="application/atom+xml">
+</head>
+  </html>
+</html>
+
+
+<body>
+  <div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-最短路径算法——迪杰斯特拉算法"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  最短路径算法——迪杰斯特拉算法
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/archives/bb86941a/" class="article-date">
+  <time datetime="2021-12-01T09:03:08.000Z" itemprop="datePublished">2021-12-01</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%9C%80%E7%9F%AD%E8%B7%AF%E5%BE%84%E7%AE%97%E6%B3%95/">最短路径算法</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">5.2k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">20 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h2 id="回顾"><a href="#回顾" class="headerlink" title="回顾"></a>回顾</h2><p>上一章中，我们学了图形遍历的两种遍历方式</p>
+<ul>
+<li>深度优先算法(DFS)</li>
+<li>广度优先算法(BFS)</li>
+</ul>
+<p>并且通过一个营救美女小美的案例来实现了代码。那么接着想一想，如果要营救的小美是在现实生活世界中的某个位置呢？我们怎么去很快的找到最有路径，尽快的将小美营救出来呢？</p>
+<p><img src="/archives/bb86941a/image-20211201171506829.png" alt="图例"></p>
+<p>这时候使用DFS算法呢，显然不行的，我们知道DFS算法中核心逻辑是递归+回溯；上一章中营救小美案例中只有几个点，所以在递归的时候是比较快的；可是如果是在现实地图中，任意一个位置都是一个点，这么多点，如果在使用DFS算法，只能压死电脑了。既然DFS行不通。那么我们就要改用其他算法了——迪杰斯特拉算法。</p>
+<h2 id="最短路径分析"><a href="#最短路径分析" class="headerlink" title="最短路径分析"></a>最短路径分析</h2><h3 id="最短路径问题分析"><a href="#最短路径问题分析" class="headerlink" title="最短路径问题分析"></a>最短路径问题分析</h3><p>在计算最短路径的时候，首先需要我们解决的是怎么把图形结构存储起来。这里我们很容易可以想到</p>
+<ul>
+<li>线性数据结构(数组+链表)</li>
+<li>非线性数据结构(树+图)</li>
+</ul>
+<p>我们要求地图中的最短路径，肯定是要用图形结构来存储，并且要用图形结构中的有向图存储。</p>
+<h3 id="问题转换"><a href="#问题转换" class="headerlink" title="问题转换"></a>问题转换</h3><p>我们可以把地图中的几个重要的点转换到图形结构中，那么每条路的长度就是图形中边的权重。这时候可以得到如下图形结构：</p>
+<p><img src="/archives/bb86941a/image-20211201173040119.png" alt="图1 图形结构"></p>
+<p>如果1作为起点，我们要到6去，那么这个问题就被转换成了求点1到点6的最短路径。</p>
+<h2 id="算法思路分析"><a href="#算法思路分析" class="headerlink" title="算法思路分析"></a>算法思路分析</h2><h3 id="数据结构分析"><a href="#数据结构分析" class="headerlink" title="数据结构分析"></a>数据结构分析</h3><p>由上一章中我们知道，存储图形数据结构有两种方法：</p>
+<ul>
+<li>邻接矩阵(二维数组)</li>
+<li>邻接表(链表)</li>
+</ul>
+<blockquote>
+<p>这两种存储方式的选择：</p>
+<p>一般情况下，如果数据量比较大，那么选择使用邻接表(链表)来存储；如果数据量不大，使用领接矩阵(二维数组)来存储</p>
+</blockquote>
+<p>这里我们是做案例数据比较少，选择使用领接矩阵(二维数组)来存储。</p>
+<h3 id="算法选择"><a href="#算法选择" class="headerlink" title="算法选择"></a>算法选择</h3><p>这次使用<strong>迪杰斯特拉算法</strong>，就是单源最短路径算法，他是所有最短路径算法的基础，我们的地图软件最终使用的算法都是以这个算法为基础优化来的。所以这个<strong>算法很重要</strong></p>
+<h3 id="迪杰斯特拉算法思想"><a href="#迪杰斯特拉算法思想" class="headerlink" title="迪杰斯特拉算法思想"></a>迪杰斯特拉算法思想</h3><p>迪杰斯特拉算法主要特点是从起始点开始，<strong>采用<a target="_blank" rel="noopener" href="https://baike.baidu.com/item/%E8%B4%AA%E5%BF%83%E7%AE%97%E6%B3%95/5411800">贪心算法</a>的<a target="_blank" rel="noopener" href="https://baike.baidu.com/item/%E7%AD%96%E7%95%A5/4006">策略</a>，每次遍历到始点距离最近且未访问过的顶点的邻接节点，直到扩展到终点为止。从局部最优推出全局最优</strong> </p>
+<h4 id="需要明确的几个关键变量"><a href="#需要明确的几个关键变量" class="headerlink" title="需要明确的几个关键变量"></a>需要明确的几个关键变量</h4><p>1、<strong>dis数组：</strong> 用来表示起始点到每个顶点的距离，最开始这个数组中的值是无穷大，赋值最大求最小；</p>
+<blockquote>
+<p>举例：如果起始点是1</p>
+<p>(1) dis[1]: 从顶点1到顶点1的距离为dis[1]</p>
+<p>(2) dis[2]: 从顶点1到顶点2的距离为dis[2]</p>
+<p>(3) dis[3]: 从顶点1到顶点3的距离为dis[3]</p>
+<p>……</p>
+<p>因为在图1中共有6个点，且我们的下标从1开始，所以数组地宁弈的长度应该是dis[7]，即<strong>dis[n+1]</strong></p>
+</blockquote>
+<p>2、<strong>loc变量：</strong> 用来赋值当前走的是第几个顶点，<strong>初始的时候需要将其赋值为初始点，这里我们的初始点为1，所以赋值为1</strong></p>
+<p>3、<strong>data[][]：</strong> 二维数组，表示领接矩阵，用来存储图形结构</p>
+<blockquote>
+<p>例如：</p>
+<p>(1) data[1][1]: 顶点1到顶点1的距离是data[1][1] </p>
+<p>(2) data[1][2]: 顶点1到顶点2的距离是data[1][2]</p>
+<p>(3) data[1][2]: 顶点1到顶点3的距离是data[1][3]</p>
+</blockquote>
+<h4 id="核心思路"><a href="#核心思路" class="headerlink" title="核心思路"></a>核心思路</h4><ol>
+<li>创建一个dis数组，用来表示起始点到每个顶点的距离，最开始的时候我们将其赋值为无穷大</li>
+<li>创建data[][]数组，用来存储图之间点与点的关系，边的距离</li>
+<li>定义变量loc，初始赋值为起始点，用来存储当前操作的点的索引，当前是第几个顶点</li>
+<li>使用贪心的策略，先取dis数组中最小的值，也就是<strong>取dis数组中距离起始点最近的权重的点</strong></li>
+<li>将loc赋值为当前取出的点的索引，判断当前这个点可以到的其他点的路径长度，更新dis数组中的值。</li>
+<li><strong>注意，dis数组中已经选取过的点我们不能再次进行选择了</strong></li>
+<li>重复步骤4、5操作，知道所有的点都处理完毕</li>
+</ol>
+<h4 id="图解分析"><a href="#图解分析" class="headerlink" title="图解分析"></a>图解分析</h4><p><img src="/archives/bb86941a/image-20211201173040119.png" alt="图1 图形结构"></p>
+<p>如上图所示，我们需要创建一个6*6的二维数组来保存图中节点关系。为了方便数组操作，我们二维数组的下标都从1开始，所以我们这里创建7*7的二维数组。如下图：</p>
+<p><img src="/archives/bb86941a/image-20211201183122584.png" alt="二维数组初始化"></p>
+<h5 id="最短路径长度求解"><a href="#最短路径长度求解" class="headerlink" title="最短路径长度求解"></a>最短路径长度求解</h5><p>1、初始化dis数组：</p>
+<p><img src="/archives/bb86941a/image-20211202133636720.png" alt="初始化dis数组为最大值"></p>
+<p>2、以结点“1”作为初始点，初始化dis数组，<strong>取loc=1，将dis[loc]进行标记，被标记后的结点，在下次取结点的时候是不可以取的。</strong></p>
+<p><img src="/archives/bb86941a/image-20211202133919349.png" alt="取结点“1”"></p>
+<blockquote>
+<ul>
+<li>dis[1]: 表示结点“1”到结点“1”的距离，因为结点“1”是我们的起始节点，所以距离是0</li>
+<li>dis[2]: 表示结点“1”到结点“2”的距离，因为图中结点“1”到结点“2”没有边相连接，即data[1][2] = -1，所以dis[2] = MAX</li>
+<li>dis[3]: 表示结点“1”到结点“3”的距离，因为图中结点“1”到结点“3”有边相连接，即data[1][3] = 10，所以dis[3] = 10</li>
+<li>dis[4]: 表示结点“1”到结点“4”的距离，因为图中结点“1”到结点“4”没有边相连接，即data[1][4] = -1，所以dis[4] = MAX</li>
+<li>dis[5]: 表示结点“1”到结点“5”的距离，因为图中结点“1”到结点“5”有边相连接，即data[1][5] = 30，所以dis[5] = 30</li>
+<li>dis[6]: 表示结点“1”到结点“6”的距离，因为图中结点“1”到结点“6”有边相连接，即data[1][6] = 100，所以dis[6] = 100</li>
+</ul>
+</blockquote>
+<p>3、从dis数组中选取<strong>未被标记的且路径权重最小的结点</strong> ，这时候dis数组中最小的结点是“3”，所以取loc = 3，且标记dis[loc],即dis[3]，下次取结点是该结点不能被取到。</p>
+<p><img src="/archives/bb86941a/image-20211202135216538.png" alt="取结点“3”"></p>
+<blockquote>
+<p>从图1中可以看出结点“3”到一条边是可以到结点“4”，且权重是50，即data[3][4] = 50；所以dis数组中结点“1”到结点“4”的距离更新为<strong>min(dis[4],dis[3] + data[3][4]),这个公式很重要，当前的loc=3，也就是当前我们观察结点“3”，当我们的结点“3”加进来的时候，我们的结点“3”是可以到达结点“4”的</strong>，所以我们现在比较的是我们保存的结点“1”-&gt;结点“3”的最小距离（dis[3]）加上结点“3”到结点“4”的距离(data[3][4])大，还是结点“1”直接到结点“4”的距离(dis[4])大，然后将距离小的更新到dis[4]中；即 min(MAX,10+50=60)，60 远小于MAX，所以更新dis[4] = 60;</p>
+<p><strong>以上这个操作就是<code>松弛操作</code></strong></p>
+</blockquote>
+<p>4、从dis数组中选取<strong>未被标记的且路径权重最小的结点</strong> ，这时候dis数组中最小的结点是“5”，所以取loc = 5，且标记dis[loc]，即dis[5]；下次取结点是该结点不能被取到。</p>
+<p><img src="/archives/bb86941a/image-20211202140104948.png" alt="取结点“5”"></p>
+<blockquote>
+<p>这里选取的结点是loc=5，以结点“5”为起点可以到达结点“4”和结点“6”两个方向。</p>
+<ul>
+<li>首先来看从结点“5”到结点“4”：权重是20，即data[5][4] = 20，所以这里dis[4]路径权重是结点“1”到结点“5”的路径权重加结点“5”到结点“4”的路径权重，即dis[5] + data[5][4] = 30+20=50，小于当前dis[4]中MAX，所以更新dis[4] = 50;</li>
+<li>再看从结点“5”到结点“6”：权重是60，即data[5][6] = 60，同样这里dis[6]的路径权重是结点“1”到结点“5”的路径权重加结点“5”到结点“6”的路径权重，即dis[5] + data[5][6] = 30+60=90，小于当前dis[6]中的100，所以更新dis[6] = 90</li>
+</ul>
+</blockquote>
+<p>5、从dis数组中选取<strong>未被标记的且路径权重最小的结点</strong> ，这时候dis数组中最小的结点是“4”，所以取loc = 4，且标记dis[loc]，即dis[4]；下次取结点是该结点不能被取到。</p>
+<p><img src="/archives/bb86941a/image-20211202140848037.png" alt="取结点“4”"></p>
+<blockquote>
+<p>结点“4”可以到结点“6”，所以dis[6] = dis[4] + data[4][6] = 50 + 10 = 60，小于当前dis[6]中的90，所以更新dis[6] = 60</p>
+</blockquote>
+<p>6、从dis数组中选取<strong>未被标记的且路径权重最小的结点</strong> ，这时候dis数组中最小的结点是“6”，所以取loc = 6，且标记dis[loc]，即dis[6]；下次取结点是该结点不能被取到。</p>
+<p><img src="/archives/bb86941a/image-20211202141135550.png" alt="取结点“6”"></p>
+<blockquote>
+<p>此时没有进行更新操作，因为结点“6”不能够到达任何一个结点</p>
+</blockquote>
+<p>7、从dis数组中选取<strong>未被标记的且路径权重最小的结点</strong> ，这时候dis数组中最小的结点是“2”，所以取loc = 2，且标记dis[loc]，即dis[2]；下次取结点是该结点不能被取到。</p>
+<p><img src="/archives/bb86941a/image-20211202141350191.png" alt="取结点“2”"></p>
+<blockquote>
+<p>结点“2”可以到达结点“3”，路径权重是5，但是从结点“1”是无法到达结点“2”，所以dis[3] = dis[2] + data[2][3] = MAX + 5 结果是小于dis[2]中MAX，所以这里不更新</p>
+</blockquote>
+<p>8、截止到这里数组遍历完毕，此时dis中的数据存放的就是起点到各个点的最短路径。</p>
+<h5 id="最短路径分析-1"><a href="#最短路径分析-1" class="headerlink" title="最短路径分析"></a>最短路径分析</h5><p>我们将每一次dis的变化以及当前的loc代表的节点标注起来。</p>
+<p><img src="/archives/bb86941a/image-20211202143439.png"></p>
+<blockquote>
+<p>需要明确一点，我们最后的dis数组一定保存的是起始点距离其下标(即某个结点)的最短路径。<strong>起始点我们是结点“1”</strong></p>
+<p>  (1) dis[1]: 表示结点“1”到结点“1”的最短路径</p>
+<p>  (2) dis[2]: 表示结点“1”到结点“2”的最短路径</p>
+<p>……</p>
+<p>通过这种方式我们最后得到的是起点到所有节点的最短路径，因此我们需要一个<strong>Map集合来保存最终的所有的起始点可以到达的所有结点的最短路径，然后每一个结点对应着一个列表或者栈来保存路径</strong></p>
+</blockquote>
+<p>1、当<code>loc = 1</code>的时候，我们<code>改变的是结点“1”,结点“3”,结点“5”,结点“6”对应的dis数组下标的值</code>，所以从起始点“1”到结点“1”,结点“3”,结点“5”,结点“6”的最短路径为：</p>
+<p><img src="/archives/bb86941a/image-20211202145137135.png"></p>
+<table>
+<thead>
+<tr>
+<th align="center">起始结点</th>
+<th align="center">终止结点</th>
+<th align="center">路径</th>
+<th align="center">路径长度</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">1-&gt;1</td>
+<td align="center">0</td>
+</tr>
+<tr>
+<td align="center">1</td>
+<td align="center">2</td>
+<td align="center">-</td>
+<td align="center">MAX</td>
+</tr>
+<tr>
+<td align="center">1</td>
+<td align="center">3</td>
+<td align="center">1-&gt;3</td>
+<td align="center">10</td>
+</tr>
+<tr>
+<td align="center">1</td>
+<td align="center">4</td>
+<td align="center">-</td>
+<td align="center">MAX</td>
+</tr>
+<tr>
+<td align="center">1</td>
+<td align="center">5</td>
+<td align="center">1-&gt;5</td>
+<td align="center">30</td>
+</tr>
+<tr>
+<td align="center">1</td>
+<td align="center">6</td>
+<td align="center">1-&gt;6</td>
+<td align="center">100</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong><code>这里的最短路径是指从起始结点“1”可以直接到终止节点的最短路径且路径长度不为MAX,所以这里就是表示从起始节点“1”到结点“3”、“5”、“6”的最短路径</code></strong></p>
+</blockquote>
+<p>2、当<code>loc = 3</code>的时候，我们<code>改变的是结点“4”对应的dis数组下标的值</code>，所以从起始点“1”到结点“4”的最短路径为：</p>
+<p><img src="/archives/bb86941a/image-20211202150618831.png"></p>
+<table>
+<thead>
+<tr>
+<th align="center">起始结点</th>
+<th align="center">终止结点</th>
+<th align="center">路径</th>
+<th align="center">路径长度</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">1-&gt;1</td>
+<td align="center">0</td>
+</tr>
+<tr>
+<td align="center">1</td>
+<td align="center">2</td>
+<td align="center">-</td>
+<td align="center">MAX</td>
+</tr>
+<tr>
+<td align="center">1</td>
+<td align="center">3</td>
+<td align="center">1-&gt;3</td>
+<td align="center">10</td>
+</tr>
+<tr>
+<td align="center">1</td>
+<td align="center">4</td>
+<td align="center">1-&gt;3-&gt;4</td>
+<td align="center">60</td>
+</tr>
+<tr>
+<td align="center">1</td>
+<td align="center">5</td>
+<td align="center">1-&gt;5</td>
+<td align="center">30</td>
+</tr>
+<tr>
+<td align="center">1</td>
+<td align="center">6</td>
+<td align="center">1-&gt;6</td>
+<td align="center">100</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>这里我们改变了结点“4”的最短路径，即dis数组中下标为4的最短路径值。根据前面推出的最短路径的公式**<code>min(dis[x],data[x][loc] + dis[x])</code>** ，因为我们当前<strong>loc = 3</strong>，所以可以得知，<strong>dis[4] &gt; dis[3] + data[3][4]<strong>，所以才会将dis[4]的最短路径长度改成60(结点“1”到结点“3”的最短路径长度为10 + 结点“3”到结点“4”的路径长度50)，所以要保存的最短路径可以是</strong><code>map.get(3).push(4),即map.get(loc).push(i),然后将这个路径放在map中，其中map的key是i，这里就是放置在map中，key为4</code></strong> </p>
+</blockquote>
+<p>3、当<code>loc = 5</code>的时候，我们<code>改变的是结点“4”、6对应的dis数组下标的值</code>，所以从起始点“1”到结点“4”，“6”的最短路径为：</p>
+<p><img src="/archives/bb86941a/image-20211202152740032.png"></p>
+<table>
+<thead>
+<tr>
+<th align="center">起始结点</th>
+<th align="center">终止结点</th>
+<th align="center">路径</th>
+<th align="center">路径长度</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">1-&gt;1</td>
+<td align="center">0</td>
+</tr>
+<tr>
+<td align="center">1</td>
+<td align="center">2</td>
+<td align="center">-</td>
+<td align="center">MAX</td>
+</tr>
+<tr>
+<td align="center">1</td>
+<td align="center">3</td>
+<td align="center">1-&gt;3</td>
+<td align="center">10</td>
+</tr>
+<tr>
+<td align="center">1</td>
+<td align="center">4</td>
+<td align="center">1-&gt;3-&gt;4</td>
+<td align="center">50</td>
+</tr>
+<tr>
+<td align="center">1</td>
+<td align="center">5</td>
+<td align="center">1-&gt;5</td>
+<td align="center">30</td>
+</tr>
+<tr>
+<td align="center">1</td>
+<td align="center">6</td>
+<td align="center">1-&gt;5-&gt;6</td>
+<td align="center">90</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>这里的路径是利用**<code>map.get(loc).push(i)得到的，这里的loc = 5,i = 4,6</code>** ，我们再处理完之后再将其重新复制给map中key为4和6的。</p>
+</blockquote>
+<p>4、当<code>loc = 4</code>的时候，我们<code>改变的是结点“6”对应的dis数组下标的值</code>，所以从起始点“1”到结点“6”的最短路径为：</p>
+<p><img src="/archives/bb86941a/image-20211202153257861.png"></p>
+<table>
+<thead>
+<tr>
+<th align="center">起始结点</th>
+<th align="center">终止结点</th>
+<th align="center">路径</th>
+<th align="center">路径长度</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">1-&gt;1</td>
+<td align="center">0</td>
+</tr>
+<tr>
+<td align="center">1</td>
+<td align="center">2</td>
+<td align="center">-</td>
+<td align="center">MAX</td>
+</tr>
+<tr>
+<td align="center">1</td>
+<td align="center">3</td>
+<td align="center">1-&gt;3</td>
+<td align="center">10</td>
+</tr>
+<tr>
+<td align="center">1</td>
+<td align="center">4</td>
+<td align="center">1-&gt;3-&gt;4</td>
+<td align="center">50</td>
+</tr>
+<tr>
+<td align="center">1</td>
+<td align="center">5</td>
+<td align="center">1-&gt;5</td>
+<td align="center">30</td>
+</tr>
+<tr>
+<td align="center">1</td>
+<td align="center">6</td>
+<td align="center">1-&gt;5-&gt;4-&gt;6</td>
+<td align="center">60</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>这个路径是利用**<code>map.get(loc).push(i)得到的，这里loc = 4，i = 6</code>** ，我们再处理完之后再将其重新赋值给map中key为6的</p>
+</blockquote>
+<p>5、当<code>loc = 6</code>的时候，我们<code>没有改变任何dis数组中的值</code>，所以各个结点的最短路径不会发生更新</p>
+<p><img src="/archives/bb86941a/image-20211202153830240.png"></p>
+<table>
+<thead>
+<tr>
+<th align="center">起始结点</th>
+<th align="center">终止结点</th>
+<th align="center">路径</th>
+<th align="center">路径长度</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">1-&gt;1</td>
+<td align="center">0</td>
+</tr>
+<tr>
+<td align="center">1</td>
+<td align="center">2</td>
+<td align="center">-</td>
+<td align="center">MAX</td>
+</tr>
+<tr>
+<td align="center">1</td>
+<td align="center">3</td>
+<td align="center">1-&gt;3</td>
+<td align="center">10</td>
+</tr>
+<tr>
+<td align="center">1</td>
+<td align="center">4</td>
+<td align="center">1-&gt;3-&gt;4</td>
+<td align="center">50</td>
+</tr>
+<tr>
+<td align="center">1</td>
+<td align="center">5</td>
+<td align="center">1-&gt;5</td>
+<td align="center">30</td>
+</tr>
+<tr>
+<td align="center">1</td>
+<td align="center">6</td>
+<td align="center">1-&gt;5-&gt;4-&gt;6</td>
+<td align="center">60</td>
+</tr>
+</tbody></table>
+<p>……后面情况类似不再分析，<strong>如果和上一步没有发生改变则不会去更改其最短路径</strong></p>
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><p><strong>我们的dis数组中保存的值就是我们认为截止到当前loc点为止，我们认为的最短的路径；<code>min(dis[loc] + data[loc][x],dis[x])</code>这个公式的意思就是取我们认为的起点到loc的最短路径加上loc到x的路径和起点到x的最短路径做比较，取最小值，将其更新到dis[x]中</strong></p>
+<h2 id="代码实现"><a href="#代码实现" class="headerlink" title="代码实现"></a>代码实现</h2><p><img src="/archives/bb86941a/image-20211201173040119.png" alt="图1 图形结构"></p>
+<p>如上图所示，求结点1到结点6的最短路径：</p>
+<p>(1) 输出最短路径经过的所有结点</p>
+<p>(2) 输出最短路径的长度</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lhb.test;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.util.HashMap;</span><br><span class="line"><span class="keyword">import</span> java.util.Map;</span><br><span class="line"><span class="keyword">import</span> java.util.Scanner;</span><br><span class="line"><span class="keyword">import</span> java.util.Stack;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> 92823</span></span><br><span class="line"><span class="comment"> * 迪杰斯特拉求最短的路径</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MinRoute</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        <span class="comment">// n表示点数，即当前图中有多少个顶点</span></span><br><span class="line">        <span class="keyword">int</span> n;</span><br><span class="line">        <span class="comment">// m表示当前这个图有多少个边（为了方便我们一会构造图）</span></span><br><span class="line">        <span class="keyword">int</span> m;</span><br><span class="line">        <span class="comment">// begin表示我们的起点，即我们从哪一个点开始进行运算</span></span><br><span class="line">        <span class="keyword">int</span> begin;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 接受用户的输入</span></span><br><span class="line">        Scanner cin = <span class="keyword">new</span> Scanner(System.in);</span><br><span class="line">        <span class="comment">// 赋值点数，边数，起点</span></span><br><span class="line">        n = cin.nextInt();</span><br><span class="line">        m = cin.nextInt();</span><br><span class="line">        begin = cin.nextInt();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 声明邻接矩阵, 因为我们的下标都是从0开始，所以长度都要加1，有几个点就是维度是几的二维数组</span></span><br><span class="line">        <span class="keyword">int</span> data[][] = <span class="keyword">new</span> <span class="keyword">int</span>[n + <span class="number">1</span>][n + <span class="number">1</span>];</span><br><span class="line">        <span class="comment">// 用来存取起点到下标的最短路径，因为下标还是从1开始的，所以长度还是需要加一，dis[5]就表示起点到顶点5的最短距离</span></span><br><span class="line">        <span class="keyword">int</span> dis[] = <span class="keyword">new</span> <span class="keyword">int</span>[n + <span class="number">1</span>];</span><br><span class="line">        <span class="comment">// 初始化一个Map，因为最后我们求出来的dis是起点到左右点的最短距离</span></span><br><span class="line">        Map&lt;Integer, Stack&lt;Integer&gt;&gt; routeMap = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line">        <span class="comment">// 初始化dis数组和邻接矩阵二维数组data[][]</span></span><br><span class="line">        <span class="comment">// 下标从1开始，所以有n个点，我们就要操作到第n个元素</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt;= n; i++) &#123;</span><br><span class="line">            <span class="comment">// 初始化dis数组，因为求最短路径，所以dis中存的应该是最大值</span></span><br><span class="line">            dis[i] = Integer.MAX_VALUE;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">1</span>; j &lt;= n; j++) &#123;</span><br><span class="line">                <span class="comment">// 赋值我们的二维数组，就是赋值邻接矩阵</span></span><br><span class="line">                <span class="comment">// 初始化邻接矩阵都是-1，-1表示的是顶点之间没有联系</span></span><br><span class="line">                data[i][j] = -<span class="number">1</span>;</span><br><span class="line">                <span class="comment">// 如果是自己和自己，则将其长度设置为0</span></span><br><span class="line">                <span class="keyword">if</span> (i == j) &#123;</span><br><span class="line">                    data[i][j] = <span class="number">0</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 赋值邻接矩阵，哪个点与哪个点有值，在此赋值</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; m; i++) &#123;</span><br><span class="line">            <span class="comment">// 横坐标</span></span><br><span class="line">            <span class="keyword">int</span> x = cin.nextInt();</span><br><span class="line">            <span class="comment">// 纵坐标</span></span><br><span class="line">            <span class="keyword">int</span> y = cin.nextInt();</span><br><span class="line">            <span class="comment">// 点与点之间的距离</span></span><br><span class="line">            <span class="keyword">int</span> value = cin.nextInt();</span><br><span class="line">            <span class="comment">// 表示的是xx到yy的距离是vv</span></span><br><span class="line">            data[x][y] = value;</span><br><span class="line"></span><br><span class="line">            <span class="comment">// 如果当前的横坐标等于我们规定的起始位置下标</span></span><br><span class="line">            <span class="keyword">if</span> (x == begin) &#123;</span><br><span class="line">                <span class="comment">// 直接赋值dis的第一次，即当loc为起点的时候，dis数组的值，dis[i]表示起点到i的值</span></span><br><span class="line">                <span class="comment">// 赋值起点到y的值为value，默认情况都是MAX</span></span><br><span class="line">                dis[y] = value;</span><br><span class="line">                <span class="comment">// 赋值初始值</span></span><br><span class="line">                Stack&lt;Integer&gt; stack = <span class="keyword">new</span> Stack&lt;&gt;();</span><br><span class="line">                <span class="comment">// 将起点也就是路径走的第一步赋值进去</span></span><br><span class="line">                stack.push(begin);</span><br><span class="line">                <span class="comment">// 赋值终点</span></span><br><span class="line">                stack.push(y);</span><br><span class="line">                routeMap.put(y, stack);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 开始搜索最短路径，起点begin，最短路径的dis数组（表示起点到其下标的点的最短路径），data表示的是邻接矩阵，n表示总共有多少个顶点</span></span><br><span class="line">        search(begin, dis, data, n, routeMap);</span><br><span class="line">        routeMap.forEach((key,path)-&gt;&#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;从结点&quot;</span>+ begin +<span class="string">&quot;到结点&quot;</span> + key + <span class="string">&quot;的最短路径为: &quot;</span> + dis[key] + <span class="string">&quot;， 最短路径规划为：&quot;</span> + path.toString());</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 开始搜索最短路径</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> begin 起始点</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> dis 最短路径数组</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> data 邻接矩阵</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> n 表示有多少个顶点</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> routeMap 走的最短路径的点</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">search</span><span class="params">(<span class="keyword">int</span> begin, <span class="keyword">int</span>[] dis, <span class="keyword">int</span>[][] data, <span class="keyword">int</span> n, Map&lt;Integer, Stack&lt;Integer&gt;&gt; routeMap)</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 标记数组，用来表示dis中哪一个值已经被标记了，标记过的无需再次处理, 下标从1开始，所以需要长度是n+1</span></span><br><span class="line">        <span class="keyword">boolean</span> mark[] = <span class="keyword">new</span> <span class="keyword">boolean</span>[n + <span class="number">1</span>];</span><br><span class="line">        <span class="comment">// 起点已经赋值过了 所以将起点标注为true 表示已经赋值过了</span></span><br><span class="line">        mark[begin] = <span class="keyword">true</span>;</span><br><span class="line">        <span class="comment">// 当前节点到当前节点的最短路径是0</span></span><br><span class="line">        dis[begin] = <span class="number">0</span>;</span><br><span class="line">        <span class="comment">// 循环遍历数组</span></span><br><span class="line">        <span class="keyword">int</span> index = <span class="number">1</span>;</span><br><span class="line">        <span class="comment">// 我们最多就是找节点的次数（n）</span></span><br><span class="line">        <span class="keyword">while</span> (index &lt;= n) &#123;</span><br><span class="line">            <span class="comment">// loc用来表示当前的节点</span></span><br><span class="line">            <span class="keyword">int</span> loc = <span class="number">0</span>;</span><br><span class="line">            <span class="comment">// 用于记录当前的dis中存储的最小值</span></span><br><span class="line">            <span class="keyword">int</span> min = Integer.MAX_VALUE;</span><br><span class="line">            <span class="comment">// 遍历dis数组，找到当前dis最小的</span></span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt;= n; i++) &#123;</span><br><span class="line">                <span class="comment">// 如果当前的dis中的点没有被标记，且小于我们的最小值</span></span><br><span class="line">                <span class="keyword">if</span> (!mark[i] &amp;&amp; dis[i] &lt; min) &#123;</span><br><span class="line">                    <span class="comment">// 保存最小值和其下标</span></span><br><span class="line">                    min = dis[i];</span><br><span class="line">                    loc = i;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 表示没有找到最小的或者全都被标记了，此时我们退出循环</span></span><br><span class="line">            <span class="keyword">if</span> (loc == <span class="number">0</span>) &#123;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 将当前的loc点进行标记</span></span><br><span class="line">            mark[loc] = <span class="keyword">true</span>;</span><br><span class="line">            <span class="comment">// 拿到当前顶点对应的 最短路径的取法</span></span><br><span class="line">            Stack&lt;Integer&gt; stack = routeMap.get(loc);</span><br><span class="line">            <span class="comment">// 更新dis数组，就是我们的dis[loc] + data[loc][X] 是否小于 dis[X] 若小于更新dis[X]的值</span></span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt;= n; i++) &#123;</span><br><span class="line">                <span class="keyword">if</span> (data[loc][i] != -<span class="number">1</span> &amp;&amp; (dis[loc] + data[loc][i] &lt; dis[i])) &#123;</span><br><span class="line">                    <span class="comment">// 更新dis数组的值</span></span><br><span class="line">                    dis[i] = dis[loc] + data[loc][i];</span><br><span class="line">                    <span class="comment">// 拷贝一份 因为直接改会影响</span></span><br><span class="line">                    Stack&lt;Integer&gt; stackClone = (Stack&lt;Integer&gt;)stack.clone();</span><br><span class="line">                    <span class="comment">// 将当前的新的节点放进去</span></span><br><span class="line">                    stackClone.push(i);</span><br><span class="line">                    <span class="comment">// 将其放入map中</span></span><br><span class="line">                    routeMap.put(i, stackClone);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 下标加1</span></span><br><span class="line">            index ++;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>输入：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">6</span><br><span class="line">8</span><br><span class="line">1</span><br><span class="line">1 3 10</span><br><span class="line">1 5 30</span><br><span class="line">1 6 100</span><br><span class="line">2 3 5</span><br><span class="line">3 4 50</span><br><span class="line">4 6 10</span><br><span class="line">5 4 20</span><br><span class="line">5 6 60</span><br></pre></td></tr></table></figure></li>
+<li><p>输出结果：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">从结点1到结点3的最短路径为: 10， 最短路径规划为：[1, 3]</span><br><span class="line">从结点1到结点4的最短路径为: 50， 最短路径规划为：[1, 5, 4]</span><br><span class="line">从结点1到结点5的最短路径为: 30， 最短路径规划为：[1, 5]</span><br><span class="line">从结点1到结点6的最短路径为: 60， 最短路径规划为：[1, 5, 4, 6]</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>如果起点和部分顶点没有边，则不会打印</p>
+</blockquote>
+</li>
+</ul>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><ol>
+<li>地图软件就是基于迪杰斯特拉算法进行实现的，采用了A*启发式搜索算法，但是其根本算法还是通过迪杰斯特拉算法改进优化而来的。</li>
+<li>如果我们的地图很大，可以缩小计算范围，只画出一部分区域。如果是省之间的，则没必要加很细粒度的点，绘画出大的省区，然后计算完之后，在计算省内的，几个大点，最后一级一级的推出来。</li>
+<li>本节课计算最短路径的时候一定要明白递推公式**<code>min(dis[loc] + data[loc][x], dis[s])</code>** ，其中dis是我们的起点到各个结点的最短路径长度的数组，loc是我们当前操作的结点索引，x表示当前的结点(loc)到x结点是有边的。</li>
+</ol>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://www.lihuibin.top/archives/bb86941a/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E8%BF%AA%E6%9D%B0%E6%96%AF%E7%89%B9%E6%8B%89%E7%AE%97%E6%B3%95/" rel="tag">迪杰斯特拉算法</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+<div class="gitalk" id="gitalk-container"></div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.css">
+
+
+<script src="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+
+
+<script src="https://cdn.jsdelivr.net/npm/blueimp-md5@2.10.0/js/md5.min.js"></script>
+
+<script type="text/javascript">
+  var gitalk = new Gitalk({
+    clientID: 'c68fe380358330f9b911',
+    clientSecret: '7e15bb1a5ac60c8a9b8f4ac3a9ce0a997a383150',
+    repo: 'li-huibin.github.io',
+    owner: 'li-huibin',
+    admin: ['li-huibin'],
+    // id: location.pathname,      // Ensure uniqueness and length less than 50
+    id: md5(location.pathname),
+    distractionFreeMode: false,  // Facebook-like distraction free mode
+    pagerDirection: 'last'
+  })
+
+  gitalk.render('gitalk-container')
+</script>
+
+   
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2021-2022
+        <i class="ri-heart-fill heart_icon"></i> Li HuiBin
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>访问人数:<span id="busuanzi_value_site_uv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>浏览次数:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+        <li>
+          <a href="https://beian.miit.gov.cn/" target="_black" rel="nofollow">晋ICP备2021014677号</a>
+        </li>
+        
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://v1.cnzz.com/z_stat.php?id=1280277223&amp;web_id=1280277223'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>
+      <div class="float_btns">
+        <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+      </div>
+    </main>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/ayer-side.svg" alt="小李子的博客"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/friends">友链</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于我</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="搜索">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+      <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+        <i class="ri-rss-line"></i>
+      </a>
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/img/alipay.jpg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="https://cdn.jsdelivr.net/gh/Shen-Yu/cdn/img/wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css">
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+ <script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+  });
+
+  MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for(i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.6/unpacked/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>
+  var ayerConfig = {
+    mathjax: true,
+  };
+</script>
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+ 
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+ 
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+ 
+<script src="/js/dz.js"></script>
+ 
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>
