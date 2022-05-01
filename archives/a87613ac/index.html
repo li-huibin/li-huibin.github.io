@@ -95,7 +95,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">109</span>
+            <span class="post-count">260</span>
         </span>
     </span>
 
@@ -121,7 +121,9 @@
        
   <h2 id="ZGC诞生背景"><a href="#ZGC诞生背景" class="headerlink" title="ZGC诞生背景"></a>ZGC诞生背景</h2><p>在Java中，JVM在进行垃圾回收的时候，有一个很大的问题，就是STW(Stop The World)，即JVM要进行垃圾回收时，会暂停所有的业务线程。导致所有业务系统暂停，直接降低了用户体验；所以目前市面上所有的垃圾回收器优化方向也是朝着怎么缩短STW方向，进而提升用户体验。</p>
 <p><img src="/archives/a87613ac/image-20220430232058737.png" alt="STW(Stop The World)"></p>
- 
+<h2 id="垃圾回收器的发展"><a href="#垃圾回收器的发展" class="headerlink" title="垃圾回收器的发展"></a>垃圾回收器的发展</h2><p>为了满足不同的业务需求，Java垃圾回收器的算法也在不停的迭代，对于特定的一个应用，选择其最合适的GC算法，才能更高效率的实现业务目标。尤其是近些年来伴随着各种高并发，超高并发应用的使用，要求JVM要能适应超低停顿时间，同时也带给JVM带来了应对大堆和超大堆的挑战，基于此，2018年在发布的JDK11中，加入了ZGC<code>A Scalable Low-Latency Garbage Collector</code> 垃圾回收器</p>
+<p><img src="/archives/a87613ac/%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E5%99%A8.png" alt="垃圾回收器"></p>
+<h2 id="ZGC介绍"><a href="#ZGC介绍" class="headerlink" title="ZGC介绍"></a>ZGC介绍</h2> 
       <!-- reward -->
       
     </div>
