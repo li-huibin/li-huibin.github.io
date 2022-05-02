@@ -95,7 +95,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">260</span>
+            <span class="post-count">562</span>
         </span>
     </span>
 
@@ -104,7 +104,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-book-open-line"></i>
             <span class="post-meta-item-text"> 阅读时长≈</span>
-            <span class="post-count">1 分钟</span>
+            <span class="post-count">2 分钟</span>
         </span>
     </span>
 </div>
@@ -121,9 +121,24 @@
        
   <h2 id="ZGC诞生背景"><a href="#ZGC诞生背景" class="headerlink" title="ZGC诞生背景"></a>ZGC诞生背景</h2><p>在Java中，JVM在进行垃圾回收的时候，有一个很大的问题，就是STW(Stop The World)，即JVM要进行垃圾回收时，会暂停所有的业务线程。导致所有业务系统暂停，直接降低了用户体验；所以目前市面上所有的垃圾回收器优化方向也是朝着怎么缩短STW方向，进而提升用户体验。</p>
 <p><img src="/archives/a87613ac/image-20220430232058737.png" alt="STW(Stop The World)"></p>
-<h2 id="垃圾回收器的发展"><a href="#垃圾回收器的发展" class="headerlink" title="垃圾回收器的发展"></a>垃圾回收器的发展</h2><p>为了满足不同的业务需求，Java垃圾回收器的算法也在不停的迭代，对于特定的一个应用，选择其最合适的GC算法，才能更高效率的实现业务目标。尤其是近些年来伴随着各种高并发，超高并发应用的使用，要求JVM要能适应超低停顿时间，同时也带给JVM带来了应对大堆和超大堆的挑战，基于此，2018年在发布的JDK11中，加入了ZGC<code>A Scalable Low-Latency Garbage Collector</code> 垃圾回收器</p>
+<h2 id="垃圾回收器的发展"><a href="#垃圾回收器的发展" class="headerlink" title="垃圾回收器的发展"></a>垃圾回收器的发展</h2><p>为了满足不同的业务需求，Java垃圾回收器的算法也在不停的迭代，对于特定的一个应用，选择其最合适的GC算法，才能更高效率的实现业务目标。尤其是近些年来伴随着各种高并发，超高并发应用的使用，要求JVM要能适应超低停顿时间，同时也带给JVM带来了应对大堆和超大堆的挑战，基于此，2018年在发布的JDK11中，加入了ZG(C<code>A Scalable Low-Latency Garbage Collector</code>) 垃圾回收器</p>
 <p><img src="/archives/a87613ac/%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E5%99%A8.png" alt="垃圾回收器"></p>
-<h2 id="ZGC介绍"><a href="#ZGC介绍" class="headerlink" title="ZGC介绍"></a>ZGC介绍</h2> 
+<h2 id="ZGC介绍"><a href="#ZGC介绍" class="headerlink" title="ZGC介绍"></a>ZGC介绍</h2><p>ZGC(<code>The Z Garbage Collector</code>) 是JDK11中推出的追求低延迟的垃圾回收器，其特点包括：</p>
+<ul>
+<li>停顿时间不超过100ms，在JDK16中已经达到了不超过1ms；</li>
+<li>停顿时间不会随着堆大小或者活跃对象的增加而增加；</li>
+<li>支持8MB~4TB级别的堆，JDK15已经可以支持16TB；</li>
+</ul>
+<h2 id="ZGC中的内存布局"><a href="#ZGC中的内存布局" class="headerlink" title="ZGC中的内存布局"></a>ZGC中的内存布局</h2><p>为了细粒度的控制内存的分配，和G1一样，ZGC将内存划分成小的分区，在ZGC中成为页面(<code>page</code>)。所以在ZGC中是没有新生代、老年代的分代概念。</p>
+<p>ZGC中支持3种页面，分别是小页面、中页面、大页面。其中小页面指的是2MB的页面空间，中页面指的是32MB的页面空间，大页面指的是受操作系统控制的大页面。</p>
+<p><img src="/archives/a87613ac/ZGC%E9%A1%B5%E9%9D%A2.png" alt="ZGC页面"></p>
+<blockquote>
+<p>当对象大小小于等于256KB时，对象分配在小页面</p>
+<p>当对象大小大于256KB小于4MB之间，对象分配在中页面</p>
+<p>当对象大小大于4MB，对象分配在大页面</p>
+<p>ZGC对于不同页面回收策略是不同的。也就是说，<strong>小页面优先回收，中页面和大页面则尽量不回收</strong></p>
+</blockquote>
+ 
       <!-- reward -->
       
     </div>
