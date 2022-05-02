@@ -95,7 +95,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">562</span>
+            <span class="post-count">730</span>
         </span>
     </span>
 
@@ -121,7 +121,7 @@
        
   <h2 id="ZGC诞生背景"><a href="#ZGC诞生背景" class="headerlink" title="ZGC诞生背景"></a>ZGC诞生背景</h2><p>在Java中，JVM在进行垃圾回收的时候，有一个很大的问题，就是STW(Stop The World)，即JVM要进行垃圾回收时，会暂停所有的业务线程。导致所有业务系统暂停，直接降低了用户体验；所以目前市面上所有的垃圾回收器优化方向也是朝着怎么缩短STW方向，进而提升用户体验。</p>
 <p><img src="/archives/a87613ac/image-20220430232058737.png" alt="STW(Stop The World)"></p>
-<h2 id="垃圾回收器的发展"><a href="#垃圾回收器的发展" class="headerlink" title="垃圾回收器的发展"></a>垃圾回收器的发展</h2><p>为了满足不同的业务需求，Java垃圾回收器的算法也在不停的迭代，对于特定的一个应用，选择其最合适的GC算法，才能更高效率的实现业务目标。尤其是近些年来伴随着各种高并发，超高并发应用的使用，要求JVM要能适应超低停顿时间，同时也带给JVM带来了应对大堆和超大堆的挑战，基于此，2018年在发布的JDK11中，加入了ZG(C<code>A Scalable Low-Latency Garbage Collector</code>) 垃圾回收器</p>
+<h2 id="垃圾回收器的发展"><a href="#垃圾回收器的发展" class="headerlink" title="垃圾回收器的发展"></a>垃圾回收器的发展</h2><p>为了满足不同的业务需求，Java垃圾回收器的算法也在不停的迭代，对于特定的一个应用，选择其最合适的GC算法，才能更高效率的实现业务目标。尤其是近些年来伴随着各种高并发，超高并发应用的使用，要求JVM要能适应超低停顿时间，同时也带给JVM带来了应对大堆和超大堆的挑战，基于此，2018年在发布的JDK11中，加入了ZGC(<code>A Scalable Low-Latency Garbage Collector</code>) 垃圾回收器</p>
 <p><img src="/archives/a87613ac/%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E5%99%A8.png" alt="垃圾回收器"></p>
 <h2 id="ZGC介绍"><a href="#ZGC介绍" class="headerlink" title="ZGC介绍"></a>ZGC介绍</h2><p>ZGC(<code>The Z Garbage Collector</code>) 是JDK11中推出的追求低延迟的垃圾回收器，其特点包括：</p>
 <ul>
@@ -138,6 +138,18 @@
 <p>当对象大小大于4MB，对象分配在大页面</p>
 <p>ZGC对于不同页面回收策略是不同的。也就是说，<strong>小页面优先回收，中页面和大页面则尽量不回收</strong></p>
 </blockquote>
+<h2 id="ZGC核心概念"><a href="#ZGC核心概念" class="headerlink" title="ZGC核心概念"></a>ZGC核心概念</h2><h3 id="染色指针-Color-Pointers"><a href="#染色指针-Color-Pointers" class="headerlink" title="染色指针(Color Pointers)"></a>染色指针(Color Pointers)</h3><p>颜色指针可以说是ZGC的核心概念。因为它在指针中借了几位来做指针染色，所以它必须要求在64位机器上才可以工作。并且因为要求64位的指针，也就不能支持压缩指针。</p>
+<p><img src="/archives/a87613ac/ZGC%E4%B8%AD64%E4%BD%8D%E6%8C%87%E9%92%88%E8%99%9A%E6%8B%9F%E7%A9%BA%E9%97%B4%E4%BD%BF%E7%94%A8.png" alt="ZGC中64位指针虚拟空间使用."></p>
+<blockquote>
+<p>ZGC中低42位表示使用中的堆空间</p>
+<p>ZGC借几位高位来做GC相关的事情(快速实现垃圾回收中的并发标记、转移和重定位等)</p>
+</blockquote>
+<h2 id="ZGC垃圾回收流程"><a href="#ZGC垃圾回收流程" class="headerlink" title="ZGC垃圾回收流程"></a>ZGC垃圾回收流程</h2><p>一次ZGC垃圾回收流程包括两个阶段</p>
+<ol>
+<li>标记阶段(标记垃圾)</li>
+<li>转移阶段(对象复制或移动)</li>
+</ol>
+<p><img src="/archives/a87613ac/ZGC%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E6%B5%81%E7%A8%8B.png" alt="ZGC垃圾回收流程"></p>
  
       <!-- reward -->
       
