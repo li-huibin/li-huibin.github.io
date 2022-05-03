@@ -95,7 +95,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">730</span>
+            <span class="post-count">1.2k</span>
         </span>
     </span>
 
@@ -104,7 +104,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-book-open-line"></i>
             <span class="post-meta-item-text"> 阅读时长≈</span>
-            <span class="post-count">2 分钟</span>
+            <span class="post-count">4 分钟</span>
         </span>
     </span>
 </div>
@@ -150,6 +150,31 @@
 <li>转移阶段(对象复制或移动)</li>
 </ol>
 <p><img src="/archives/a87613ac/ZGC%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E6%B5%81%E7%A8%8B.png" alt="ZGC垃圾回收流程"></p>
+<blockquote>
+<ol>
+<li><p><strong>初始阶段：</strong> </p>
+<p>在ZGC初始化之后，此时地址视图位Remapped，程序正常运行，在内存中分配对象，满足一定条件后垃圾回收启动。</p>
+</li>
+<li><p><strong>初始标记：</strong> </p>
+<p>这个阶段需要暂停用户线程(STW)，初始标记只需要扫描所有GC Roots，其处理时间和GC Roots的数量成正比，停顿时间不会随着堆的大小或者活跃对象的大小而增加。</p>
+</li>
+<li><p><strong>并发标记：</strong> </p>
+<p>这个阶段不需要暂停(没有STW)，根据初始标记找到的根对象，使用深度优先遍历对象的成员变量进行标记，来扫描剩余的所有对象，这个处理时间比较长，所以通过并发处理，业务线程与GC线程同时运行。但是这个阶段会产生漏标问题(可用过增量更新和原始快照<code>SATB</code>来解决)。</p>
+</li>
+<li><p><strong>再标记：</strong> </p>
+<p>这个阶段需要暂停(STW)，主要是处理并发标记中漏标的对象，通过原始快照(SATB)算法解决(G1中的解决漏标的方案)</p>
+</li>
+</ol>
+</blockquote>
+<h3 id="ZGC染色指针的并发转移算法"><a href="#ZGC染色指针的并发转移算法" class="headerlink" title="ZGC染色指针的并发转移算法"></a>ZGC染色指针的并发转移算法</h3><h3 id="根可达分析算法"><a href="#根可达分析算法" class="headerlink" title="根可达分析算法"></a>根可达分析算法</h3><p>在ZGC中，判断对象是否存活，是通过<code>根可达分析算法</code>来实现的，这个算法的基本思路就是通过一系列的称为”GC Roots”的对象作为起始点，从这些节点开始向下搜索，搜索所走过的路径称为引用链(<code>Reference Chain</code>)，当一个对象到GC Roots没有任何引用链相连时，则证明此对象是不可用的。</p>
+<p><img src="/archives/a87613ac/%E6%A0%B9%E5%8F%AF%E8%BE%BE%E6%80%A7%E5%88%86%E6%9E%90%E7%AE%97%E6%B3%95.png" alt="根可达性分析算法"></p>
+<p>作为GC Roots的对象主要包括以下4种：</p>
+<ul>
+<li>虚拟机栈(栈帧种的本地变量表)：各个线程调用方法堆栈中使用到的参数、局部变量、临时变量等。</li>
+<li>方法区中类静态变量：Java类的引用类型静态变量。</li>
+<li>方法区中常量：比如：字符串常量池里的引用。</li>
+<li>本地方法栈中JNI指针：(即一般说的Native方法)</li>
+</ul>
  
       <!-- reward -->
       
