@@ -95,7 +95,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">1.2k</span>
+            <span class="post-count">1.9k</span>
         </span>
     </span>
 
@@ -104,7 +104,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-book-open-line"></i>
             <span class="post-meta-item-text"> 阅读时长≈</span>
-            <span class="post-count">4 分钟</span>
+            <span class="post-count">6 分钟</span>
         </span>
     </span>
 </div>
@@ -166,7 +166,44 @@
 </li>
 </ol>
 </blockquote>
-<h3 id="ZGC染色指针的并发转移算法"><a href="#ZGC染色指针的并发转移算法" class="headerlink" title="ZGC染色指针的并发转移算法"></a>ZGC染色指针的并发转移算法</h3><h3 id="根可达分析算法"><a href="#根可达分析算法" class="headerlink" title="根可达分析算法"></a>根可达分析算法</h3><p>在ZGC中，判断对象是否存活，是通过<code>根可达分析算法</code>来实现的，这个算法的基本思路就是通过一系列的称为”GC Roots”的对象作为起始点，从这些节点开始向下搜索，搜索所走过的路径称为引用链(<code>Reference Chain</code>)，当一个对象到GC Roots没有任何引用链相连时，则证明此对象是不可用的。</p>
+<h3 id="ZGC染色指针的并发转移算法"><a href="#ZGC染色指针的并发转移算法" class="headerlink" title="ZGC染色指针的并发转移算法"></a>ZGC染色指针的并发转移算法</h3><h4 id="ZGC转移阶段分为三步"><a href="#ZGC转移阶段分为三步" class="headerlink" title="ZGC转移阶段分为三步"></a>ZGC转移阶段分为三步</h4><ul>
+<li><p>并发转移准备(分析最有价值GC分页，该阶段无STW)</p>
+</li>
+<li><p>初始转移（转移初始标记的存活的对象，同时做对象重定位，该阶段有STW）</p>
+</li>
+<li><p>并发转移（对并发标记的存活对象做转移，该阶段无STW）；并发转移阶段因为GC线程和用户线程同时执行，所以在转移过程中借助转发表来完成对象转移。</p>
+</li>
+</ul>
+<h2 id="图解ZGC垃圾回收过程"><a href="#图解ZGC垃圾回收过程" class="headerlink" title="图解ZGC垃圾回收过程"></a>图解ZGC垃圾回收过程</h2><ol>
+<li><p>初始标记</p>
+<p><img src="/archives/a87613ac/ZGC%E5%88%9D%E5%A7%8B%E6%A0%87%E8%AE%B0.png" alt="初始标记"></p>
+</li>
+<li><p>并发标记</p>
+<p><img src="/archives/a87613ac/ZGC%E5%B9%B6%E5%8F%91%E6%A0%87%E8%AE%B0.png" alt="并发标记"></p>
+<blockquote>
+<p>并发标记中，用户线程和GC线程同时进行。所以这个阶段会产生浮动垃圾，即漏标。漏标可以通过增量更新和原始快照(SATB)两种方式去解决。</p>
+</blockquote>
+</li>
+<li><p>再标记</p>
+<p><img src="/archives/a87613ac/ZGC%E5%86%8D%E6%A0%87%E8%AE%B0.png" alt="再标记"></p>
+<blockquote>
+<p>这个阶段主要解决再并发标记过程中漏标的对象，此阶段STW</p>
+</blockquote>
+</li>
+<li><p>初始转移</p>
+<p><img src="/archives/a87613ac/ZGC%E5%88%9D%E5%A7%8B%E8%BD%AC%E7%A7%BB.png" alt="初始转移"></p>
+<blockquote>
+<p>这个阶段主要转移初始标记阶段标记的对象</p>
+</blockquote>
+</li>
+<li><p>并发转移</p>
+<p><img src="/archives/a87613ac/ZGC%E5%B9%B6%E5%8F%91%E8%BD%AC%E7%A7%BB.png" alt="并发转移"></p>
+<blockquote>
+<p>这个阶段转移并发标记阶段的对象，因为这个阶段用户线程和GC线程同步进行，所以会有对象正在使用，如果此时将正在使用的对象转移到新的地址，而正在使用的对象还是旧的地址，此时就会有问题，为了解决这个问题，这个阶段使用了转发表来记录转移对象的新地址和旧地址映射关系。等到下一个ZGC垃圾回收阶段，再回收转发表中的对象。</p>
+</blockquote>
+</li>
+</ol>
+<h3 id="根可达分析算法"><a href="#根可达分析算法" class="headerlink" title="根可达分析算法"></a>根可达分析算法</h3><p>在ZGC中，判断对象是否存活，是通过<code>根可达分析算法</code>来实现的，这个算法的基本思路就是通过一系列的称为”GC Roots”的对象作为起始点，从这些节点开始向下搜索，搜索所走过的路径称为引用链(<code>Reference Chain</code>)，当一个对象到GC Roots没有任何引用链相连时，则证明此对象是不可用的。</p>
 <p><img src="/archives/a87613ac/%E6%A0%B9%E5%8F%AF%E8%BE%BE%E6%80%A7%E5%88%86%E6%9E%90%E7%AE%97%E6%B3%95.png" alt="根可达性分析算法"></p>
 <p>作为GC Roots的对象主要包括以下4种：</p>
 <ul>
@@ -174,6 +211,18 @@
 <li>方法区中类静态变量：Java类的引用类型静态变量。</li>
 <li>方法区中常量：比如：字符串常量池里的引用。</li>
 <li>本地方法栈中JNI指针：(即一般说的Native方法)</li>
+</ul>
+<h2 id="ZGC参数设置"><a href="#ZGC参数设置" class="headerlink" title="ZGC参数设置"></a>ZGC参数设置</h2><p>ZGC优势不仅仅再其超低的STW停顿时间，也在于其参数的简单，绝大多数生产场景都可以自动适应。当然，在有些情况下也可能对个别的ZGC参数做调整，参数大致可以分为三类：</p>
+<ul>
+<li><p><strong>堆大小：</strong> -Xmx</p>
+<p>当分配速率过高，超过回收速率，造成堆内存不够用时，会触发Allocation Stall，这个类Stall会减缓当前的用户线程。因此，当我们在GC日志中看到Allocation Stall，通常可以认为堆空间偏小或者concurrent gc threads数偏小。</p>
+</li>
+<li><p><strong>GC触发时机：</strong> ZAllocatioSpike Tolerance，ZCollectionInterval。</p>
+<p>ZAllocationSpikeTolerance 用来估算当前的堆内存分配速率，在当前剩余的堆内存下，ZAllocationSpike Tolerance越大，估算的达到OOM的时间越快，ZGC就会更早地进行触发GC。ZCollectionInterval用来指定GC发生的间隔，以秒位单位触发GC</p>
+</li>
+<li><p><strong>GC线程：</strong> ParallerGCThreads，ConcGCThreads。</p>
+<p>ParallelGCThreads是设置STW任务的GC线程数，默认为CPU个数的60%；ConcGCThreads是并发阶段GC线程的数目，默认为CPU个数的12.5%。增加GC线程数目，可以加快GC完成任务，减少各个阶段的时间，但也会增加CPU的抢占开销。</p>
+</li>
 </ul>
  
       <!-- reward -->
