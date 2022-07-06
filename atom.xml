@@ -6,7 +6,7 @@
   <link href="https://www.lihuibin.top/atom.xml" rel="self"/>
   
   <link href="https://www.lihuibin.top/"/>
-  <updated>2022-05-03T05:38:51.490Z</updated>
+  <updated>2022-07-06T15:02:36.918Z</updated>
   <id>https://www.lihuibin.top/</id>
   
   <author>
@@ -17,11 +17,36 @@
   <generator uri="https://hexo.io/">Hexo</generator>
   
   <entry>
+    <title>规则引擎Drools</title>
+    <link href="https://www.lihuibin.top/archives/bc098de5/"/>
+    <id>https://www.lihuibin.top/archives/bc098de5/</id>
+    <published>2022-07-06T14:53:53.000Z</published>
+    <updated>2022-07-06T15:02:36.918Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;&lt;strong&gt;规则引擎&lt;/strong&gt;，全称为&lt;strong&gt;业务规则管理系统&lt;/strong&gt;，英文名为BRMS(即Business Rule Management</summary>
+        
+      
+    
+    
+    
+    <category term="规则引擎" scheme="https://www.lihuibin.top/categories/%E8%A7%84%E5%88%99%E5%BC%95%E6%93%8E/"/>
+    
+    
+    <category term="Drools" scheme="https://www.lihuibin.top/tags/Drools/"/>
+    
+  </entry>
+  
+  <entry>
     <title>Java垃圾收集器之ZGC剖析</title>
     <link href="https://www.lihuibin.top/archives/a87613ac/"/>
     <id>https://www.lihuibin.top/archives/a87613ac/</id>
     <published>2022-04-30T14:54:15.000Z</published>
-    <updated>2022-05-03T05:38:51.490Z</updated>
+    <updated>2022-05-03T06:35:28.822Z</updated>
     
     
       
@@ -489,31 +514,6 @@
     
     
     <category term="归并排序" scheme="https://www.lihuibin.top/tags/%E5%BD%92%E5%B9%B6%E6%8E%92%E5%BA%8F/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>排序算法——希尔排序</title>
-    <link href="https://www.lihuibin.top/archives/41c4cd29/"/>
-    <id>https://www.lihuibin.top/archives/41c4cd29/</id>
-    <published>2021-11-06T04:42:23.000Z</published>
-    <updated>2021-11-06T11:03:05.963Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;h2 id=&quot;基本排序思想&quot;&gt;&lt;a href=&quot;#基本排序思想&quot; class=&quot;headerlink&quot;</summary>
-        
-      
-    
-    
-    
-    <category term="算法" scheme="https://www.lihuibin.top/categories/%E7%AE%97%E6%B3%95/"/>
-    
-    
-    <category term="希尔排序" scheme="https://www.lihuibin.top/tags/%E5%B8%8C%E5%B0%94%E6%8E%92%E5%BA%8F/"/>
     
   </entry>
   
