@@ -6,7 +6,7 @@
   <link href="https://www.lihuibin.top/atom.xml" rel="self"/>
   
   <link href="https://www.lihuibin.top/"/>
-  <updated>2022-07-06T15:02:36.918Z</updated>
+  <updated>2022-07-07T15:04:59.372Z</updated>
   <id>https://www.lihuibin.top/</id>
   
   <author>
@@ -17,18 +17,18 @@
   <generator uri="https://hexo.io/">Hexo</generator>
   
   <entry>
-    <title>规则引擎Drools</title>
+    <title>规则引擎Drools快速入门</title>
     <link href="https://www.lihuibin.top/archives/bc098de5/"/>
     <id>https://www.lihuibin.top/archives/bc098de5/</id>
     <published>2022-07-06T14:53:53.000Z</published>
-    <updated>2022-07-06T15:02:36.918Z</updated>
+    <updated>2022-07-07T15:04:59.372Z</updated>
     
     
       
       
         
         
-    <summary type="html">&lt;p&gt;&lt;strong&gt;规则引擎&lt;/strong&gt;，全称为&lt;strong&gt;业务规则管理系统&lt;/strong&gt;，英文名为BRMS(即Business Rule Management</summary>
+    <summary type="html">&lt;h1 id=&quot;规则引擎简介&quot;&gt;&lt;a href=&quot;#规则引擎简介&quot; class=&quot;headerlink&quot;</summary>
         
       
     

@@ -18,7 +18,7 @@
         name="viewport"
         content="width=device-width, initial-scale=1, maximum-scale=1"
       />
-      <title>规则引擎Drools |  小李子的博客</title>
+      <title>规则引擎Drools快速入门 |  小李子的博客</title>
   <meta name="generator" content="hexo-theme-ayer">
       
       <link rel="shortcut icon" href="/favicon.ico" />
@@ -75,7 +75,7 @@
     <header class="article-header">
        
 <h1 class="article-title sea-center" style="border-left:0" itemprop="name">
-  规则引擎Drools
+  规则引擎Drools快速入门
 </h1>
  
 
@@ -95,7 +95,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">147</span>
+            <span class="post-count">1.7k</span>
         </span>
     </span>
 
@@ -104,22 +104,76 @@
         <span class="post-meta-item-icon">
             <i class="ri-book-open-line"></i>
             <span class="post-meta-item-text"> 阅读时长≈</span>
-            <span class="post-count">1 分钟</span>
+            <span class="post-count">7 分钟</span>
         </span>
     </span>
 </div>
  
     </div>
       
+    <div class="tocbot"></div>
+
 
 
 
   
     <div class="article-entry" itemprop="articleBody">
        
-  <p><strong>规则引擎</strong>，全称为<strong>业务规则管理系统</strong>，英文名为BRMS(即Business Rule Management System)。规则引擎实现了将业务决策从应用程序中分离出来，接收数据的输入，解释业务规则，并根据业务规则做出业务决策。规则引擎就是这样一个输入输出平台。</p>
-<p><img src="https://www.drools.org/headerFooter/DroolsLogo200px.png" alt="Drools logo"></p>
-<p>现在比较流行的规则引擎之一为Drools，一款由JBoss组织提供的基于Java语言开发的开源规则引擎，Drools是KIE项目的一部分，Kie：Knowledge is everything, Jboss一些列项目的总称</p>
+  <h1 id="规则引擎简介"><a href="#规则引擎简介" class="headerlink" title="规则引擎简介"></a><strong>规则引擎简介</strong></h1><p><strong>规则引擎</strong>，全称为<strong>业务规则管理系统</strong>，英文名为BRMS(即Business Rule Management System)。规则引擎实现了将业务决策从应用程序中分离出来，接收数据的输入，解释业务规则，并根据业务规则做出业务决策。规则引擎就是这样一个输入输出平台。现在比较流行的规则引擎之一为Drools，一款由JBoss组织提供的基于Java语言开发的开源规则引擎，Drools是KIE项目的一部分，Kie：Knowledge is everything, Jboss一些列项目的总称。</p>
+<h2 id="规则引擎主要的应用场景"><a href="#规则引擎主要的应用场景" class="headerlink" title="规则引擎主要的应用场景"></a>规则引擎主要的应用场景</h2><p>对于一些比较复杂的业务规则并且业务规则可能频繁的变动的系统比较合适使用规则引擎，如下：</p>
+<ol>
+<li>风险控制系统——风险贷款、风险评估</li>
+<li>反欺诈项目——银行贷款、征信验证</li>
+<li>决策平台系统——财务计算</li>
+<li>促销平台系统——满减、打折、加价购</li>
+</ol>
+<h2 id="Drools介绍"><a href="#Drools介绍" class="headerlink" title="Drools介绍"></a>Drools介绍</h2><p>drools是一款由JBoos组织提供的基于Java语言开发的开源规则引擎，可以将复杂的业务规则从硬编码中剥离出来，以规则脚本的形式放在文件或者特定的存储介质中（例如数据库中），使得业务规则的变更不需要修改项目代码、不用重启服务器就可以在线上环境立即生效。</p>
+<p><a target="_blank" rel="noopener" href="https://drools.org/">drools官网地址</a></p>
+<p><a target="_blank" rel="noopener" href="https://github.com/kiegroup/drools">drools源码下载地址</a></p>
+<ul>
+<li>使用规则引擎有哪些优势：<ul>
+<li>业务规则与系统代码分离，实现业务规则的集中管理</li>
+<li>在不重启服务的情况下可以随时对业务规则进行扩展和维护</li>
+<li>可以动态修改业务规则，从而快速响应需求变更</li>
+<li>规则引擎是相对独立的，只关心业务规则，是的业务分析人员也可以参与编辑、维护系统的业务规则</li>
+<li>减少硬编码业务规则的成本和风险</li>
+<li>使用规则引擎提供的规则编辑工具，使复杂的业务规则变得简单</li>
+</ul>
+</li>
+</ul>
+<p>在项目中使用drools时，既可以单独使用也可以整合springboot使用。如果单独使用需要导入如下maven坐标即可：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.drools<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>drools-compiler<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">version</span>&gt;</span>7.10.0.Final<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>如果我们使用IDEA开发drools应用，IDEA中已经集成了drools插件。</p>
+<p>drools API开发步骤如下</p>
+<p><img src="/archives/bc098de5/image-20220707224445150.png" alt="drools开发步骤"></p>
+<h2 id="Drools快速入门"><a href="#Drools快速入门" class="headerlink" title="Drools快速入门"></a>Drools快速入门</h2><h3 id="业务场景说明"><a href="#业务场景说明" class="headerlink" title="业务场景说明"></a>业务场景说明</h3><p>用户购买的商品总额和对应的积分赠送规则如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">100元以下，不加积分</span><br><span class="line">100元~500元，加100积分</span><br><span class="line">500元~1000元，加500积分</span><br><span class="line">1000元以上，加1000积分</span><br></pre></td></tr></table></figure>
+
+<h3 id="开发实现"><a href="#开发实现" class="headerlink" title="开发实现"></a>开发实现</h3><p>第一步：创建maven工程droolsDemo并导入相关maven坐标</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.drools<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>drools-compiler<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>7.10.0.Final<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>junit<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>junit<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>4.12<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>第二步：在工程中的resources下创建META-INF文件夹，并在文件夹下创建kmodule.xml配置文件，配置文件内容如下：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot; ?&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">kmodule</span> <span class="attr">xmlns</span>=<span class="string">&quot;http://www.drools.org/xsd/kmodule&quot;</span>&gt;</span></span><br><span class="line">    <span class="comment">&lt;!--</span></span><br><span class="line"><span class="comment">        name:指定kbase的名称，可以任意，但是需要唯一</span></span><br><span class="line"><span class="comment">        packages:指定规则文件的目录，需要根据实际情况填写，否则无法加载到规则文件</span></span><br><span class="line"><span class="comment">        default:指定当前kbase是否为默认</span></span><br><span class="line"><span class="comment">    --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">kbase</span> <span class="attr">name</span>=<span class="string">&quot;myKbase1&quot;</span> <span class="attr">packages</span>=<span class="string">&quot;rules&quot;</span> <span class="attr">default</span>=<span class="string">&quot;true&quot;</span>&gt;</span></span><br><span class="line">        <span class="comment">&lt;!--</span></span><br><span class="line"><span class="comment">            name:指定ksession名称，可以任意，但是需要唯一</span></span><br><span class="line"><span class="comment">            default:指定当前session是否为默认</span></span><br><span class="line"><span class="comment">        --&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">ksession</span> <span class="attr">name</span>=<span class="string">&quot;ksession-rule&quot;</span> <span class="attr">default</span>=<span class="string">&quot;true&quot;</span>/&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">kbase</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">kmodule</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>注意：</strong> 上面配置文件的名称和位置都是固定写法，不能更改</p>
+<p>kmodule 中可以包含一个到多个kbase，分别对应drl的规则文件</p>
+<p>kbase 需要一个唯一的name，可以去任意字符串</p>
+<p>packages 为drl文件所在的resource目录下的路径。(注意区分drl文件中的package与此处的package不一定相同。多个包用逗号分隔。默认情况下会扫描resources目录及子目录下所有规则文件)</p>
+<p>kbase的default属性，表示当前KieBase是不是默认的，如果时默认的规则不用名称就可以查找到该KieBase，但每个module最多只能有一个默认KieBase</p>
+<p>kbase下面可以有一个或者多个ksession，ksession的name属性必须设置，且必须唯一</p>
+</blockquote>
+<p>第三步：创建实体类</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lhb.entity;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Order</span> </span>&#123;</span><br><span class="line">    <span class="comment">/** 订单原价 */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> amout;</span><br><span class="line">    <span class="comment">/** 积分 */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> score;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">getAmout</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> amout;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setAmout</span><span class="params">(<span class="keyword">int</span> amout)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.amout = amout;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">getScore</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> score;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setScore</span><span class="params">(<span class="keyword">int</span> score)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.score = score;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">toString</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;Order&#123;&quot;</span> +</span><br><span class="line">                <span class="string">&quot;amout=&quot;</span> + amout +</span><br><span class="line">                <span class="string">&quot;, score=&quot;</span> + score +</span><br><span class="line">                <span class="string">&#x27;&#125;&#x27;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>第四步：在resources下创建rules目录，并且添加规则文件score-rules.drl</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line">package rules</span><br><span class="line"></span><br><span class="line">import com.lhb.entity.Order</span><br><span class="line"></span><br><span class="line">//规则1：100元以下, 不加分</span><br><span class="line">rule &quot;score_1&quot;</span><br><span class="line">    when</span><br><span class="line">        $s : Order(amout &lt;= 100)</span><br><span class="line">    then</span><br><span class="line">        $s.setScore(0);</span><br><span class="line">        System.out.println(&quot;成功匹配到规则1：100元以下, 不加分 &quot;);</span><br><span class="line">end</span><br><span class="line"></span><br><span class="line">//规则2：100元-500元 加100分</span><br><span class="line">rule &quot;score_2&quot;</span><br><span class="line">    when</span><br><span class="line">        $s : Order(amout &gt; 100 &amp;&amp; amout &lt;= 500)</span><br><span class="line">    then</span><br><span class="line">        $s.setScore(100);</span><br><span class="line">        System.out.println(&quot;成功匹配到规则2：100元-500元 加100分 &quot;);</span><br><span class="line">end</span><br><span class="line">//规则3：500元-1000元 加500分</span><br><span class="line">rule &quot;score_3&quot;</span><br><span class="line">    when</span><br><span class="line">        $s : Order(amout &gt; 500 &amp;&amp; amout &lt;= 1000)</span><br><span class="line">    then</span><br><span class="line">        $s.setScore(500);</span><br><span class="line">        System.out.println(&quot;成功匹配到规则3：500元-1000元 加500分 &quot;);</span><br><span class="line">end</span><br><span class="line">//规则4：1000元 以上 加1000分</span><br><span class="line">rule &quot;score_4&quot;</span><br><span class="line">    when</span><br><span class="line">        $s : Order(amout &gt; 1000)</span><br><span class="line">    then</span><br><span class="line">        $s.setScore(1000);</span><br><span class="line">        System.out.println(&quot;成功匹配到规则4：1000元 以上 加1000分 &quot;);</span><br><span class="line">end</span><br></pre></td></tr></table></figure>
+
+<p>这个规则文件就是描述了，当符合条件的时侯，做什么事情，每当规则有变动的时候，我们只需要修改规则文件，然后重新加载即可</p>
+<p>第五步：编写单元测试</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lhb.test;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> com.lhb.entity.Order;</span><br><span class="line"><span class="keyword">import</span> org.junit.Test;</span><br><span class="line"><span class="keyword">import</span> org.kie.api.KieServices;</span><br><span class="line"><span class="keyword">import</span> org.kie.api.runtime.KieContainer;</span><br><span class="line"><span class="keyword">import</span> org.kie.api.runtime.KieSession;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestDrools</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Test</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">test1</span><span class="params">()</span></span>&#123;</span><br><span class="line">        KieServices kieServices = KieServices.Factory.get();</span><br><span class="line">        KieContainer kieContainer = kieServices.getKieClasspathContainer();</span><br><span class="line">        <span class="comment">//会话对象,用于和规则引擎交互</span></span><br><span class="line">        KieSession kieSession = kieContainer.newKieSession();</span><br><span class="line">        <span class="comment">//构造订单对象，设置订单金额，由规则引擎计算获得的积分</span></span><br><span class="line">        Order order = <span class="keyword">new</span> Order();</span><br><span class="line">        order.setAmout(<span class="number">200</span>);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//将数据交给规则引擎，规则引擎会根据提供的数据进行规则匹配</span></span><br><span class="line">        kieSession.insert(order);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//激活规则引擎，如果匹配成功则执行规则</span></span><br><span class="line">        kieSession.fireAllRules();</span><br><span class="line">        <span class="comment">//关闭会话</span></span><br><span class="line">        kieSession.dispose();</span><br><span class="line">        <span class="comment">//打印结果;</span></span><br><span class="line">        System.out.println(<span class="string">&quot;订单提交之后积分：&quot;</span>+order.getScore());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
  
       <!-- reward -->
       
