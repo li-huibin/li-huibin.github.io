@@ -7,7 +7,10 @@
     <head>
       <meta charset="utf-8" />
        
-      <meta name="keywords" content="小李子的博客,lihuibin,lhb,Java,hexo+github,spring,springboot,springcloud,nacos,jvm,mysql,k8s,docker,gateway,springcloudAlibaba" />
+      <meta
+        name="keywords"
+        content="Drools基础语法,小李子的博客,lihuibin,lhb,Java,hexo+github,spring,springboot,springcloud,nacos,jvm,mysql,k8s,docker,gateway,springcloudAlibaba"
+      />
        
       <meta name="description" content="学习，生活分享" />
       
@@ -15,7 +18,7 @@
         name="viewport"
         content="width=device-width, initial-scale=1, maximum-scale=1"
       />
-      <title> 小李子的博客</title>
+      <title>Drools基础语法 |  小李子的博客</title>
   <meta name="generator" content="hexo-theme-ayer">
       
       <link rel="shortcut icon" href="/favicon.ico" />
@@ -59,538 +62,254 @@
     
       
     <main class="content on">
-      
-<section class="cover">
+      <section class="outer">
+  <article
+  id="post-Drools基础语法"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
     
-  <div class="cover-frame">
-    <div class="bg-box">
-      <img src="/images/cover1.jpg" alt="image frame" />
-    </div>
-    <div class="cover-inner text-center text-white">
-      <h1><a href="/">小李子的博客</a></h1>
-      <div id="subtitle-box">
-        
-          <span id="subtitle">一个不知名的Java开发攻城狮</span>
-        
-      </div>
-      <div>
-        
-      </div>
-    </div>
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  Drools基础语法
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/archives/8095b998/" class="article-date">
+  <time datetime="2022-07-08T14:15:55.000Z" itemprop="datePublished">2022-07-08</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E8%A7%84%E5%88%99%E5%BC%95%E6%93%8E/">规则引擎</a>
   </div>
-  <div class="cover-learn-more">
-    <a href="javascript:void(0)" class="anchor"><i class="ri-arrow-down-line"></i></a>
-  </div>
-</section>
-
-
-
-
-<!-- Subtitle -->
-
-<div id="main">
-  <section class="outer">
   
-  
-  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">881</span>
+        </span>
+    </span>
 
-<div class="notice" style="margin-top:50px">
-    <i class="ri-heart-fill"></i>
-    <div class="notice-content" id="broad"></div>
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">3 分钟</span>
+        </span>
+    </span>
 </div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h1 id="规则文件的构成"><a href="#规则文件的构成" class="headerlink" title="规则文件的构成"></a>规则文件的构成</h1><p>drl是Drools Rule Language的缩写。在规则文件中编写具体的规则内容。</p>
+<p>一套完整的规则文件内容构成由以下元素：</p>
+<ul>
+<li>package：包名，package对应的不一定是真正的目录，可以任意写com.abc，同一个包下的drl文件可以相互访问</li>
+<li>import：用于导入类或静态方法</li>
+<li>global：全局变量</li>
+<li>function：自定义函数</li>
+<li>query：查询</li>
+<li>rule end：规则体</li>
+</ul>
+<h1 id="规则体语法结构"><a href="#规则体语法结构" class="headerlink" title="规则体语法结构"></a>规则体语法结构</h1><p>一个规则通常包括三个部分：属性部分（attribute）、条件部分（LHS）、结果部分（RHS）</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">rule &quot;ruleName&quot;    //rule关键字，表示规则开始，参数为规则的唯一名称</span><br><span class="line">    attributes    //规则属性，是rule与when之间的参数，为可选项</span><br><span class="line">    when        //关键字，后面是规则的条件部分</span><br><span class="line">        LHS    //Left Hand Side，是规则的条件部分</span><br><span class="line">    then        //后面跟规则的结果部分</span><br><span class="line">        RHS    //是规则的结果或者行为</span><br><span class="line">end            //表示一个规则的结束</span><br></pre></td></tr></table></figure>
+
+<h2 id="条件部分"><a href="#条件部分" class="headerlink" title="条件部分"></a>条件部分</h2><p><strong>LHS(Left Hand Side)：</strong> 是规则的条件部分的通用名称。它由零个或者多个条件元素组成。如果LHS为空，则它将被视为始终为true的条件元素。</p>
+<p>LHS部分的条件又称为pattern。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pattern的语法结构为：绑定变量名:Object(Field约束)</span><br></pre></td></tr></table></figure>
+
+<p>其中绑定变量名可以省略，通常绑定变量名的命名一般建议以<code>$</code>开始。如果定义了绑定了绑定变量名，就可以在规则体的RHS部分使用此绑定变量名来操作响应的Fact对象。Field约束部分是需要返回true或者false的0个或者多个表达式。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">//规则1：100元以下，不加积分</span><br><span class="line">rule &quot;score_1&quot;</span><br><span class="line">    when</span><br><span class="line">        //工作内存中必须存在Order这种类型的Fact对象——类型约束</span><br><span class="line">        //Fact对象的amout属性值必须小于等于100——属性约束</span><br><span class="line">        $order:Order(amout &lt;= 100)</span><br><span class="line">    then</span><br><span class="line">        $order.setScore(0);</span><br><span class="line">        System.out.println(&quot;成功匹配到规则1：100元以下，不加积分&quot;);</span><br><span class="line">end</span><br></pre></td></tr></table></figure>
+
+<p>如果LHS部分为空的话，那么引擎会自动添加一个eval(true)的条件，由于条件总是返回true，所以LHS为空的规则总是返回true</p>
+<h3 id="1、约束连接"><a href="#1、约束连接" class="headerlink" title="1、约束连接"></a>1、约束连接</h3><p>在LHS当中，可以包含0~n个条件，多个pattern之间可以采用”&amp;&amp;”、”||”、”,”来实现，也可以不写，默认连接为”&amp;&amp;”</p>
+<blockquote>
+<p>“&amp;&amp;”：表示and</p>
+<p>“||”：表示or</p>
+<p>“,”：表示and</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">//规则2：100元~500元，加100积分</span><br><span class="line">rule &quot;score_2&quot;</span><br><span class="line">    when</span><br><span class="line">        $order:Order(amout &gt; 100 &amp;&amp; amout &lt;= 500)</span><br><span class="line">    then</span><br><span class="line">        $order.setScore(100);</span><br><span class="line">        System.out.println(&quot;匹配到规则2：100元~500元，加100积分&quot;);</span><br><span class="line">end</span><br></pre></td></tr></table></figure>
+
+<h3 id="2、比较操作符"><a href="#2、比较操作符" class="headerlink" title="2、比较操作符"></a>2、比较操作符</h3><p>在Drools中一共提供了十二种类型的比较操作符，分别是：&gt;、&gt;=、&lt;、&lt;=、==、!=、contains、not contains、memberof、not memberof、matches、not matches；</p>
+<table>
+<thead>
+<tr>
+<th align="center">符号</th>
+<th align="center">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">&gt;</td>
+<td align="center">大于</td>
+</tr>
+<tr>
+<td align="center">&lt;</td>
+<td align="center">小于</td>
+</tr>
+<tr>
+<td align="center">&gt;=</td>
+<td align="center">大于等于</td>
+</tr>
+<tr>
+<td align="center">&lt;=</td>
+<td align="center">小于等于</td>
+</tr>
+<tr>
+<td align="center">==</td>
+<td align="center">等于</td>
+</tr>
+<tr>
+<td align="center">!=</td>
+<td align="center">不等于</td>
+</tr>
+<tr>
+<td align="center">contains</td>
+<td align="center">检查一个Fact对象的某个属性是否包含一个指定对象值</td>
+</tr>
+<tr>
+<td align="center">not contains</td>
+<td align="center">检查一个Fact对象的某个属性值是否不包含一个指定对象值</td>
+</tr>
+<tr>
+<td align="center">memberOf</td>
+<td align="center">判断一个Fact对象的某个属性是否在一个或多个集合中</td>
+</tr>
+<tr>
+<td align="center">not memberOf</td>
+<td align="center">判断一个Fact对象的某个属性是否不在一个或多个集合中</td>
+</tr>
+<tr>
+<td align="center">matches</td>
+<td align="center">判断一个Fact对象的属性是否与提供的标准的java正则表达式进行匹配</td>
+</tr>
+<tr>
+<td align="center">not matches</td>
+<td align="center">判断一个Fact对象的属性是否不与提供的标准的java正则表达式进行匹配</td>
+</tr>
+</tbody></table>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://www.lihuibin.top/archives/8095b998/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Drools%E8%AF%AD%E6%B3%95/" rel="tag">Drools语法</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+<div class="gitalk" id="gitalk-container"></div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.css">
+
+
+<script src="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+
+
+<script src="https://cdn.jsdelivr.net/npm/blueimp-md5@2.10.0/js/md5.min.js"></script>
+
 <script type="text/javascript">
-    fetch('https://v1.hitokoto.cn')
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById("broad").innerHTML = data.hitokoto;
-        })
-        .catch(console.error)
+  var gitalk = new Gitalk({
+    clientID: 'c68fe380358330f9b911',
+    clientSecret: '7e15bb1a5ac60c8a9b8f4ac3a9ce0a997a383150',
+    repo: 'li-huibin.github.io',
+    owner: 'li-huibin',
+    admin: ['li-huibin'],
+    // id: location.pathname,      // Ensure uniqueness and length less than 50
+    id: md5(location.pathname),
+    distractionFreeMode: false,  // Facebook-like distraction free mode
+    pagerDirection: 'last'
+  })
+
+  gitalk.render('gitalk-container')
 </script>
 
-<style>
-    .notice {
-        padding: 20px;
-        border: 1px dashed #e6e6e6;
-        color: #969696;
-        position: relative;
-        display: inline-block;
-        width: 100%;
-        background: #fbfbfb50;
-        border-radius: 10px;
-    }
-
-    .notice i {
-        float: left;
-        color: #999;
-        font-size: 16px;
-        padding-right: 10px;
-        vertical-align: middle;
-        margin-top: -2px;
-    }
-
-    .notice-content {
-        display: initial;
-        vertical-align: middle;
-    }
-</style>
-  
-  <article class="articles">
-    
-    
-    
-    
-    <article
-  id="post-Zookeeper实战"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/archives/e5bda741/"
-    >Zookeeper实战</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/archives/e5bda741/" class="article-date">
-  <time datetime="2021-10-03T04:11:12.000Z" itemprop="datePublished">2021-10-03</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/zookeeper/">zookeeper</a>
-  </div>
    
-    </div>
-       
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/zookeeper/" rel="tag">zookeeper</a></li></ul>
-
-    </footer>
-  </div>
-
-    
 </article>
 
-    
-    <article
-  id="post-Redis缓存那些事"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/archives/cfd129cc/"
-    >Redis缓存那些事</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/archives/cfd129cc/" class="article-date">
-  <time datetime="2021-10-01T13:48:18.000Z" itemprop="datePublished">2021-10-01</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E9%9D%A2%E8%AF%95%E5%AE%9D%E5%85%B8/">面试宝典</a>
-  </div>
-   
-    </div>
-       
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9D%A2%E8%AF%95%E5%AE%9D%E5%85%B8/" rel="tag">面试宝典</a></li></ul>
-
-    </footer>
-  </div>
-
-    
-</article>
-
-    
-    <article
-  id="post-Redis键值设计规范与性能优化"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/archives/c0eb8ebf/"
-    >Redis键值设计规范与性能优化</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/archives/c0eb8ebf/" class="article-date">
-  <time datetime="2021-09-30T06:47:37.000Z" itemprop="datePublished">2021-09-30</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Redis/">Redis</a>
-  </div>
-   
-    </div>
-       
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Redis/" rel="tag">Redis</a></li></ul>
-
-    </footer>
-  </div>
-
-    
-</article>
-
-    
-    <article
-  id="post-Redis缓存失效和缓存雪崩以及热点缓存key重建优化"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/archives/134045b4/"
-    >Redis缓存失效和缓存雪崩以及热点缓存key重建优化</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/archives/134045b4/" class="article-date">
-  <time datetime="2021-09-30T03:25:30.000Z" itemprop="datePublished">2021-09-30</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Redis/">Redis</a>
-  </div>
-   
-    </div>
-       
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Redis/" rel="tag">Redis</a></li></ul>
-
-    </footer>
-  </div>
-
-    
-</article>
-
-    
-    <article
-  id="post-Redis缓存穿透"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/archives/f435d36e/"
-    >Redis缓存穿透</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/archives/f435d36e/" class="article-date">
-  <time datetime="2021-09-29T08:06:46.000Z" itemprop="datePublished">2021-09-29</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Redis/">Redis</a>
-  </div>
-   
-    </div>
-       
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Redis/" rel="tag">Redis</a></li></ul>
-
-    </footer>
-  </div>
-
-    
-</article>
-
-    
-    <article
-  id="post-html播放-m3u8格式视频"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/archives/e6ea49db/"
-    >html播放.m3u8格式视频</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/archives/e6ea49db/" class="article-date">
-  <time datetime="2021-09-26T09:07:22.000Z" itemprop="datePublished">2021-09-26</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/html/">html</a>
-  </div>
-   
-    </div>
-       
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/html/" rel="tag">html</a></li></ul>
-
-    </footer>
-  </div>
-
-    
-</article>
-
-    
-    <article
-  id="post-Redis高可用集群水平扩展"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/archives/c709d40a/"
-    >Redis高可用集群水平扩展</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/archives/c709d40a/" class="article-date">
-  <time datetime="2021-09-24T04:42:34.000Z" itemprop="datePublished">2021-09-24</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Redis/">Redis</a>
-  </div>
-   
-    </div>
-       
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Redis/" rel="tag">Redis</a></li></ul>
-
-    </footer>
-  </div>
-
-    
-</article>
-
-    
-    <article
-  id="post-Redis集群原理分析"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/archives/c0af2eb/"
-    >Redis集群原理分析</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/archives/c0af2eb/" class="article-date">
-  <time datetime="2021-09-22T01:03:39.000Z" itemprop="datePublished">2021-09-22</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Redis/">Redis</a>
-  </div>
-   
-    </div>
-       
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Redis/" rel="tag">Redis</a></li></ul>
-
-    </footer>
-  </div>
-
-    
-</article>
-
-    
-    <article
-  id="post-Redis高可用集群部署"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/archives/1d883d6c/"
-    >Redis高可用集群部署</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/archives/1d883d6c/" class="article-date">
-  <time datetime="2021-09-18T04:24:13.000Z" itemprop="datePublished">2021-09-18</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Redis/">Redis</a>
-  </div>
-   
-    </div>
-       
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Redis/" rel="tag">Redis</a></li></ul>
-
-    </footer>
-  </div>
-
-    
-</article>
-
-    
-    <article
-  id="post-Redis持久化"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/archives/119ed1dc/"
-    >Redis持久化</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/archives/119ed1dc/" class="article-date">
-  <time datetime="2021-09-16T01:03:31.000Z" itemprop="datePublished">2021-09-16</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Redis/">Redis</a>
-  </div>
-   
-    </div>
-       
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Redis/" rel="tag">Redis</a></li></ul>
-
-    </footer>
-  </div>
-
-    
-</article>
-
-    
-  </article>
-  
-
-  
-  <nav class="page-nav">
-    
-    <a class="extend prev" rel="prev" href="/page/3/">上一页</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/page/5/">5</a><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/5/">下一页</a>
-  </nav>
-  
 </section>
-</div>
-
       <footer class="footer">
   <div class="outer">
     <ul>
@@ -734,6 +453,22 @@
 <script src="/js/lazyload.min.js"></script>
 
 <!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
 
 <script src="https://cdn.jsdelivr.net/npm/jquery-modal@0.9.2/jquery.modal.min.js"></script>
 <link
