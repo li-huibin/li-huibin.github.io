@@ -291,6 +291,32 @@
       </tags>
   </entry>
   <entry>
+    <title>RPC和Http的区别</title>
+    <url>/archives/c71dc211/</url>
+    <content><![CDATA[<h1 id="Rpc调用和Http调用区别"><a href="#Rpc调用和Http调用区别" class="headerlink" title="Rpc调用和Http调用区别"></a>Rpc调用和Http调用区别</h1><ol>
+<li><p>协议区别</p>
+<p>Rpc是通常基于TCP/IP协议实现的；而Http是基于Http协议实现的</p>
+</li>
+<li><p>效率</p>
+<p>Rpc效率要比Http效率高</p>
+</li>
+<li><p>复杂度</p>
+<p>Rpc要比Http复杂。设计RPC框架，服务注册于发现，服务治理等。</p>
+<p>Rpc是长连接，不必每次通信都要像http一样去进行3次握手，减少了网络开销；其次就是Rpc框架一般都是有注册中心，有丰富的服务监控管理；服务发布、服务下线、动态扩展等接口，对调用方来说是无感知、统一化的操作。</p>
+</li>
+<li><p>使用场景</p>
+<p>Rpc通常在大型网站、微服务、分布式服务中使用，单体服务、小网站直接用http就可以</p>
+</li>
+</ol>
+]]></content>
+      <categories>
+        <category>面试宝典</category>
+      </categories>
+      <tags>
+        <tag>面试宝典</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Redis哨兵架构搭建</title>
     <url>/archives/8bd0f0fd/</url>
     <content><![CDATA[<h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>安装Redis教程这里就不说了，我们在之前搭建的<a href="/archives/ba77e58/">《Redis主从架构搭建》</a>基础上来进行Redis哨兵架构的搭建。</p>
@@ -337,32 +363,6 @@
       </categories>
       <tags>
         <tag>Redis</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>RPC和Http的区别</title>
-    <url>/archives/c71dc211/</url>
-    <content><![CDATA[<h1 id="Rpc调用和Http调用区别"><a href="#Rpc调用和Http调用区别" class="headerlink" title="Rpc调用和Http调用区别"></a>Rpc调用和Http调用区别</h1><ol>
-<li><p>协议区别</p>
-<p>Rpc是通常基于TCP/IP协议实现的；而Http是基于Http协议实现的</p>
-</li>
-<li><p>效率</p>
-<p>Rpc效率要比Http效率高</p>
-</li>
-<li><p>复杂度</p>
-<p>Rpc要比Http复杂。设计RPC框架，服务注册于发现，服务治理等。</p>
-<p>Rpc是长连接，不必每次通信都要像http一样去进行3次握手，减少了网络开销；其次就是Rpc框架一般都是有注册中心，有丰富的服务监控管理；服务发布、服务下线、动态扩展等接口，对调用方来说是无感知、统一化的操作。</p>
-</li>
-<li><p>使用场景</p>
-<p>Rpc通常在大型网站、微服务、分布式服务中使用，单体服务、小网站直接用http就可以</p>
-</li>
-</ol>
-]]></content>
-      <categories>
-        <category>面试宝典</category>
-      </categories>
-      <tags>
-        <tag>面试宝典</tag>
       </tags>
   </entry>
   <entry>
@@ -629,6 +629,47 @@
       </tags>
   </entry>
   <entry>
+    <title>Redis缓存穿透</title>
+    <url>/archives/f435d36e/</url>
+    <content><![CDATA[<p>缓存穿透是指查询一个根本不存在的数据，缓存层和存储层都不会命中，通常处于容错的考虑，如果从存储层查不到数据则不写入缓存层。<br>缓存层将导致不存在的数据每次请求都要存储层去查询，失去了缓存保护后端存储的意义。<br>造成缓存穿透的基本原因有两个：</p>
+<ol>
+<li>自身业务代码或者数据出现问题。</li>
+<li>一些恶意攻击、爬虫等造成大量空命中。</li>
+</ol>
+<h2 id="缓存穿透问题解决方案"><a href="#缓存穿透问题解决方案" class="headerlink" title="缓存穿透问题解决方案"></a>缓存穿透问题解决方案</h2><ol>
+<li><p><strong>缓冲空对象</strong> </p>
+<p>下面是伪代码</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function">String <span class="title">get</span><span class="params">(String key)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 从缓存中获取数据</span></span><br><span class="line">    String cacheValue = cache.get(key);</span><br><span class="line">    <span class="comment">// 缓存为空</span></span><br><span class="line">    <span class="keyword">if</span> (StringUtils.isBlank(cacheValue)) &#123;</span><br><span class="line">        <span class="comment">// 从存储中获取</span></span><br><span class="line">        String storageValue = storage.get(key);</span><br><span class="line">        cache.set(key, storageValue);</span><br><span class="line">        <span class="comment">// 如果存储数据为空， 需要设置一个过期时间(300秒)</span></span><br><span class="line">        <span class="keyword">if</span> (storageValue == <span class="keyword">null</span>) &#123;</span><br><span class="line">            cache.expire(key, <span class="number">60</span> * <span class="number">5</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> storageValue;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// 缓存非空</span></span><br><span class="line">        <span class="keyword">return</span> cacheValue;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li><p>布隆过滤器</p>
+<p>对于恶意攻击，向服务器请求大量不存在的数据造成的缓存穿透，还可以用布隆过滤器先做一次过滤，对于不存在的数据布隆过滤器一般都能够过滤掉，不让请求再往后端发送。当布隆过滤器说<strong>某个值存在时，这个值可能不存在；当他说不存在时，那就肯定不存在。</strong><br><img src="/archives/f435d36e/image-20210930100804245.png" alt="布隆过滤器原理图"></p>
+<blockquote>
+<p>布隆过滤器就是一个<strong>大型的位数组和几个不一样的无偏hash函数</strong>。所谓无偏就是能够把元素的hash值算的比较均匀。  </p>
+</blockquote>
+<p>向布隆过滤器中添加key时，会使用多个hash函数对key进行hash算的一个整数索引值，然后对位数组长度进行取模算的一个位置，每个hash函数都会算得一个不同的位置。再把位数组的这几个位置都置为1就完成了add操作。    向布隆过滤器询问key是否存在时，跟add一样，也会把hash的几个位置都算出来，看看位数组中几个位置是否都为1，只要有一个为0，那么说明布隆过滤器中这个key不存在。如果都是1，这并不能说明这个key就一定存在，只是极有可能存在，因为这些位置为1可能是因为其他的key存在导致的。如果这个位数组比较稀疏，这个概率就会很大，如果这个位数组比较拥挤，这个概率就会降低。</p>
+<p>这种方法适用于数据命中不高、数据相对固定、实时性低（通常是数据集较大）的应用场景，代码维护较为复杂，但是<strong>缓存空间占用很少</strong>。</p>
+<h3 id="布隆过滤器的实现"><a href="#布隆过滤器的实现" class="headerlink" title="布隆过滤器的实现"></a>布隆过滤器的实现</h3><p>可以用<code>redission</code>实现布隆过滤器，引入依赖：</p>
+<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">   <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.redisson<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">   <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>redisson<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">   <span class="tag">&lt;<span class="name">version</span>&gt;</span>3.6.5<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>示例伪代码：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.redisson;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.redisson.Redisson;</span><br><span class="line"><span class="keyword">import</span> org.redisson.api.RBloomFilter;</span><br><span class="line"><span class="keyword">import</span> org.redisson.api.RedissonClient;</span><br><span class="line"><span class="keyword">import</span> org.redisson.config.Config;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">RedissonBloomFilter</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Config config = <span class="keyword">new</span> Config();</span><br><span class="line">        config.useSingleServer().setAddress(<span class="string">&quot;redis://localhost:6379&quot;</span>);</span><br><span class="line">        <span class="comment">//构造Redisson</span></span><br><span class="line">        RedissonClient redisson = Redisson.create(config);</span><br><span class="line"></span><br><span class="line">        RBloomFilter&lt;String&gt; bloomFilter = redisson.getBloomFilter(<span class="string">&quot;nameList&quot;</span>);</span><br><span class="line">        <span class="comment">//初始化布隆过滤器：预计元素为100000000L,误差率为3%,根据这两个参数会计算出底层的bit数组大小</span></span><br><span class="line">        bloomFilter.tryInit(<span class="number">100000000L</span>,<span class="number">0.03</span>);</span><br><span class="line">        <span class="comment">//将zhuge插入到布隆过滤器中</span></span><br><span class="line">        bloomFilter.add(<span class="string">&quot;zhangsan&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//判断下面号码是否在布隆过滤器中</span></span><br><span class="line">        System.out.println(bloomFilter.contains(<span class="string">&quot;lisi&quot;</span>));<span class="comment">//false</span></span><br><span class="line">        System.out.println(bloomFilter.contains(<span class="string">&quot;wangwu&quot;</span>));<span class="comment">//false</span></span><br><span class="line">        System.out.println(bloomFilter.contains(<span class="string">&quot;zhangsan&quot;</span>));<span class="comment">//true</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>使用布隆过滤器需要把所有数据提前放入布隆过滤器，并且在增加数据时也要往布隆过滤器里放，布隆过滤器缓存过滤伪代码：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">//初始化布隆过滤器</span></span><br><span class="line">RBloomFilter&lt;String&gt; bloomFilter = redisson.getBloomFilter(<span class="string">&quot;nameList&quot;</span>);</span><br><span class="line"><span class="comment">//初始化布隆过滤器：预计元素为100000000L,误差率为3%</span></span><br><span class="line">bloomFilter.tryInit(<span class="number">100000000L</span>,<span class="number">0.03</span>);</span><br><span class="line">        </span><br><span class="line"><span class="comment">//把所有数据存入布隆过滤器</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">init</span><span class="params">()</span></span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (String key: keys) &#123;</span><br><span class="line">        bloomFilter.put(key);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function">String <span class="title">get</span><span class="params">(String key)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 从布隆过滤器这一级缓存判断下key是否存在</span></span><br><span class="line">    Boolean exist = bloomFilter.contains(key);</span><br><span class="line">    <span class="keyword">if</span>(!exist)&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 从缓存中获取数据</span></span><br><span class="line">    String cacheValue = cache.get(key);</span><br><span class="line">    <span class="comment">// 缓存为空</span></span><br><span class="line">    <span class="keyword">if</span> (StringUtils.isBlank(cacheValue)) &#123;</span><br><span class="line">        <span class="comment">// 从存储中获取</span></span><br><span class="line">        String storageValue = storage.get(key);</span><br><span class="line">        cache.set(key, storageValue);</span><br><span class="line">        <span class="comment">// 如果存储数据为空， 需要设置一个过期时间(300秒)</span></span><br><span class="line">        <span class="keyword">if</span> (storageValue == <span class="keyword">null</span>) &#123;</span><br><span class="line">            cache.expire(key, <span class="number">60</span> * <span class="number">5</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> storageValue;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// 缓存非空</span></span><br><span class="line">        <span class="keyword">return</span> cacheValue;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>注意：布隆过滤器不能删除数据，如果要删除得重新初始化数据。</strong></p>
+</blockquote>
+</li>
+</ol>
+]]></content>
+      <categories>
+        <category>Redis</category>
+      </categories>
+      <tags>
+        <tag>Redis</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Redis缓存那些事</title>
     <url>/archives/cfd129cc/</url>
     <content><![CDATA[<h2 id="Redis有哪些特性？"><a href="#Redis有哪些特性？" class="headerlink" title="Redis有哪些特性？"></a>Redis有哪些特性？</h2><ul>
@@ -817,126 +858,6 @@
       </categories>
       <tags>
         <tag>面试宝典</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Redis缓存穿透</title>
-    <url>/archives/f435d36e/</url>
-    <content><![CDATA[<p>缓存穿透是指查询一个根本不存在的数据，缓存层和存储层都不会命中，通常处于容错的考虑，如果从存储层查不到数据则不写入缓存层。<br>缓存层将导致不存在的数据每次请求都要存储层去查询，失去了缓存保护后端存储的意义。<br>造成缓存穿透的基本原因有两个：</p>
-<ol>
-<li>自身业务代码或者数据出现问题。</li>
-<li>一些恶意攻击、爬虫等造成大量空命中。</li>
-</ol>
-<h2 id="缓存穿透问题解决方案"><a href="#缓存穿透问题解决方案" class="headerlink" title="缓存穿透问题解决方案"></a>缓存穿透问题解决方案</h2><ol>
-<li><p><strong>缓冲空对象</strong> </p>
-<p>下面是伪代码</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function">String <span class="title">get</span><span class="params">(String key)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 从缓存中获取数据</span></span><br><span class="line">    String cacheValue = cache.get(key);</span><br><span class="line">    <span class="comment">// 缓存为空</span></span><br><span class="line">    <span class="keyword">if</span> (StringUtils.isBlank(cacheValue)) &#123;</span><br><span class="line">        <span class="comment">// 从存储中获取</span></span><br><span class="line">        String storageValue = storage.get(key);</span><br><span class="line">        cache.set(key, storageValue);</span><br><span class="line">        <span class="comment">// 如果存储数据为空， 需要设置一个过期时间(300秒)</span></span><br><span class="line">        <span class="keyword">if</span> (storageValue == <span class="keyword">null</span>) &#123;</span><br><span class="line">            cache.expire(key, <span class="number">60</span> * <span class="number">5</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> storageValue;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// 缓存非空</span></span><br><span class="line">        <span class="keyword">return</span> cacheValue;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
-<li><p>布隆过滤器</p>
-<p>对于恶意攻击，向服务器请求大量不存在的数据造成的缓存穿透，还可以用布隆过滤器先做一次过滤，对于不存在的数据布隆过滤器一般都能够过滤掉，不让请求再往后端发送。当布隆过滤器说<strong>某个值存在时，这个值可能不存在；当他说不存在时，那就肯定不存在。</strong><br><img src="/archives/f435d36e/image-20210930100804245.png" alt="布隆过滤器原理图"></p>
-<blockquote>
-<p>布隆过滤器就是一个<strong>大型的位数组和几个不一样的无偏hash函数</strong>。所谓无偏就是能够把元素的hash值算的比较均匀。  </p>
-</blockquote>
-<p>向布隆过滤器中添加key时，会使用多个hash函数对key进行hash算的一个整数索引值，然后对位数组长度进行取模算的一个位置，每个hash函数都会算得一个不同的位置。再把位数组的这几个位置都置为1就完成了add操作。    向布隆过滤器询问key是否存在时，跟add一样，也会把hash的几个位置都算出来，看看位数组中几个位置是否都为1，只要有一个为0，那么说明布隆过滤器中这个key不存在。如果都是1，这并不能说明这个key就一定存在，只是极有可能存在，因为这些位置为1可能是因为其他的key存在导致的。如果这个位数组比较稀疏，这个概率就会很大，如果这个位数组比较拥挤，这个概率就会降低。</p>
-<p>这种方法适用于数据命中不高、数据相对固定、实时性低（通常是数据集较大）的应用场景，代码维护较为复杂，但是<strong>缓存空间占用很少</strong>。</p>
-<h3 id="布隆过滤器的实现"><a href="#布隆过滤器的实现" class="headerlink" title="布隆过滤器的实现"></a>布隆过滤器的实现</h3><p>可以用<code>redission</code>实现布隆过滤器，引入依赖：</p>
-<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">   <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.redisson<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">   <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>redisson<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">   <span class="tag">&lt;<span class="name">version</span>&gt;</span>3.6.5<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
-
-<p>示例伪代码：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.redisson;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.redisson.Redisson;</span><br><span class="line"><span class="keyword">import</span> org.redisson.api.RBloomFilter;</span><br><span class="line"><span class="keyword">import</span> org.redisson.api.RedissonClient;</span><br><span class="line"><span class="keyword">import</span> org.redisson.config.Config;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">RedissonBloomFilter</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Config config = <span class="keyword">new</span> Config();</span><br><span class="line">        config.useSingleServer().setAddress(<span class="string">&quot;redis://localhost:6379&quot;</span>);</span><br><span class="line">        <span class="comment">//构造Redisson</span></span><br><span class="line">        RedissonClient redisson = Redisson.create(config);</span><br><span class="line"></span><br><span class="line">        RBloomFilter&lt;String&gt; bloomFilter = redisson.getBloomFilter(<span class="string">&quot;nameList&quot;</span>);</span><br><span class="line">        <span class="comment">//初始化布隆过滤器：预计元素为100000000L,误差率为3%,根据这两个参数会计算出底层的bit数组大小</span></span><br><span class="line">        bloomFilter.tryInit(<span class="number">100000000L</span>,<span class="number">0.03</span>);</span><br><span class="line">        <span class="comment">//将zhuge插入到布隆过滤器中</span></span><br><span class="line">        bloomFilter.add(<span class="string">&quot;zhangsan&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//判断下面号码是否在布隆过滤器中</span></span><br><span class="line">        System.out.println(bloomFilter.contains(<span class="string">&quot;lisi&quot;</span>));<span class="comment">//false</span></span><br><span class="line">        System.out.println(bloomFilter.contains(<span class="string">&quot;wangwu&quot;</span>));<span class="comment">//false</span></span><br><span class="line">        System.out.println(bloomFilter.contains(<span class="string">&quot;zhangsan&quot;</span>));<span class="comment">//true</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>使用布隆过滤器需要把所有数据提前放入布隆过滤器，并且在增加数据时也要往布隆过滤器里放，布隆过滤器缓存过滤伪代码：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">//初始化布隆过滤器</span></span><br><span class="line">RBloomFilter&lt;String&gt; bloomFilter = redisson.getBloomFilter(<span class="string">&quot;nameList&quot;</span>);</span><br><span class="line"><span class="comment">//初始化布隆过滤器：预计元素为100000000L,误差率为3%</span></span><br><span class="line">bloomFilter.tryInit(<span class="number">100000000L</span>,<span class="number">0.03</span>);</span><br><span class="line">        </span><br><span class="line"><span class="comment">//把所有数据存入布隆过滤器</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">init</span><span class="params">()</span></span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (String key: keys) &#123;</span><br><span class="line">        bloomFilter.put(key);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function">String <span class="title">get</span><span class="params">(String key)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 从布隆过滤器这一级缓存判断下key是否存在</span></span><br><span class="line">    Boolean exist = bloomFilter.contains(key);</span><br><span class="line">    <span class="keyword">if</span>(!exist)&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 从缓存中获取数据</span></span><br><span class="line">    String cacheValue = cache.get(key);</span><br><span class="line">    <span class="comment">// 缓存为空</span></span><br><span class="line">    <span class="keyword">if</span> (StringUtils.isBlank(cacheValue)) &#123;</span><br><span class="line">        <span class="comment">// 从存储中获取</span></span><br><span class="line">        String storageValue = storage.get(key);</span><br><span class="line">        cache.set(key, storageValue);</span><br><span class="line">        <span class="comment">// 如果存储数据为空， 需要设置一个过期时间(300秒)</span></span><br><span class="line">        <span class="keyword">if</span> (storageValue == <span class="keyword">null</span>) &#123;</span><br><span class="line">            cache.expire(key, <span class="number">60</span> * <span class="number">5</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> storageValue;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// 缓存非空</span></span><br><span class="line">        <span class="keyword">return</span> cacheValue;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<p><strong>注意：布隆过滤器不能删除数据，如果要删除得重新初始化数据。</strong></p>
-</blockquote>
-</li>
-</ol>
-]]></content>
-      <categories>
-        <category>Redis</category>
-      </categories>
-      <tags>
-        <tag>Redis</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Redis集群原理分析</title>
-    <url>/archives/c0af2eb/</url>
-    <content><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>Redis Cluster将所有数据划分为16384个slots(槽位)，每个节点负责其中一部分槽位。槽位的信息存储于每个节点中；当Redis Cluster的客户端连接集群时，它也会得到一份槽位配置信息并将其缓存在客户端本地。这样当客户端要查找某个key时，可以直接定位到目标节点。同时也会带来一个问题”槽位信息在客户端和服务器不一致的情况，这就需要纠正机制来实现槽位信息的纠正”。</p>
-<h3 id="槽位定位算法"><a href="#槽位定位算法" class="headerlink" title="槽位定位算法"></a>槽位定位算法</h3><p>Cluster默认会对key使用CRC16算法进行hash得到一个整数值，然后用这个整数值对16384进行取模得到具体的槽位。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">HASH_SLOT = CRC16(key) mod 16384</span><br></pre></td></tr></table></figure>
-
-<h3 id="跳转重定位"><a href="#跳转重定位" class="headerlink" title="跳转重定位"></a>跳转重定位</h3><p>当客户端向一个错误的节点发出了指令，该节点会发现指令的key所在的槽位不是自己管理的，这时它会像客户端发送一个特殊的跳转指令携带目标操作的节点地址，告诉客户端去连接这个指定的节点去获取数据。客户端收到指令之后跳转到正确的节点上去操作，还会同步更新纠正本地的槽位映射表缓存，后续所有key将使用新的槽位映射表。</p>
-<p><img src="/archives/c0af2eb/image-20210922092847540.png" alt="跳转重定向"></p>
-<h3 id="Redis集群节点间的通信机制"><a href="#Redis集群节点间的通信机制" class="headerlink" title="Redis集群节点间的通信机制"></a>Redis集群节点间的通信机制</h3><p>Redis Cluster节点间采用gossip协议进行通信，来<strong>维护集群的元数据(集群节点信息、主从角色、节点数量、各节点共享的数据等)</strong> 。</p>
-<p>维护集群元数据的方式有两种：</p>
-<ol>
-<li>集中式</li>
-<li>gossip</li>
-</ol>
-<h4 id="集中式"><a href="#集中式" class="headerlink" title="集中式"></a>集中式</h4><p>优点：在于元数据的更新和读取时效性非常好，一旦元数据出现变更就会立即同步到集中式存储中，其他节点读取的时候就会立即感知到数据的变化；</p>
-<p>缺点：在于所有的元数据的更新压力全部会集中在一个地方，可能导致元数据的存储压力。很多中间件会借助zookeeper集中式存储元数据。</p>
-<h4 id="gossip协议"><a href="#gossip协议" class="headerlink" title="gossip协议"></a>gossip协议</h4><p><img src="/archives/c0af2eb/gossip%E5%8D%8F%E8%AE%AE%E9%80%9A%E4%BF%A1.gif" alt="gossip协议通信"></p>
-<p>gossip协议包含多种信息，包括<code>ping</code>、<code>pong</code>、<code>meet</code>、<code>fail</code>等。</p>
-<blockquote>
-<p><code>meet</code>：某个节点发送<code>meet</code>给新加入的节点，让新节点加入集群中，然后新节点就会开始和其他节点开始通信；</p>
-<p><code>ping</code>：每个节点都会频繁的给其他节点发送<code>ping</code>，其中包含自己的状态还有自己维护的集群元数据，互相通过<code>ping</code>交换元数据(类似感知到集群节点增加和删除，hash slot信息等)；</p>
-<p><code>pong</code>：对<code>ping</code>和<code>meet</code>信息的返回，包含自己的状态和其他信息，也可以用于广播和更新；</p>
-<p><code>fail</code>：某个节点判断另一个节点<code>fail</code>之后，就会发送<code>fail</code>给其他节点，通知其他节点，指定节点宕机了；</p>
-</blockquote>
-<p><strong>优点：</strong> 在于元数据的更新比较分散，不是集中在一个地方，更新请求会陆陆续续打到所有节点上去更新，有一定的延时，降低了压力；</p>
-<p><strong>缺点：</strong> 在于数据更新有一定的延时，可能导致集群的一些操作会有些滞后；</p>
-<h4 id="gossip协议通信端口"><a href="#gossip协议通信端口" class="headerlink" title="gossip协议通信端口"></a>gossip协议通信端口</h4><p>每个节点都有一个专门用于节点之间gossip通信的端口，就是自己提供服务的端口号+10000，比如：节点端口是7001，那么用于节点通信的端口就是17001。</p>
-<p>每个节点每隔一段时间都会往另外几个节点发送<code>ping</code>消息，同时其他几个接收到<code>ping</code>消息之后返回<code>pong</code>消息。</p>
-<h3 id="网络抖动问题"><a href="#网络抖动问题" class="headerlink" title="网络抖动问题"></a>网络抖动问题</h3><p>在正常生产环境中，经常会出现突然部分连接不可访问，过一会之后又恢复正常。对于这样的问题Redis集群模式也提供了解决方案；可以配置选项<code>cluster-node-timeout</code>，表示当某个节点持续timeout的时间失联时，才可以认定该节点出现故障，需要进行主从机器换。如果没有这个选项，网络抖动导致主从频繁切换，数据重复复制。</p>
-<h3 id="Redis集群选举原理"><a href="#Redis集群选举原理" class="headerlink" title="Redis集群选举原理"></a>Redis集群选举原理</h3><p>当slave发现自己的master变为fail状态时，便会尝试进行<code>Failover</code>，让其成为新的master。由于挂掉了master可能会有多个slave，从而存在多个slave竞争成为master节点的过程，过程如下：</p>
-<ol>
-<li><p>slave发现自己的master变为FAIL；</p>
-</li>
-<li><p>将自己记录的集群<code>currentEpoch</code>加1，并广播<code>FAILOVER_AUTH_RERQUEST</code>信息；</p>
-</li>
-<li><p>其他节点接收到该信息，只有master响应，判断请求者的合法性，并发送<code>FAILOVER_AUTH_ACK</code>，对每一个<code>epoch</code>只发送一次<code>ack</code>；</p>
-</li>
-<li><p>尝试<code>failover</code>的slave收集master返回的<code>FAILOVER_AUTH_ACK</code>；</p>
-</li>
-<li><p>slave收到<strong>超过半数master的ack</strong>后变成新的master</p>
-<blockquote>
-<p>这里解释了集群为什么至少需要三个主节点，如果只有两个，当其中一个挂了，只剩下一个主节点是不能选举成功的。</p>
-</blockquote>
-</li>
-<li><p>slave广播<code>pong</code>消息通知其他集群节点</p>
-</li>
-</ol>
-<p>从节点并不是在主节点已进入<code>FAIL</code>状态就马上尝试发起选举，而是有一定的延时，这个延时确保我们等待<code>FAIL</code>状态在集群中传播，slave如果立即尝试选举，其他masters或许没有意识到<code>FAIL</code>状态，可能会拒绝投票。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">延时计算公式：`DELAY = 500ms + random(0~500ms) + SLAVE_RANK * 1000ms`</span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<p><code>SLAVE_RANK</code>表示此slave已经从master复制数据的总量的rank。Rank越小表示已经复制的数据越新。这种方式下，持有最新数据的slave将会首先发起选举。</p>
-</blockquote>
-<h3 id="集群脑裂数据丢失问题"><a href="#集群脑裂数据丢失问题" class="headerlink" title="集群脑裂数据丢失问题"></a>集群脑裂数据丢失问题</h3><p>redis集群没有过半机制会有脑裂问题，网络分区导致脑裂后多个主节点对外提供写服务，一旦网络分区恢复，会将其中一个主节点变为从节点，这时会有大量数据丢失。</p>
-<p>规避方法可以在redis配置里加上参数(这种方法不可能百分之百避免数据丢失，参考集群leader选举机制)：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">min-replicas-to-write 1 # 写数据成功最少同步的slave数量，这个数量可以模仿大于半数机制配置，比如集群总共三个节点可以配置1，加上leader就是2，超过了半数</span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<p><strong>注意：</strong></p>
-<p>这个配置在一定程度上影响集群的可用性，比如slave要是少于1个，这个集群就算leader正常也不能提供服务了，需要具体场景权衡选择。</p>
-</blockquote>
-<h3 id="集群是否完整才能对外提供服务？"><a href="#集群是否完整才能对外提供服务？" class="headerlink" title="集群是否完整才能对外提供服务？"></a>集群是否完整才能对外提供服务？</h3><p>当<code>redis.conf</code>的配置<code>cluster-require-full-coverage</code>为no时，表示负责一个插槽的主库下线且没有相应的从库进行故障恢复时，集群任然可用，如果为yes则集群不可用。</p>
-<h3 id="Redis集群为什么至少需要三个master节点，且推荐节点数为奇数？"><a href="#Redis集群为什么至少需要三个master节点，且推荐节点数为奇数？" class="headerlink" title="Redis集群为什么至少需要三个master节点，且推荐节点数为奇数？"></a>Redis集群为什么至少需要三个master节点，且推荐节点数为奇数？</h3><p>因为新master的选举需要大于半数的集群master同意才能选举成功，如果只有两个master节点，当其中一个挂了，是达不到选举新master的条件的。  </p>
-<p>奇数个master节点可以在满足选举该条件的基础上节省一个节点，比如三个master节点和四个master节点的集群相比，大家如果都挂了一个master节点都能选举新master节点，如果都挂了两个master节点都没有办法选举新master节点了，所以奇数的master节点更多的是从<strong>节省机器资源角度出发</strong>的。</p>
-<h3 id="Redis集群对批量操作指令的支持"><a href="#Redis集群对批量操作指令的支持" class="headerlink" title="Redis集群对批量操作指令的支持"></a>Redis集群对批量操作指令的支持</h3><p>对于类似<code>mset</code>，这样的多个key的原生批量操作指令，redis集群只支持所有key落在同一slot的情况，如果有多个key一定要使用<code>mset</code>命令在redis集群上操作，则可以在可以的前面加上<code>&#123;XXX&#125;</code>，这样参数数据分片hash计算的只会是大括号中的值，这样能确保不同的key能落在同一slot中，示例如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mset &#123;user1&#125;:1:name zhangsan &#123;user1&#125;:1:age 20</span><br></pre></td></tr></table></figure>
-
-<p>假如name和age计算的hash slot值不一样，但是这条命令在集群下执行，redis只会用大括号里的<code>user1</code>做hash slot计算，所以算出来的slot值肯定相同，最后能落在同一slot。</p>
-<h3 id="哨兵leader选举流程"><a href="#哨兵leader选举流程" class="headerlink" title="哨兵leader选举流程"></a>哨兵leader选举流程</h3><p>当一个master服务器被某个sentinel视为下线状态后，该sentinel会与其他sentinel协商选出sentinel的leader进行故障转移工作。每个发现master服务器下线的sentinel都可以要求其他sentinel选举自己为sentinel的leader，选举是先到先得。同时每一个sentinel每次选举都会自增配置选举周期，每个选举周期只会选择一个sentinel的leader。如果所有<strong>超过一半</strong>的sentinel选举某个sentinel作为leader。之后该sentinel进行故障转移操作，从存活的slave中选举出新的master，这个选举过程和集群的master选举很类似。</p>
-<p>哨兵集群只有一个哨兵节点，redis的主从也能正常运行以及选举master，如果master挂了，那唯一的那个哨兵节点就是哨兵leader了，可以正常选举新的master。不过为了高可用一般都推荐至少部署三个哨兵节点。为什么推荐奇数个哨兵节点，原理和集群奇数个master节点类似。</p>
-]]></content>
-      <categories>
-        <category>Redis</category>
-      </categories>
-      <tags>
-        <tag>Redis</tag>
       </tags>
   </entry>
   <entry>
@@ -1147,6 +1068,85 @@
 <h2 id="LFU算法"><a href="#LFU算法" class="headerlink" title="LFU算法"></a>LFU算法</h2><p>LFU（Least Frequently Used 最不经常使用）：淘汰最近一段时间被访问次数最少的数据，以<strong>次数</strong>作为参考。</p>
 <p>当存在热点数据时，LRU的效率很好，但偶发性的、周期性的批量操作会导致LRU命中急剧下降，缓存污染情况比较严重。这时使用LFU可能更好。</p>
 <p>根据自身业务类型，配置好maxmemory-policy（默认是noeviction），推荐使用volatile-lru。如果不设置最大内存，当Redis内存超出物理内存限制时，内存的数据会开始和磁盘产生频繁的交换（swap），会让Redis的性能急剧下降。当Redis运行在主从模式时，只有主节点才会执行过期删除策略，然后把删除操作“del key”同步到从节点删除数据。</p>
+]]></content>
+      <categories>
+        <category>Redis</category>
+      </categories>
+      <tags>
+        <tag>Redis</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Redis集群原理分析</title>
+    <url>/archives/c0af2eb/</url>
+    <content><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>Redis Cluster将所有数据划分为16384个slots(槽位)，每个节点负责其中一部分槽位。槽位的信息存储于每个节点中；当Redis Cluster的客户端连接集群时，它也会得到一份槽位配置信息并将其缓存在客户端本地。这样当客户端要查找某个key时，可以直接定位到目标节点。同时也会带来一个问题”槽位信息在客户端和服务器不一致的情况，这就需要纠正机制来实现槽位信息的纠正”。</p>
+<h3 id="槽位定位算法"><a href="#槽位定位算法" class="headerlink" title="槽位定位算法"></a>槽位定位算法</h3><p>Cluster默认会对key使用CRC16算法进行hash得到一个整数值，然后用这个整数值对16384进行取模得到具体的槽位。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">HASH_SLOT = CRC16(key) mod 16384</span><br></pre></td></tr></table></figure>
+
+<h3 id="跳转重定位"><a href="#跳转重定位" class="headerlink" title="跳转重定位"></a>跳转重定位</h3><p>当客户端向一个错误的节点发出了指令，该节点会发现指令的key所在的槽位不是自己管理的，这时它会像客户端发送一个特殊的跳转指令携带目标操作的节点地址，告诉客户端去连接这个指定的节点去获取数据。客户端收到指令之后跳转到正确的节点上去操作，还会同步更新纠正本地的槽位映射表缓存，后续所有key将使用新的槽位映射表。</p>
+<p><img src="/archives/c0af2eb/image-20210922092847540.png" alt="跳转重定向"></p>
+<h3 id="Redis集群节点间的通信机制"><a href="#Redis集群节点间的通信机制" class="headerlink" title="Redis集群节点间的通信机制"></a>Redis集群节点间的通信机制</h3><p>Redis Cluster节点间采用gossip协议进行通信，来<strong>维护集群的元数据(集群节点信息、主从角色、节点数量、各节点共享的数据等)</strong> 。</p>
+<p>维护集群元数据的方式有两种：</p>
+<ol>
+<li>集中式</li>
+<li>gossip</li>
+</ol>
+<h4 id="集中式"><a href="#集中式" class="headerlink" title="集中式"></a>集中式</h4><p>优点：在于元数据的更新和读取时效性非常好，一旦元数据出现变更就会立即同步到集中式存储中，其他节点读取的时候就会立即感知到数据的变化；</p>
+<p>缺点：在于所有的元数据的更新压力全部会集中在一个地方，可能导致元数据的存储压力。很多中间件会借助zookeeper集中式存储元数据。</p>
+<h4 id="gossip协议"><a href="#gossip协议" class="headerlink" title="gossip协议"></a>gossip协议</h4><p><img src="/archives/c0af2eb/gossip%E5%8D%8F%E8%AE%AE%E9%80%9A%E4%BF%A1.gif" alt="gossip协议通信"></p>
+<p>gossip协议包含多种信息，包括<code>ping</code>、<code>pong</code>、<code>meet</code>、<code>fail</code>等。</p>
+<blockquote>
+<p><code>meet</code>：某个节点发送<code>meet</code>给新加入的节点，让新节点加入集群中，然后新节点就会开始和其他节点开始通信；</p>
+<p><code>ping</code>：每个节点都会频繁的给其他节点发送<code>ping</code>，其中包含自己的状态还有自己维护的集群元数据，互相通过<code>ping</code>交换元数据(类似感知到集群节点增加和删除，hash slot信息等)；</p>
+<p><code>pong</code>：对<code>ping</code>和<code>meet</code>信息的返回，包含自己的状态和其他信息，也可以用于广播和更新；</p>
+<p><code>fail</code>：某个节点判断另一个节点<code>fail</code>之后，就会发送<code>fail</code>给其他节点，通知其他节点，指定节点宕机了；</p>
+</blockquote>
+<p><strong>优点：</strong> 在于元数据的更新比较分散，不是集中在一个地方，更新请求会陆陆续续打到所有节点上去更新，有一定的延时，降低了压力；</p>
+<p><strong>缺点：</strong> 在于数据更新有一定的延时，可能导致集群的一些操作会有些滞后；</p>
+<h4 id="gossip协议通信端口"><a href="#gossip协议通信端口" class="headerlink" title="gossip协议通信端口"></a>gossip协议通信端口</h4><p>每个节点都有一个专门用于节点之间gossip通信的端口，就是自己提供服务的端口号+10000，比如：节点端口是7001，那么用于节点通信的端口就是17001。</p>
+<p>每个节点每隔一段时间都会往另外几个节点发送<code>ping</code>消息，同时其他几个接收到<code>ping</code>消息之后返回<code>pong</code>消息。</p>
+<h3 id="网络抖动问题"><a href="#网络抖动问题" class="headerlink" title="网络抖动问题"></a>网络抖动问题</h3><p>在正常生产环境中，经常会出现突然部分连接不可访问，过一会之后又恢复正常。对于这样的问题Redis集群模式也提供了解决方案；可以配置选项<code>cluster-node-timeout</code>，表示当某个节点持续timeout的时间失联时，才可以认定该节点出现故障，需要进行主从机器换。如果没有这个选项，网络抖动导致主从频繁切换，数据重复复制。</p>
+<h3 id="Redis集群选举原理"><a href="#Redis集群选举原理" class="headerlink" title="Redis集群选举原理"></a>Redis集群选举原理</h3><p>当slave发现自己的master变为fail状态时，便会尝试进行<code>Failover</code>，让其成为新的master。由于挂掉了master可能会有多个slave，从而存在多个slave竞争成为master节点的过程，过程如下：</p>
+<ol>
+<li><p>slave发现自己的master变为FAIL；</p>
+</li>
+<li><p>将自己记录的集群<code>currentEpoch</code>加1，并广播<code>FAILOVER_AUTH_RERQUEST</code>信息；</p>
+</li>
+<li><p>其他节点接收到该信息，只有master响应，判断请求者的合法性，并发送<code>FAILOVER_AUTH_ACK</code>，对每一个<code>epoch</code>只发送一次<code>ack</code>；</p>
+</li>
+<li><p>尝试<code>failover</code>的slave收集master返回的<code>FAILOVER_AUTH_ACK</code>；</p>
+</li>
+<li><p>slave收到<strong>超过半数master的ack</strong>后变成新的master</p>
+<blockquote>
+<p>这里解释了集群为什么至少需要三个主节点，如果只有两个，当其中一个挂了，只剩下一个主节点是不能选举成功的。</p>
+</blockquote>
+</li>
+<li><p>slave广播<code>pong</code>消息通知其他集群节点</p>
+</li>
+</ol>
+<p>从节点并不是在主节点已进入<code>FAIL</code>状态就马上尝试发起选举，而是有一定的延时，这个延时确保我们等待<code>FAIL</code>状态在集群中传播，slave如果立即尝试选举，其他masters或许没有意识到<code>FAIL</code>状态，可能会拒绝投票。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">延时计算公式：`DELAY = 500ms + random(0~500ms) + SLAVE_RANK * 1000ms`</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><code>SLAVE_RANK</code>表示此slave已经从master复制数据的总量的rank。Rank越小表示已经复制的数据越新。这种方式下，持有最新数据的slave将会首先发起选举。</p>
+</blockquote>
+<h3 id="集群脑裂数据丢失问题"><a href="#集群脑裂数据丢失问题" class="headerlink" title="集群脑裂数据丢失问题"></a>集群脑裂数据丢失问题</h3><p>redis集群没有过半机制会有脑裂问题，网络分区导致脑裂后多个主节点对外提供写服务，一旦网络分区恢复，会将其中一个主节点变为从节点，这时会有大量数据丢失。</p>
+<p>规避方法可以在redis配置里加上参数(这种方法不可能百分之百避免数据丢失，参考集群leader选举机制)：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">min-replicas-to-write 1 # 写数据成功最少同步的slave数量，这个数量可以模仿大于半数机制配置，比如集群总共三个节点可以配置1，加上leader就是2，超过了半数</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>注意：</strong></p>
+<p>这个配置在一定程度上影响集群的可用性，比如slave要是少于1个，这个集群就算leader正常也不能提供服务了，需要具体场景权衡选择。</p>
+</blockquote>
+<h3 id="集群是否完整才能对外提供服务？"><a href="#集群是否完整才能对外提供服务？" class="headerlink" title="集群是否完整才能对外提供服务？"></a>集群是否完整才能对外提供服务？</h3><p>当<code>redis.conf</code>的配置<code>cluster-require-full-coverage</code>为no时，表示负责一个插槽的主库下线且没有相应的从库进行故障恢复时，集群任然可用，如果为yes则集群不可用。</p>
+<h3 id="Redis集群为什么至少需要三个master节点，且推荐节点数为奇数？"><a href="#Redis集群为什么至少需要三个master节点，且推荐节点数为奇数？" class="headerlink" title="Redis集群为什么至少需要三个master节点，且推荐节点数为奇数？"></a>Redis集群为什么至少需要三个master节点，且推荐节点数为奇数？</h3><p>因为新master的选举需要大于半数的集群master同意才能选举成功，如果只有两个master节点，当其中一个挂了，是达不到选举新master的条件的。  </p>
+<p>奇数个master节点可以在满足选举该条件的基础上节省一个节点，比如三个master节点和四个master节点的集群相比，大家如果都挂了一个master节点都能选举新master节点，如果都挂了两个master节点都没有办法选举新master节点了，所以奇数的master节点更多的是从<strong>节省机器资源角度出发</strong>的。</p>
+<h3 id="Redis集群对批量操作指令的支持"><a href="#Redis集群对批量操作指令的支持" class="headerlink" title="Redis集群对批量操作指令的支持"></a>Redis集群对批量操作指令的支持</h3><p>对于类似<code>mset</code>，这样的多个key的原生批量操作指令，redis集群只支持所有key落在同一slot的情况，如果有多个key一定要使用<code>mset</code>命令在redis集群上操作，则可以在可以的前面加上<code>&#123;XXX&#125;</code>，这样参数数据分片hash计算的只会是大括号中的值，这样能确保不同的key能落在同一slot中，示例如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mset &#123;user1&#125;:1:name zhangsan &#123;user1&#125;:1:age 20</span><br></pre></td></tr></table></figure>
+
+<p>假如name和age计算的hash slot值不一样，但是这条命令在集群下执行，redis只会用大括号里的<code>user1</code>做hash slot计算，所以算出来的slot值肯定相同，最后能落在同一slot。</p>
+<h3 id="哨兵leader选举流程"><a href="#哨兵leader选举流程" class="headerlink" title="哨兵leader选举流程"></a>哨兵leader选举流程</h3><p>当一个master服务器被某个sentinel视为下线状态后，该sentinel会与其他sentinel协商选出sentinel的leader进行故障转移工作。每个发现master服务器下线的sentinel都可以要求其他sentinel选举自己为sentinel的leader，选举是先到先得。同时每一个sentinel每次选举都会自增配置选举周期，每个选举周期只会选择一个sentinel的leader。如果所有<strong>超过一半</strong>的sentinel选举某个sentinel作为leader。之后该sentinel进行故障转移操作，从存活的slave中选举出新的master，这个选举过程和集群的master选举很类似。</p>
+<p>哨兵集群只有一个哨兵节点，redis的主从也能正常运行以及选举master，如果master挂了，那唯一的那个哨兵节点就是哨兵leader了，可以正常选举新的master。不过为了高可用一般都推荐至少部署三个哨兵节点。为什么推荐奇数个哨兵节点，原理和集群奇数个master节点类似。</p>
 ]]></content>
       <categories>
         <category>Redis</category>
@@ -1447,6 +1447,29 @@
       </tags>
   </entry>
   <entry>
+    <title>hexo静态页面图片不显示问题</title>
+    <url>/archives/e4419141/</url>
+    <content><![CDATA[<p>hexo静态页面图片不显示一般有几个原因：</p>
+<p>1、<code>_config.yml</code>中没有设置<code>post_asset_folder: true</code>；这个设置默认是false</p>
+<p>2、没有安装插件 asset-image</p>
+<p>如果在运行工程之前上面两个步骤都没有操作过，则首先需要在<code>_config.yml</code>中设置<code>post_asset_folder:true</code> 。然后在cmd中运行</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npm install https://github.com/CodeFalling/hexo-asset-image --save</span><br></pre></td></tr></table></figure>
+
+<p>由于国内网络环境，可能需要多下载几次才可以下载成功，要耐心等待。或者有条件的可以翻墙下载。</p>
+<p>以上操作完毕之后重新发布工程</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean &amp;&amp; hexo generate &amp;&amp; hexo deploy</span><br></pre></td></tr></table></figure>
+
+<p>页面效果如下：</p>
+<p><img src="/archives/e4419141/image-20210728134047043.png"></p>
+]]></content>
+      <categories>
+        <category>解决方案</category>
+      </categories>
+      <tags>
+        <tag>问题解决</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>html播放.m3u8格式视频</title>
     <url>/archives/e6ea49db/</url>
     <content><![CDATA[<p>播放<code>.m3u8</code>格式视频时需要借助<code>hls.js</code>，为了下载速度快点，我们直接通过国内的cdn访问<a href="https://www.bootcdn.cn/hls.js/">https://www.bootcdn.cn/hls.js/</a></p>
@@ -1500,29 +1523,6 @@
       </categories>
       <tags>
         <tag>html</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>hexo静态页面图片不显示问题</title>
-    <url>/archives/e4419141/</url>
-    <content><![CDATA[<p>hexo静态页面图片不显示一般有几个原因：</p>
-<p>1、<code>_config.yml</code>中没有设置<code>post_asset_folder: true</code>；这个设置默认是false</p>
-<p>2、没有安装插件 asset-image</p>
-<p>如果在运行工程之前上面两个步骤都没有操作过，则首先需要在<code>_config.yml</code>中设置<code>post_asset_folder:true</code> 。然后在cmd中运行</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npm install https://github.com/CodeFalling/hexo-asset-image --save</span><br></pre></td></tr></table></figure>
-
-<p>由于国内网络环境，可能需要多下载几次才可以下载成功，要耐心等待。或者有条件的可以翻墙下载。</p>
-<p>以上操作完毕之后重新发布工程</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean &amp;&amp; hexo generate &amp;&amp; hexo deploy</span><br></pre></td></tr></table></figure>
-
-<p>页面效果如下：</p>
-<p><img src="/archives/e4419141/image-20210728134047043.png"></p>
-]]></content>
-      <categories>
-        <category>解决方案</category>
-      </categories>
-      <tags>
-        <tag>问题解决</tag>
       </tags>
   </entry>
   <entry>
@@ -2304,45 +2304,6 @@
       </tags>
   </entry>
   <entry>
-    <title>设计模式-工厂模式</title>
-    <url>/archives/ccff2b22/</url>
-    <content><![CDATA[<h1 id="工厂模式"><a href="#工厂模式" class="headerlink" title="工厂模式"></a>工厂模式</h1><p>工厂模式是Java中最常用的设计模式之一。在我们悉知的Spring中源码中的bean创建就是使用了工厂模式；这种类型的设计模式属于创建型模式，他提供一种创建对象的最佳方式。在工厂模式中，我们在创建对象时不会对客户端暴露创建逻辑，并且是通过使用一个共同的接口来指向新创建的对象。</p>
-<h2 id="使用场景"><a href="#使用场景" class="headerlink" title="使用场景"></a>使用场景</h2><ol>
-<li>日志记录器：记录磁盘信息、业务事件、访问服务器信息等，让用户来选择日志记录到哪里。</li>
-<li>连接服务器使用不同的协议，<code>POP3</code>、<code>IMAP</code>、<code>HTTP</code>三个协议可以用同一个接口来实现。</li>
-</ol>
-<h2 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h2><ol>
-<li>当一个调用者想创建对象时，只需要知道对象名字即可</li>
-<li>扩展性高，如果需要增加新的类品，只需要新增一个工厂类即可</li>
-<li>隐藏产品的具体实现，让调用者只关心接口</li>
-</ol>
-<h2 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h2><p>每次新增一个产品都需要新增一个产品工厂类，增加了系统复杂度。</p>
-<h2 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h2><p>工厂模式在Spring源码中的应用解析：</p>
-<p>我们知道在Spring中，如果我们想要通过容器去创建一个bean就需要调用一下代码来实现bean创建。</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">ApplicationContext applicationContext = <span class="keyword">new</span> AnnotationConfigApplicationContext(ApplicationMain.class);</span><br><span class="line">TestIOCImpl bean = applicationContext.getBean(TestIOCImpl.class);</span><br></pre></td></tr></table></figure>
-
-<p>其实<code>ApplicationContext</code>创建bean就是使用到了工厂模式。在上面的代码中，我们并没有显式的通过<code>new</code>去创建一个<code>TestIOCImpl</code>,通过调用<code>applicationContext.getBean()</code>传入一个bean的class来实例化；具体创建过程则交给了<code>ApplicationContext</code>去实现了。</p>
-<p>首先来看看<code>ApplicationContext</code>整体的继承关系，也就是工厂模式的继承关系</p>
-<p><img src="/archives/ccff2b22/image-20210810151313670.png" alt="ApplicationContext.java"></p>
-<p><code>ApplicationContext</code>接口继承了一个最顶层的工厂类<code>BeanFactory</code>，来继续看看<code>BeanFactory</code>中有些什么方法呢。</p>
-<p><img src="/archives/ccff2b22/image-20210810151723712.png" alt="BeanFactory.java"></p>
-<p>看到这里是不是就会有点想法，我们在上面的代码中调用的<code>getBean(Class class)</code>是不是就是调用的这里的方法呢？具体实现那肯定就是在子类中去实现的喽。因为我们一开始的代码是</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">ApplicationContext applicationContext = <span class="keyword">new</span> AnnotationConfigApplicationContext(ApplicationMain.class);</span><br></pre></td></tr></table></figure>
-
-<p>创建的<code>ApplicationContext</code>接口实现类其实是<code>AnnotationConfigApplicationContext</code>类型，那么在<code>AnnotationConfigApplicationContext</code>类中是不是也实现了<code>getBean</code>的一些方法？实际上spring并没有在<code>AnnotationConfigApplicationContext</code>中去实现这些方法，而是通过一个抽象类<code>AbstractApplicationContext</code>来实现了<code>ApplicationContext</code>接口中的<code>getBean</code>一系列方法。这样做的目的也是为了提高后期的扩展性，毕竟spring这么强大，扩展性肯定是必须要很强的。</p>
-<p><img src="/archives/ccff2b22/image-20210810152406751.png" alt="AnnotationConfigApplicationContext.java关系图"></p>
-<p><code>AbstractApplicationContext</code>中实现<code>getBean</code>系列方法的代码：</p>
-<p><img src="/archives/ccff2b22/image-20210810153412546.png" alt="getBean(...)代码实现"></p>
-<p>以上就是在Spring中创建Bean所用到的工厂设计模式。</p>
-]]></content>
-      <categories>
-        <category>设计模式</category>
-      </categories>
-      <tags>
-        <tag>设计模式</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>规则引擎Drools快速入门</title>
     <url>/archives/bc098de5/</url>
     <content><![CDATA[<h1 id="规则引擎简介"><a href="#规则引擎简介" class="headerlink" title="规则引擎简介"></a><strong>规则引擎简介</strong></h1><p><strong>规则引擎</strong>，全称为<strong>业务规则管理系统</strong>，英文名为BRMS(即Business Rule Management System)。规则引擎实现了将业务决策从应用程序中分离出来，接收数据的输入，解释业务规则，并根据业务规则做出业务决策。规则引擎就是这样一个输入输出平台。现在比较流行的规则引擎之一为Drools，一款由JBoss组织提供的基于Java语言开发的开源规则引擎，Drools是KIE项目的一部分，Kie：Knowledge is everything, Jboss一些列项目的总称。</p>
@@ -2400,12 +2361,71 @@
 <p>第五步：编写单元测试</p>
 <figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lhb.test;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> com.lhb.entity.Order;</span><br><span class="line"><span class="keyword">import</span> org.junit.Test;</span><br><span class="line"><span class="keyword">import</span> org.kie.api.KieServices;</span><br><span class="line"><span class="keyword">import</span> org.kie.api.runtime.KieContainer;</span><br><span class="line"><span class="keyword">import</span> org.kie.api.runtime.KieSession;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestDrools</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Test</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">test1</span><span class="params">()</span></span>&#123;</span><br><span class="line">        KieServices kieServices = KieServices.Factory.get();</span><br><span class="line">        KieContainer kieContainer = kieServices.getKieClasspathContainer();</span><br><span class="line">        <span class="comment">//会话对象,用于和规则引擎交互</span></span><br><span class="line">        KieSession kieSession = kieContainer.newKieSession();</span><br><span class="line">        <span class="comment">//构造订单对象，设置订单金额，由规则引擎计算获得的积分</span></span><br><span class="line">        Order order = <span class="keyword">new</span> Order();</span><br><span class="line">        order.setAmout(<span class="number">200</span>);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//将数据交给规则引擎，规则引擎会根据提供的数据进行规则匹配</span></span><br><span class="line">        kieSession.insert(order);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//激活规则引擎，如果匹配成功则执行规则</span></span><br><span class="line">        kieSession.fireAllRules();</span><br><span class="line">        <span class="comment">//关闭会话</span></span><br><span class="line">        kieSession.dispose();</span><br><span class="line">        <span class="comment">//打印结果;</span></span><br><span class="line">        System.out.println(<span class="string">&quot;订单提交之后积分：&quot;</span>+order.getScore());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
 
+<h2 id="规则引擎构成"><a href="#规则引擎构成" class="headerlink" title="规则引擎构成"></a>规则引擎构成</h2><p>drools规则引擎由以下三个部分构成：</p>
+<ul>
+<li>Working Memory（工作内存）</li>
+<li>Rule Base（规则库）</li>
+<li>Inference Engine（推理引擎），其中推理引擎又包括以下部分：<ul>
+<li>Pattern Matcher（匹配器）具体匹配哪个规则，由这一个来完成</li>
+<li>Agenda（议程）</li>
+<li>Execution Engine（执行引擎）</li>
+</ul>
+</li>
+</ul>
+<p>如下图</p>
+<p><img src="/archives/bc098de5/image-20220708215409773.png" alt="image-20220708215409773"></p>
+<h3 id="相关概念说明"><a href="#相关概念说明" class="headerlink" title="相关概念说明"></a>相关概念说明</h3><p><strong>Working Memory：</strong> 工作内存，drools规则引擎会从Working Memory中获取数据并和规则文件中定义的规则进行模式匹配，所以我们开发的应用程序只需要将我们的数据插入到Working Memory中即可，例如上面案例中，调用kieSession.insert(order)就是将order对象插入到了工作内存中。</p>
+<p><strong>Fact：</strong> 事实，是指在drools规则应用当中，将一个普通的JavaBean插入到Working Memory后的对象就是Fact对象，例如上面案例中的Order对象就是输入Fact对象。Fact对象时我们的应用和规则引擎进行数据交互的桥梁或通道。</p>
+<p><strong>Rule Base：</strong> 规则库，我们在规则文件中定义的规则都会被加载到规则库中</p>
+<p><strong>Pattern Matcher：</strong> 匹配器，将Rule Base中的所有规则与Working Memory中的Fact对象进行模式匹配，匹配成功的规则将被激活并放入Agenda中。</p>
+<p><strong>Agenda：</strong> 议程，用于存放通过匹配器进行模式匹配后被激活的规则。</p>
+<p><strong>Execution Engine：</strong> 执行引擎，执行Agenda中被激活的规则</p>
+<h3 id="规则引擎执行过程"><a href="#规则引擎执行过程" class="headerlink" title="规则引擎执行过程"></a>规则引擎执行过程</h3><p><img src="/archives/bc098de5/image-20220708221305352.png" alt="规则引擎执行过程"></p>
 ]]></content>
       <categories>
         <category>规则引擎</category>
       </categories>
       <tags>
         <tag>Drools</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>设计模式-工厂模式</title>
+    <url>/archives/ccff2b22/</url>
+    <content><![CDATA[<h1 id="工厂模式"><a href="#工厂模式" class="headerlink" title="工厂模式"></a>工厂模式</h1><p>工厂模式是Java中最常用的设计模式之一。在我们悉知的Spring中源码中的bean创建就是使用了工厂模式；这种类型的设计模式属于创建型模式，他提供一种创建对象的最佳方式。在工厂模式中，我们在创建对象时不会对客户端暴露创建逻辑，并且是通过使用一个共同的接口来指向新创建的对象。</p>
+<h2 id="使用场景"><a href="#使用场景" class="headerlink" title="使用场景"></a>使用场景</h2><ol>
+<li>日志记录器：记录磁盘信息、业务事件、访问服务器信息等，让用户来选择日志记录到哪里。</li>
+<li>连接服务器使用不同的协议，<code>POP3</code>、<code>IMAP</code>、<code>HTTP</code>三个协议可以用同一个接口来实现。</li>
+</ol>
+<h2 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h2><ol>
+<li>当一个调用者想创建对象时，只需要知道对象名字即可</li>
+<li>扩展性高，如果需要增加新的类品，只需要新增一个工厂类即可</li>
+<li>隐藏产品的具体实现，让调用者只关心接口</li>
+</ol>
+<h2 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h2><p>每次新增一个产品都需要新增一个产品工厂类，增加了系统复杂度。</p>
+<h2 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h2><p>工厂模式在Spring源码中的应用解析：</p>
+<p>我们知道在Spring中，如果我们想要通过容器去创建一个bean就需要调用一下代码来实现bean创建。</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">ApplicationContext applicationContext = <span class="keyword">new</span> AnnotationConfigApplicationContext(ApplicationMain.class);</span><br><span class="line">TestIOCImpl bean = applicationContext.getBean(TestIOCImpl.class);</span><br></pre></td></tr></table></figure>
+
+<p>其实<code>ApplicationContext</code>创建bean就是使用到了工厂模式。在上面的代码中，我们并没有显式的通过<code>new</code>去创建一个<code>TestIOCImpl</code>,通过调用<code>applicationContext.getBean()</code>传入一个bean的class来实例化；具体创建过程则交给了<code>ApplicationContext</code>去实现了。</p>
+<p>首先来看看<code>ApplicationContext</code>整体的继承关系，也就是工厂模式的继承关系</p>
+<p><img src="/archives/ccff2b22/image-20210810151313670.png" alt="ApplicationContext.java"></p>
+<p><code>ApplicationContext</code>接口继承了一个最顶层的工厂类<code>BeanFactory</code>，来继续看看<code>BeanFactory</code>中有些什么方法呢。</p>
+<p><img src="/archives/ccff2b22/image-20210810151723712.png" alt="BeanFactory.java"></p>
+<p>看到这里是不是就会有点想法，我们在上面的代码中调用的<code>getBean(Class class)</code>是不是就是调用的这里的方法呢？具体实现那肯定就是在子类中去实现的喽。因为我们一开始的代码是</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">ApplicationContext applicationContext = <span class="keyword">new</span> AnnotationConfigApplicationContext(ApplicationMain.class);</span><br></pre></td></tr></table></figure>
+
+<p>创建的<code>ApplicationContext</code>接口实现类其实是<code>AnnotationConfigApplicationContext</code>类型，那么在<code>AnnotationConfigApplicationContext</code>类中是不是也实现了<code>getBean</code>的一些方法？实际上spring并没有在<code>AnnotationConfigApplicationContext</code>中去实现这些方法，而是通过一个抽象类<code>AbstractApplicationContext</code>来实现了<code>ApplicationContext</code>接口中的<code>getBean</code>一系列方法。这样做的目的也是为了提高后期的扩展性，毕竟spring这么强大，扩展性肯定是必须要很强的。</p>
+<p><img src="/archives/ccff2b22/image-20210810152406751.png" alt="AnnotationConfigApplicationContext.java关系图"></p>
+<p><code>AbstractApplicationContext</code>中实现<code>getBean</code>系列方法的代码：</p>
+<p><img src="/archives/ccff2b22/image-20210810153412546.png" alt="getBean(...)代码实现"></p>
+<p>以上就是在Spring中创建Bean所用到的工厂设计模式。</p>
+]]></content>
+      <categories>
+        <category>设计模式</category>
+      </categories>
+      <tags>
+        <tag>设计模式</tag>
       </tags>
   </entry>
   <entry>
