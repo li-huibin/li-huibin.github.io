@@ -95,7 +95,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">0</span>
+            <span class="post-count">1k</span>
         </span>
     </span>
 
@@ -104,20 +104,81 @@
         <span class="post-meta-item-icon">
             <i class="ri-book-open-line"></i>
             <span class="post-meta-item-text"> 阅读时长≈</span>
-            <span class="post-count">1 分钟</span>
+            <span class="post-count">4 分钟</span>
         </span>
     </span>
 </div>
  
     </div>
       
+    <div class="tocbot"></div>
+
 
 
 
   
     <div class="article-entry" itemprop="articleBody">
        
-   
+  <h1 id="Drools关键字"><a href="#Drools关键字" class="headerlink" title="Drools关键字"></a>Drools关键字</h1><table>
+<thead>
+<tr>
+<th align="left">关键字</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">package</td>
+<td align="left">包名，只限于逻辑上的管理，同一个包名下的查询或者函数可以直接调用</td>
+</tr>
+<tr>
+<td align="left">import</td>
+<td align="left">用于导入类或静态方法</td>
+</tr>
+<tr>
+<td align="left">global</td>
+<td align="left">全局变量</td>
+</tr>
+<tr>
+<td align="left">function</td>
+<td align="left">自定义函数</td>
+</tr>
+<tr>
+<td align="left">query</td>
+<td align="left">查询</td>
+</tr>
+<tr>
+<td align="left">rule end</td>
+<td align="left">规则体</td>
+</tr>
+</tbody></table>
+<h2 id="global全局变量"><a href="#global全局变量" class="headerlink" title="global全局变量"></a>global全局变量</h2><p>全局变量，一般用作执行规则后的结果数据返回或对具体某个服务调用等，例如：一个电子邮件服务的实例，在调用规则引擎的集成代码中，获取emailService对象，然后将其设置在工作内存中。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">语法结构为：global 对象类型 对象名称</span><br></pre></td></tr></table></figure>
+
+<p>示例：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">global java.util.List myGlobalList;<span class="comment">//如果在规则文件中使用了全局变量，那么必须在规则引擎中设置全局变量值</span></span><br><span class="line"></span><br><span class="line">rule <span class="string">&quot;global_rule1&quot;</span></span><br><span class="line"><span class="function">when</span></span><br><span class="line"><span class="function">    <span class="title">eval</span><span class="params">( <span class="keyword">true</span> )</span></span></span><br><span class="line"><span class="function">then</span></span><br><span class="line"><span class="function">    myGlobalList.<span class="title">add</span><span class="params">( <span class="string">&quot;Hello World&quot;</span> )</span></span>;<span class="comment">//</span></span><br><span class="line">    System.out.println(<span class="string">&quot;global_rule1 is execution...&quot;</span>);</span><br><span class="line">end</span><br><span class="line"></span><br><span class="line">rule <span class="string">&quot;global_rule2&quot;</span></span><br><span class="line"><span class="function">when</span></span><br><span class="line"><span class="function">    <span class="title">eval</span><span class="params">( <span class="keyword">true</span> )</span></span></span><br><span class="line"><span class="function">then</span></span><br><span class="line"><span class="function">    System.out.<span class="title">println</span><span class="params">(<span class="string">&quot;myGlobalList集合的元素个数:&quot;</span>+myGlobalList.size()</span>)</span>;</span><br><span class="line">    System.out.println(<span class="string">&quot;global_rule2 is execution...&quot;</span>);</span><br><span class="line">end</span><br></pre></td></tr></table></figure>
+
+<p>测试：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//测试高级语法</span></span><br><span class="line"><span class="meta">@Test</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">test6</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">  KieServices kieServices = KieServices.Factory.get();</span><br><span class="line">  KieContainer kieClasspathContainer = kieServices.getKieClasspathContainer();</span><br><span class="line">  KieSession kieSession = kieClasspathContainer.newKieSession();</span><br><span class="line">  List list = <span class="keyword">new</span> ArrayList();</span><br><span class="line">  <span class="comment">////设置全局变量，名称和类型必须和规则文件中定义的全局变量名称对应</span></span><br><span class="line">  kieSession.setGlobal( <span class="string">&quot;myGlobalList&quot;</span>, list );</span><br><span class="line">  <span class="comment">//激活规则引擎，如果匹配成功则执行规则</span></span><br><span class="line">  kieSession.fireAllRules();</span><br><span class="line"></span><br><span class="line">  <span class="comment">//通过规则过滤器实现只执行指定规则</span></span><br><span class="line">  <span class="comment">//kieSession.fireAllRules(new RuleNameEqualsAgendaFilter(&quot;rule5&quot;));</span></span><br><span class="line">  kieSession.dispose();</span><br><span class="line"></span><br><span class="line">  System.out.println(<span class="string">&quot;list.size():&quot;</span>+list.size());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="query查询"><a href="#query查询" class="headerlink" title="query查询"></a>query查询</h2><p>query语法提供了一种查询working memory中符合约束条件的Fact对象的简单方法。它仅包含规则文件中的LHS部分，不用指定”when”和”then”部分。query有一个可选参数集合，每一个参数都有可选的类型。如果没有指定类型，则默认为Object类型。引擎会尝试强转为需要的类型。对于KieBase来说，query的名字是全局性的，因此不要向同一RuleBase的不同包添加相同名称的query。</p>
+<p>使用<code>ksession.getQueryResults(&quot;name&quot;)</code> 方法可以获得查询得结果，其中name为query的名称，方法的返回结果是一个列表，从中可以获取匹配查询到的对象。</p>
+<p>示例：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//不带参数的查询</span></span><br><span class="line"><span class="comment">//当前query用于查询Working Memory中age&gt;30的Person对象</span></span><br><span class="line">query <span class="string">&quot;query-1&quot;</span></span><br><span class="line">    $person : Person(age &gt; <span class="number">30</span>)</span><br><span class="line">end</span><br><span class="line"></span><br><span class="line"><span class="comment">//带有参数的查询</span></span><br><span class="line"><span class="comment">////当前query用于查询Working Memory中age&gt;30同时name需要和传递的参数name相同的Person对象</span></span><br><span class="line">query <span class="string">&quot;query-2&quot;</span>(String nameParam)</span><br><span class="line">    $person : Person(age &gt; <span class="number">30</span>,name == nameParam)</span><br><span class="line">end</span><br></pre></td></tr></table></figure>
+
+<p>测试：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//测试高级语法</span></span><br><span class="line"><span class="meta">@Test</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">test7</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">  KieServices kieServices = KieServices.Factory.get();</span><br><span class="line">  KieContainer kieClasspathContainer = kieServices.getKieClasspathContainer();</span><br><span class="line">  KieSession kieSession = kieClasspathContainer.newKieSession();</span><br><span class="line"></span><br><span class="line">  Person p1 = <span class="keyword">new</span> Person();</span><br><span class="line">  p1.setName(<span class="string">&quot;JACK1&quot;</span>);</span><br><span class="line">  p1.setAge(<span class="number">29</span>);</span><br><span class="line">  Person p2 = <span class="keyword">new</span> Person();</span><br><span class="line">  p2.setAge(<span class="number">40</span>);</span><br><span class="line">  p2.setName(<span class="string">&quot;JACK2&quot;</span>);</span><br><span class="line"></span><br><span class="line">  kieSession.insert(p1);</span><br><span class="line">  kieSession.insert(p2);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  <span class="comment">//激活规则引擎，如果匹配成功则执行规则</span></span><br><span class="line">  kieSession.fireAllRules();</span><br><span class="line"></span><br><span class="line">  <span class="comment">//通过规则过滤器实现只执行指定规则</span></span><br><span class="line">  <span class="comment">//kieSession.fireAllRules(new RuleNameEqualsAgendaFilter(&quot;rule5&quot;));</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  QueryResults results = kieSession.getQueryResults(<span class="string">&quot;query-1&quot;</span>);</span><br><span class="line">  System.out.println(<span class="string">&quot;results size is &quot;</span> + results.size());</span><br><span class="line">  <span class="keyword">for</span>(QueryResultsRow row : results)&#123;</span><br><span class="line">    Person person = (Person) row.get(<span class="string">&quot;$person&quot;</span>);</span><br><span class="line">    System.out.println(<span class="string">&quot;Person from WM, age : &quot;</span> + person.getAge());</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  System.out.println(<span class="string">&quot;-----------------------&quot;</span>);</span><br><span class="line">  QueryResults results2 = kieSession.getQueryResults(<span class="string">&quot;query-2&quot;</span>, <span class="string">&quot;JACK1&quot;</span>);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">for</span>(QueryResultsRow row : results)&#123;</span><br><span class="line">    Person person = (Person) row.get(<span class="string">&quot;$person&quot;</span>);</span><br><span class="line">    System.out.println(person);</span><br><span class="line">  &#125;</span><br><span class="line">  kieSession.dispose();</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="function函数"><a href="#function函数" class="headerlink" title="function函数"></a>function函数</h2><p>在规则中可以通过函数来做一些通用的逻辑，就相当于Java类中的方法一样</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">function String <span class="title">format</span><span class="params">(String name)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;hello &quot;</span> + name;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>函数的返回类型和参数类型于Java的规则一样</p>
+<p>示例：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">function String <span class="title">format</span><span class="params">(String name)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;hello &quot;</span> + name;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//测试函数</span></span><br><span class="line">rule <span class="string">&quot;function_rule&quot;</span></span><br><span class="line">    when</span><br><span class="line">        $person:Person(name!=<span class="keyword">null</span>&amp;&amp;age&gt;<span class="number">30</span>)</span><br><span class="line">    then</span><br><span class="line">        <span class="comment">//调用上面定义的函数</span></span><br><span class="line">        String ret = format($person.getName());</span><br><span class="line">        System.out.println(ret);</span><br><span class="line">end</span><br></pre></td></tr></table></figure>
+
+<p>测试：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//测试高级语法</span></span><br><span class="line"><span class="meta">@Test</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">test7</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">  KieServices kieServices = KieServices.Factory.get();</span><br><span class="line">  KieContainer kieClasspathContainer = kieServices.getKieClasspathContainer();</span><br><span class="line">  KieSession kieSession = kieClasspathContainer.newKieSession();</span><br><span class="line"></span><br><span class="line">  Person p1 = <span class="keyword">new</span> Person();</span><br><span class="line">  p1.setName(<span class="string">&quot;JACK1&quot;</span>);</span><br><span class="line">  p1.setAge(<span class="number">29</span>);</span><br><span class="line">  Person p2 = <span class="keyword">new</span> Person();</span><br><span class="line">  p2.setAge(<span class="number">40</span>);</span><br><span class="line">  p2.setName(<span class="string">&quot;JACK2&quot;</span>);</span><br><span class="line"></span><br><span class="line">  kieSession.insert(p1);</span><br><span class="line">  kieSession.insert(p2);</span><br><span class="line">  <span class="comment">//激活规则引擎，如果匹配成功则执行规则</span></span><br><span class="line">  kieSession.fireAllRules();</span><br><span class="line">  kieSession.dispose();</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+ 
       <!-- reward -->
       
     </div>
