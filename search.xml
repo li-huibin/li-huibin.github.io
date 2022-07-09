@@ -1,6 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>Drools高级语法</title>
+    <url>/archives/7d4f3505/</url>
+    <content><![CDATA[]]></content>
+      <categories>
+        <category>规则引擎</category>
+      </categories>
+      <tags>
+        <tag>Drools高级语法</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Java垃圾收集器之ZGC剖析</title>
     <url>/archives/a87613ac/</url>
     <content><![CDATA[<h2 id="ZGC诞生背景"><a href="#ZGC诞生背景" class="headerlink" title="ZGC诞生背景"></a>ZGC诞生背景</h2><p>在Java中，JVM在进行垃圾回收的时候，有一个很大的问题，就是STW(Stop The World)，即JVM要进行垃圾回收时，会暂停所有的业务线程。导致所有业务系统暂停，直接降低了用户体验；所以目前市面上所有的垃圾回收器优化方向也是朝着怎么缩短STW方向，进而提升用户体验。</p>
@@ -1156,6 +1167,60 @@
       </tags>
   </entry>
   <entry>
+    <title>Redis高可用集群部署</title>
+    <url>/archives/1d883d6c/</url>
+    <content><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在<a href="/archives/8bd0f0fd/">《Redis哨兵架构搭建》</a>中我们说了怎么搭建哨兵架构，既然有了哨兵架构，为什么还要提供<strong>Redis高可用集群模式</strong>呢？那就的从哨兵模式的缺点开始说起；</p>
+<p>在redis3.0以前的版本要实现集群一般都是借助哨兵Sentinel工具来监控master节点的状态，如果master节点异常，则会主动切换，将某一台slave作为master，哨兵配置略微复杂，并且在性能和高可用方面都表现一般，特别是在主从切换的瞬间存在<em><strong>访问瞬断</strong></em>的情况，而且哨兵模式只有一个主节点是对外提供服务的，没有办法支持很高的并发量，还有单个节点的内存也不适合设置过大，否则会导致持久化文件太大，影像数据恢复或主从数据同步的效率。</p>
+<p>基于以上哨兵模式的种种的缺点，所以Redis又给我们提供了高可用集群模式。</p>
+<h2 id="高可用集群模式"><a href="#高可用集群模式" class="headerlink" title="高可用集群模式"></a>高可用集群模式</h2><p><img src="/archives/1d883d6c/image-20210918123415239.png" alt="Redis高可用集群架构图"></p>
+<p>redis集群是一个有多个<strong>主从节点群组成的分布式服务器群</strong>，它具有<strong>复制、高可用和分片</strong>特性。Redis集群不需要Sentinel哨兵也能完成节点的移除和故障的转移功能。只是在启动的时候需要将每个节点设置成集群模式即可，这种集群模式没有中心节点，可以水平扩展，按照官方文档描述可以扩展到上万个节点(<em><strong>官方推荐不超过1000个节点</strong></em>)。<strong>redis集群的性能和高可用性都优于之前版本的哨兵模式，且集群配置也非常简单</strong>。</p>
+<h2 id="Redis高可用集群搭建"><a href="#Redis高可用集群搭建" class="headerlink" title="Redis高可用集群搭建"></a>Redis高可用集群搭建</h2><blockquote>
+<p>redis集群需要至少<strong>三个master节点</strong>，我们这里搭建三个master节点，并且每个master在搭建一个slave节点，总共6个redis节点，这里用三台机器部署6个redis实例，每台机器一主一从。</p>
+</blockquote>
+<p>最终我们搭建的高可用架构图如下：</p>
+<p><img src="/archives/1d883d6c/image-20210924125414621.png" alt="Redis高可用三主三从结构"></p>
+<h3 id="第一步"><a href="#第一步" class="headerlink" title="第一步"></a>第一步</h3><p>在第一台机器的/home/redis/下创建文件夹<code>cluster</code>，然后在其下面分别创建2个文件夹如下：</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">mkdir -p /home/redis/cluster</span><br><span class="line">mkdir 8001 8004</span><br></pre></td></tr></table></figure>
+
+<h3 id="第二步"><a href="#第二步" class="headerlink" title="第二步"></a>第二步</h3><p>把之前的<code>redis.conf</code>配置文件copy到8001下，修改以下内容：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">daemonize yes</span><br><span class="line">port 8001 #（分别对每个机器的端口号进行设置）</span><br><span class="line">pidfile /var/run/redis_8001.pid  #把pid进程写入pidfile配置的文件</span><br><span class="line">dir /home/redis/cluster/8001/ # （指定数据文件存放位置，必须要指定不同的目录位置，不然会丢数据）</span><br><span class="line">cluster-enabled yes # 启动集群模式</span><br><span class="line">cluster-config-file nodes-8001.config # (集群节点信息文件，这里800X最好和port对应)</span><br><span class="line">cluster-node-timeout 10000</span><br><span class="line"># bind 127.0.0.1（bind绑定的是自己机器网卡的ip，如果有多块网卡可以配多个ip，代表允许客户端通过机器的哪些网卡ip去访问，内网一般可以不配置bind，注释掉即可）</span><br><span class="line">protected-mode no # 关闭保护模式</span><br><span class="line"># 如果要设置密码需要增加以下配置</span><br><span class="line">requirepass 123456 # 设置redis访问密码</span><br><span class="line">masterauth 123456 # 设置集群节点间访问密码，跟上面一致</span><br></pre></td></tr></table></figure>
+
+<h3 id="第三步"><a href="#第三步" class="headerlink" title="第三步"></a>第三步</h3><p>把修改后的配置文件，copy到8004，修改第二步中的2,3,4,6行的端口号。</p>
+<h3 id="第四步"><a href="#第四步" class="headerlink" title="第四步"></a>第四步</h3><p>另外两台机器也需要做上面几步操作，第二台机器用8002和8005，第三台机器用8003和8006</p>
+<h3 id="第五步"><a href="#第五步" class="headerlink" title="第五步"></a>第五步</h3><p>分别启动6个redis实例，然后检查是否启动成功</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">ps -ef | grep redis</span><br></pre></td></tr></table></figure>
+
+<h3 id="第六步"><a href="#第六步" class="headerlink" title="第六步"></a>第六步</h3><p>用<code>redis-cli</code>创建整个redis集群</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">/home/redis/build/bin/redis-cli -a mst --cluster create --cluster-replicas 1 192.168.31.16:8001 192.168.31.224:8002 192.168.31.80:8003 192.168.31.16:8004 192.168.31.224:8005 192.168.31.80 8006</span><br></pre></td></tr></table></figure>
+
+<p>上面命令中的 1 代表每个创建的主服务器节点创建一个从服务器节点</p>
+<p><strong>注意：</strong></p>
+<blockquote>
+<p>执行上述命令需要先确认三台机器之间的redis实例能不能互相访问，如果不能访问需要我们把防火墙关闭，如果不关闭防火墙，则需要打开redis服务端口和集群节点gossip通信端口16379（默认是在redis端口上加10000）</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">systemctl stop firewalld # 临时关闭防火墙</span><br><span class="line">systemctl disable firewalld # 禁止开机启动</span><br></pre></td></tr></table></figure>
+
+
+</blockquote>
+<h3 id="第七步"><a href="#第七步" class="headerlink" title="第七步"></a>第七步</h3><p>验证集群是否成功</p>
+<ol>
+<li><p>连接任意一个客户端即可：<code>./redis-cli -c -h -p (-a访问服务端密码，-c表示集群模式，-h表示指定ip地址，-p表示指定端口号)</code>，如：</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">/home/redis/build/bin/redis-cli -a mst -c -h 192.168.31.16 -p 800*</span><br></pre></td></tr></table></figure></li>
+<li><p>进行验证：</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">cluster info <span class="comment">#查看集群信息</span></span><br><span class="line">cluster nodes <span class="comment"># 查看节点列表</span></span><br></pre></td></tr></table></figure></li>
+<li><p>进行数据操作验证</p>
+</li>
+<li><p>关闭集群规则需要逐个进行关闭，使用命令</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">/home/redis/build/bin/redis-cli -a mst -c -h 192.168.31.16 -p 800* shutdown</span><br></pre></td></tr></table></figure></li>
+</ol>
+]]></content>
+      <categories>
+        <category>Redis</category>
+      </categories>
+      <tags>
+        <tag>Redis</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Redis高可用集群水平扩展</title>
     <url>/archives/c709d40a/</url>
     <content><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在<a href="/archives/1d883d6c/">《Redis高可用集群部署》</a>中我们部署了Redis高可用架构。整个集群由6个节点组成，这6个节点分布在三台机器上，采用了三主三从模式。</p>
@@ -1274,60 +1339,6 @@
       </tags>
   </entry>
   <entry>
-    <title>Redis高可用集群部署</title>
-    <url>/archives/1d883d6c/</url>
-    <content><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在<a href="/archives/8bd0f0fd/">《Redis哨兵架构搭建》</a>中我们说了怎么搭建哨兵架构，既然有了哨兵架构，为什么还要提供<strong>Redis高可用集群模式</strong>呢？那就的从哨兵模式的缺点开始说起；</p>
-<p>在redis3.0以前的版本要实现集群一般都是借助哨兵Sentinel工具来监控master节点的状态，如果master节点异常，则会主动切换，将某一台slave作为master，哨兵配置略微复杂，并且在性能和高可用方面都表现一般，特别是在主从切换的瞬间存在<em><strong>访问瞬断</strong></em>的情况，而且哨兵模式只有一个主节点是对外提供服务的，没有办法支持很高的并发量，还有单个节点的内存也不适合设置过大，否则会导致持久化文件太大，影像数据恢复或主从数据同步的效率。</p>
-<p>基于以上哨兵模式的种种的缺点，所以Redis又给我们提供了高可用集群模式。</p>
-<h2 id="高可用集群模式"><a href="#高可用集群模式" class="headerlink" title="高可用集群模式"></a>高可用集群模式</h2><p><img src="/archives/1d883d6c/image-20210918123415239.png" alt="Redis高可用集群架构图"></p>
-<p>redis集群是一个有多个<strong>主从节点群组成的分布式服务器群</strong>，它具有<strong>复制、高可用和分片</strong>特性。Redis集群不需要Sentinel哨兵也能完成节点的移除和故障的转移功能。只是在启动的时候需要将每个节点设置成集群模式即可，这种集群模式没有中心节点，可以水平扩展，按照官方文档描述可以扩展到上万个节点(<em><strong>官方推荐不超过1000个节点</strong></em>)。<strong>redis集群的性能和高可用性都优于之前版本的哨兵模式，且集群配置也非常简单</strong>。</p>
-<h2 id="Redis高可用集群搭建"><a href="#Redis高可用集群搭建" class="headerlink" title="Redis高可用集群搭建"></a>Redis高可用集群搭建</h2><blockquote>
-<p>redis集群需要至少<strong>三个master节点</strong>，我们这里搭建三个master节点，并且每个master在搭建一个slave节点，总共6个redis节点，这里用三台机器部署6个redis实例，每台机器一主一从。</p>
-</blockquote>
-<p>最终我们搭建的高可用架构图如下：</p>
-<p><img src="/archives/1d883d6c/image-20210924125414621.png" alt="Redis高可用三主三从结构"></p>
-<h3 id="第一步"><a href="#第一步" class="headerlink" title="第一步"></a>第一步</h3><p>在第一台机器的/home/redis/下创建文件夹<code>cluster</code>，然后在其下面分别创建2个文件夹如下：</p>
-<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">mkdir -p /home/redis/cluster</span><br><span class="line">mkdir 8001 8004</span><br></pre></td></tr></table></figure>
-
-<h3 id="第二步"><a href="#第二步" class="headerlink" title="第二步"></a>第二步</h3><p>把之前的<code>redis.conf</code>配置文件copy到8001下，修改以下内容：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">daemonize yes</span><br><span class="line">port 8001 #（分别对每个机器的端口号进行设置）</span><br><span class="line">pidfile /var/run/redis_8001.pid  #把pid进程写入pidfile配置的文件</span><br><span class="line">dir /home/redis/cluster/8001/ # （指定数据文件存放位置，必须要指定不同的目录位置，不然会丢数据）</span><br><span class="line">cluster-enabled yes # 启动集群模式</span><br><span class="line">cluster-config-file nodes-8001.config # (集群节点信息文件，这里800X最好和port对应)</span><br><span class="line">cluster-node-timeout 10000</span><br><span class="line"># bind 127.0.0.1（bind绑定的是自己机器网卡的ip，如果有多块网卡可以配多个ip，代表允许客户端通过机器的哪些网卡ip去访问，内网一般可以不配置bind，注释掉即可）</span><br><span class="line">protected-mode no # 关闭保护模式</span><br><span class="line"># 如果要设置密码需要增加以下配置</span><br><span class="line">requirepass 123456 # 设置redis访问密码</span><br><span class="line">masterauth 123456 # 设置集群节点间访问密码，跟上面一致</span><br></pre></td></tr></table></figure>
-
-<h3 id="第三步"><a href="#第三步" class="headerlink" title="第三步"></a>第三步</h3><p>把修改后的配置文件，copy到8004，修改第二步中的2,3,4,6行的端口号。</p>
-<h3 id="第四步"><a href="#第四步" class="headerlink" title="第四步"></a>第四步</h3><p>另外两台机器也需要做上面几步操作，第二台机器用8002和8005，第三台机器用8003和8006</p>
-<h3 id="第五步"><a href="#第五步" class="headerlink" title="第五步"></a>第五步</h3><p>分别启动6个redis实例，然后检查是否启动成功</p>
-<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">ps -ef | grep redis</span><br></pre></td></tr></table></figure>
-
-<h3 id="第六步"><a href="#第六步" class="headerlink" title="第六步"></a>第六步</h3><p>用<code>redis-cli</code>创建整个redis集群</p>
-<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">/home/redis/build/bin/redis-cli -a mst --cluster create --cluster-replicas 1 192.168.31.16:8001 192.168.31.224:8002 192.168.31.80:8003 192.168.31.16:8004 192.168.31.224:8005 192.168.31.80 8006</span><br></pre></td></tr></table></figure>
-
-<p>上面命令中的 1 代表每个创建的主服务器节点创建一个从服务器节点</p>
-<p><strong>注意：</strong></p>
-<blockquote>
-<p>执行上述命令需要先确认三台机器之间的redis实例能不能互相访问，如果不能访问需要我们把防火墙关闭，如果不关闭防火墙，则需要打开redis服务端口和集群节点gossip通信端口16379（默认是在redis端口上加10000）</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">systemctl stop firewalld # 临时关闭防火墙</span><br><span class="line">systemctl disable firewalld # 禁止开机启动</span><br></pre></td></tr></table></figure>
-
-
-</blockquote>
-<h3 id="第七步"><a href="#第七步" class="headerlink" title="第七步"></a>第七步</h3><p>验证集群是否成功</p>
-<ol>
-<li><p>连接任意一个客户端即可：<code>./redis-cli -c -h -p (-a访问服务端密码，-c表示集群模式，-h表示指定ip地址，-p表示指定端口号)</code>，如：</p>
-<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">/home/redis/build/bin/redis-cli -a mst -c -h 192.168.31.16 -p 800*</span><br></pre></td></tr></table></figure></li>
-<li><p>进行验证：</p>
-<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">cluster info <span class="comment">#查看集群信息</span></span><br><span class="line">cluster nodes <span class="comment"># 查看节点列表</span></span><br></pre></td></tr></table></figure></li>
-<li><p>进行数据操作验证</p>
-</li>
-<li><p>关闭集群规则需要逐个进行关闭，使用命令</p>
-<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">/home/redis/build/bin/redis-cli -a mst -c -h 192.168.31.16 -p 800* shutdown</span><br></pre></td></tr></table></figure></li>
-</ol>
-]]></content>
-      <categories>
-        <category>Redis</category>
-      </categories>
-      <tags>
-        <tag>Redis</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Spring-IOC原理(一)</title>
     <url>/archives/81aeb1f/</url>
     <content><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在Spring中最重要的就属<code>IOC</code>了，不论是在面试中，还是在一些中间件与Spring的继承中，都离不开<code>IOC</code>，下面就来瞧瞧<code>IOC</code>是个什么东西，他是怎么一个加载流程，先大致粗略的了解一下！</p>
@@ -1377,29 +1388,6 @@
       </categories>
       <tags>
         <tag>Spring源码</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>hexo静态页面图片不显示问题</title>
-    <url>/archives/e4419141/</url>
-    <content><![CDATA[<p>hexo静态页面图片不显示一般有几个原因：</p>
-<p>1、<code>_config.yml</code>中没有设置<code>post_asset_folder: true</code>；这个设置默认是false</p>
-<p>2、没有安装插件 asset-image</p>
-<p>如果在运行工程之前上面两个步骤都没有操作过，则首先需要在<code>_config.yml</code>中设置<code>post_asset_folder:true</code> 。然后在cmd中运行</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npm install https://github.com/CodeFalling/hexo-asset-image --save</span><br></pre></td></tr></table></figure>
-
-<p>由于国内网络环境，可能需要多下载几次才可以下载成功，要耐心等待。或者有条件的可以翻墙下载。</p>
-<p>以上操作完毕之后重新发布工程</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean &amp;&amp; hexo generate &amp;&amp; hexo deploy</span><br></pre></td></tr></table></figure>
-
-<p>页面效果如下：</p>
-<p><img src="/archives/e4419141/image-20210728134047043.png"></p>
-]]></content>
-      <categories>
-        <category>解决方案</category>
-      </categories>
-      <tags>
-        <tag>问题解决</tag>
       </tags>
   </entry>
   <entry>
@@ -1467,6 +1455,29 @@
       </categories>
       <tags>
         <tag>环境搭建</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>hexo静态页面图片不显示问题</title>
+    <url>/archives/e4419141/</url>
+    <content><![CDATA[<p>hexo静态页面图片不显示一般有几个原因：</p>
+<p>1、<code>_config.yml</code>中没有设置<code>post_asset_folder: true</code>；这个设置默认是false</p>
+<p>2、没有安装插件 asset-image</p>
+<p>如果在运行工程之前上面两个步骤都没有操作过，则首先需要在<code>_config.yml</code>中设置<code>post_asset_folder:true</code> 。然后在cmd中运行</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npm install https://github.com/CodeFalling/hexo-asset-image --save</span><br></pre></td></tr></table></figure>
+
+<p>由于国内网络环境，可能需要多下载几次才可以下载成功，要耐心等待。或者有条件的可以翻墙下载。</p>
+<p>以上操作完毕之后重新发布工程</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean &amp;&amp; hexo generate &amp;&amp; hexo deploy</span><br></pre></td></tr></table></figure>
+
+<p>页面效果如下：</p>
+<p><img src="/archives/e4419141/image-20210728134047043.png"></p>
+]]></content>
+      <categories>
+        <category>解决方案</category>
+      </categories>
+      <tags>
+        <tag>问题解决</tag>
       </tags>
   </entry>
   <entry>
@@ -2035,6 +2046,35 @@
       </tags>
   </entry>
   <entry>
+    <title>排序算法——冒泡排序</title>
+    <url>/archives/4fe6adbb/</url>
+    <content><![CDATA[<h2 id="基本原理"><a href="#基本原理" class="headerlink" title="基本原理"></a>基本原理</h2><ol>
+<li>比较相邻的元素。如果第一个比第二个大，就交换他们两个</li>
+<li>对每一对相邻元素做同样的工作，从开始第一对到结尾的最后一对。在这一点，最后的元素应该会是最大的数</li>
+<li>针对所有的元素重复以上步骤，除了最后一个</li>
+<li>持续每次对越来越少的元素重复上面的步骤，直到没有任何一对数字需要比较</li>
+</ol>
+<h2 id="动态图演示"><a href="#动态图演示" class="headerlink" title="动态图演示"></a>动态图演示</h2><p><img src="/archives/4fe6adbb/bubbleSort.gif" alt="冒泡排序动态图"></p>
+<h2 id="代码实现"><a href="#代码实现" class="headerlink" title="代码实现"></a>代码实现</h2><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.company;</span><br><span class="line"><span class="keyword">import</span> java.util.Arrays;</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span>[] data = &#123;<span class="number">3</span>,<span class="number">44</span>,<span class="number">38</span>,<span class="number">5</span>,<span class="number">47</span>,<span class="number">15</span>,<span class="number">36</span>,<span class="number">26</span>,<span class="number">27</span>,<span class="number">2</span>,<span class="number">46</span>,<span class="number">4</span>,<span class="number">19</span>,<span class="number">50</span>,<span class="number">48</span>&#125;;</span><br><span class="line">        bubbleSort(data);</span><br><span class="line">        System.out.println(<span class="string">&quot;冒泡排序结果：&quot;</span> + Arrays.toString(data));</span><br><span class="line">    &#125;</span><br><span class="line">  </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">bubbleSort</span><span class="params">(<span class="keyword">int</span>[] data)</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 控制排序次数</span></span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; data.length - <span class="number">1</span>; i++) &#123;</span><br><span class="line">            <span class="comment">// 此处为算法优化点，可以去掉； 设置一个标记，若为true，则表示此次循环没有需要进行交换的，也就是说待排序序列已经是有序的了</span></span><br><span class="line">            <span class="keyword">boolean</span> sortFlag = <span class="keyword">true</span>;</span><br><span class="line">            <span class="comment">// 开始从第0个元素排序，相邻两个元素排序</span></span><br><span class="line">            <span class="keyword">for</span>(<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; data.length - <span class="number">1</span> - i; j++) &#123;</span><br><span class="line">                <span class="keyword">if</span>(data[j] &gt; data[j + <span class="number">1</span>]) &#123;</span><br><span class="line">                    sortFlag = <span class="keyword">false</span>;</span><br><span class="line">                    <span class="comment">// 交换元素</span></span><br><span class="line">                    <span class="comment">// 第一种交换写法，通过加减运算</span></span><br><span class="line">                    data[j] = data[j] + data[j + <span class="number">1</span>];</span><br><span class="line">                    data[j + <span class="number">1</span>] = data[j] - data[j + <span class="number">1</span>];</span><br><span class="line">                    data[j] = data[j] - data[j + <span class="number">1</span>];</span><br><span class="line">                    <span class="comment">// 第二种交换写法，通过异或(^)运算</span></span><br><span class="line"><span class="comment">//                    data[j] = (data[j] ^ data[j + 1]);</span></span><br><span class="line"><span class="comment">//                    data[j + 1] = data[j + 1] ^ data[j];</span></span><br><span class="line"><span class="comment">//                    data[j] =  data[j + 1] ^ data[j];</span></span><br><span class="line">                    <span class="comment">// 第三种交换写法，通过借助临时变量完成</span></span><br><span class="line"><span class="comment">//                    int temp = data[j];</span></span><br><span class="line"><span class="comment">//                    data[j] = data[j + 1];</span></span><br><span class="line"><span class="comment">//                    data[j + 1] = temp;</span></span><br><span class="line"></span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span>(sortFlag) &#123;</span><br><span class="line">              <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>在交换元素的时候有三种方式：</p>
+<ul>
+<li>通过元素间的加减运算交换——-代码中第一种写法</li>
+<li>通过元素间的异或(^)运算交换——–代码中第二种写法</li>
+<li>通过借助临时变量交换——–代码中第三种写法</li>
+</ul>
+<p>其中前两种写法在运行效率上高于第三种，因为在运行过程中减少了内存分配的开销。</p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>算法</category>
+      </categories>
+      <tags>
+        <tag>冒泡排序</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>在pyecharts中自定义geojson创建地图</title>
     <url>/archives/5c618354/</url>
     <content><![CDATA[<h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><p>客户要求使用地图展示全省用电量，这里自然是想到了使用pyecharts来做地图，然后渲染数据；然而一切进展的很坎坷，在展示杭州地图时因为在2021年杭州重新调整了行政区域，pyecharts中也没有及时的更新相关数据，所以导致生成出来的杭州地图行政划分是错的。</p>
@@ -2076,35 +2116,6 @@
       </categories>
       <tags>
         <tag>链表</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>排序算法——冒泡排序</title>
-    <url>/archives/4fe6adbb/</url>
-    <content><![CDATA[<h2 id="基本原理"><a href="#基本原理" class="headerlink" title="基本原理"></a>基本原理</h2><ol>
-<li>比较相邻的元素。如果第一个比第二个大，就交换他们两个</li>
-<li>对每一对相邻元素做同样的工作，从开始第一对到结尾的最后一对。在这一点，最后的元素应该会是最大的数</li>
-<li>针对所有的元素重复以上步骤，除了最后一个</li>
-<li>持续每次对越来越少的元素重复上面的步骤，直到没有任何一对数字需要比较</li>
-</ol>
-<h2 id="动态图演示"><a href="#动态图演示" class="headerlink" title="动态图演示"></a>动态图演示</h2><p><img src="/archives/4fe6adbb/bubbleSort.gif" alt="冒泡排序动态图"></p>
-<h2 id="代码实现"><a href="#代码实现" class="headerlink" title="代码实现"></a>代码实现</h2><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.company;</span><br><span class="line"><span class="keyword">import</span> java.util.Arrays;</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span>[] data = &#123;<span class="number">3</span>,<span class="number">44</span>,<span class="number">38</span>,<span class="number">5</span>,<span class="number">47</span>,<span class="number">15</span>,<span class="number">36</span>,<span class="number">26</span>,<span class="number">27</span>,<span class="number">2</span>,<span class="number">46</span>,<span class="number">4</span>,<span class="number">19</span>,<span class="number">50</span>,<span class="number">48</span>&#125;;</span><br><span class="line">        bubbleSort(data);</span><br><span class="line">        System.out.println(<span class="string">&quot;冒泡排序结果：&quot;</span> + Arrays.toString(data));</span><br><span class="line">    &#125;</span><br><span class="line">  </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">bubbleSort</span><span class="params">(<span class="keyword">int</span>[] data)</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 控制排序次数</span></span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; data.length - <span class="number">1</span>; i++) &#123;</span><br><span class="line">            <span class="comment">// 此处为算法优化点，可以去掉； 设置一个标记，若为true，则表示此次循环没有需要进行交换的，也就是说待排序序列已经是有序的了</span></span><br><span class="line">            <span class="keyword">boolean</span> sortFlag = <span class="keyword">true</span>;</span><br><span class="line">            <span class="comment">// 开始从第0个元素排序，相邻两个元素排序</span></span><br><span class="line">            <span class="keyword">for</span>(<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; data.length - <span class="number">1</span> - i; j++) &#123;</span><br><span class="line">                <span class="keyword">if</span>(data[j] &gt; data[j + <span class="number">1</span>]) &#123;</span><br><span class="line">                    sortFlag = <span class="keyword">false</span>;</span><br><span class="line">                    <span class="comment">// 交换元素</span></span><br><span class="line">                    <span class="comment">// 第一种交换写法，通过加减运算</span></span><br><span class="line">                    data[j] = data[j] + data[j + <span class="number">1</span>];</span><br><span class="line">                    data[j + <span class="number">1</span>] = data[j] - data[j + <span class="number">1</span>];</span><br><span class="line">                    data[j] = data[j] - data[j + <span class="number">1</span>];</span><br><span class="line">                    <span class="comment">// 第二种交换写法，通过异或(^)运算</span></span><br><span class="line"><span class="comment">//                    data[j] = (data[j] ^ data[j + 1]);</span></span><br><span class="line"><span class="comment">//                    data[j + 1] = data[j + 1] ^ data[j];</span></span><br><span class="line"><span class="comment">//                    data[j] =  data[j + 1] ^ data[j];</span></span><br><span class="line">                    <span class="comment">// 第三种交换写法，通过借助临时变量完成</span></span><br><span class="line"><span class="comment">//                    int temp = data[j];</span></span><br><span class="line"><span class="comment">//                    data[j] = data[j + 1];</span></span><br><span class="line"><span class="comment">//                    data[j + 1] = temp;</span></span><br><span class="line"></span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span>(sortFlag) &#123;</span><br><span class="line">              <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<p>在交换元素的时候有三种方式：</p>
-<ul>
-<li>通过元素间的加减运算交换——-代码中第一种写法</li>
-<li>通过元素间的异或(^)运算交换——–代码中第二种写法</li>
-<li>通过借助临时变量交换——–代码中第三种写法</li>
-</ul>
-<p>其中前两种写法在运行效率上高于第三种，因为在运行过程中减少了内存分配的开销。</p>
-</blockquote>
-]]></content>
-      <categories>
-        <category>算法</category>
-      </categories>
-      <tags>
-        <tag>冒泡排序</tag>
       </tags>
   </entry>
   <entry>
@@ -2677,7 +2688,7 @@
         <category>规则引擎</category>
       </categories>
       <tags>
-        <tag>Drools语法</tag>
+        <tag>Drools基础语法</tag>
       </tags>
   </entry>
   <entry>
